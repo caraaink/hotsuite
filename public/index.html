@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instagram Poster</title>
+    <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h2>Instagram Poster</h2>
+            <button id="themeToggle" class="theme-btn">
+                <i class="fas fa-moon"></i>
+            </button>
+        </header>
+        <main>
+            <select id="accountSelect">
+                <option value="">Pilih Akun Instagram</option>
+                <option value="17841472299141470" data-username="_cika.cantika">Cika Cantika (_cika.cantika)</option>
+                <option value="17841469780026465" data-username="raisa.ayunda_">Raisa Ayunda (raisa.ayunda_)</option>
+                <option value="17841472886987230" data-username="meownimev2">Meownime (meownimev2)</option>
+                <option value="17841402777728356" data-username="meownime.official">Meownime (meownime.official)</option>
+            </select>
+
+            <input type="file" id="imageInput" accept="image/*">
+            <input type="text" id="imageUrl" placeholder="Atau masukkan link gambar">
+            <textarea id="caption" placeholder="Masukkan caption"></textarea>
+            <button onclick="uploadToInstagram()" class="upload-btn">Upload ke IG</button>
+
+            <p id="status"></p>
+        </main>
+    </div>
+
+    <script>
+        // Toggle tema gelap/terang
+        const themeToggle = document.getElementById("themeToggle");
+        themeToggle.addEventListener("click", () => {
+            document.body.classList.toggle("dark-mode");
+            const icon = themeToggle.querySelector("i");
+            icon.classList.toggle("fa-moon");
+            icon.classList.toggle("fa-sun");
+            localStorage.setItem("theme", document.body.classList.contains("dark-mode") ? "dark" : "light");
+        });
+
+        // Muat tema dari localStorage
+        if (localStorage.getItem("theme") === "dark") {
+            document.body.classList.add("dark-mode");
+            themeToggle.querySelector("i").classList.replace("fa-moon", "fa-sun");
+        }
+
+        async function uploadToInstagram() {
+            const accountId = document.getElementById("accountSelect").value;
+            const fileInput = document.getElementById("imageInput").files[0];
+            let imageUrl = document.getElementById("imageUrl").value;
+            const caption = document.getElementById("caption").value;
+            const statusText = document.getElementById("status");
+
+            if (!accountId) {
+                statusText.innerText = "Pilih akun Instagram terlebih dahulu!";
+                return;
+            }
+
+            statusText.innerText = "Mengunggah...";
+
+            const formData = new FormData();
+            if (fileInput) {
+                formData.append("image", fileInput);
+            }
+            formData.append("imageUrl", imageUrl);
+            formData.append("caption", caption);
+            formData.append("accountId", accountId);
+
+            const response = await fetch("/api/upload", {
+                method: "POST",
+                body: formData
+            });
+
+            const result = await response.json();
+            statusText.innerText = result.message;
+        }
+    </script>
+</body>
+</html>
