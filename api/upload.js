@@ -1,4 +1,3 @@
-const fetch = require("node-fetch");
 const fs = require("fs").promises;
 const path = require("path");
 
@@ -95,7 +94,7 @@ module.exports = async (req, res) => {
     let finalImageUrl = imageUrl;
     if (req.file) {
         const formData = new FormData();
-        formData.append("image", req.file.buffer.toString("base64"));
+        formData.append("image", Buffer.from(req.file.buffer).toString("base64"));
         formData.append("key", "a54b42bd860469def254d13b8f55f43e");
 
         const imgbbResponse = await fetch("https://api.imgbb.com/1/upload", {
