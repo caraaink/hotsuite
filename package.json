@@ -1,13 +1,11 @@
 {
-  "name": "ig-auto-post",
+  "name": "hotsuite",
   "version": "1.0.0",
-  "main": "index.js",
-  "scripts": {
-    "start": "node index.js"
-  },
   "dependencies": {
-    "express": "^4.17.1",
-    "node-fetch": "^2.6.1",
-    "dotenv": "^16.0.3"
+    "instagram-graph-api": "^1.4.0",
+    "axios": "^1.6.0"
+  },
+  "scripts": {
+    "dev": "vercel dev"
   }
 }
