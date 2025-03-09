@@ -1,0 +1,10 @@
+{
+    "name": "instagram-poster",
+    "version": "1.0.0",
+    "dependencies": {
+        "node-fetch": "^2.6.1"
+    },
+    "engines": {
+        "node": "14.x"
+    }
+}
