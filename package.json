@@ -2,7 +2,6 @@
   "name": "hotsuite",
   "version": "1.0.0",
   "dependencies": {
-    "instagram-graph-api": "^1.4.0",
     "axios": "^1.6.0"
   },
   "scripts": {
