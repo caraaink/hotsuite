@@ -1,78 +1,91 @@
-import fetch from 'node-fetch';
-import express from 'express';
-import cron from 'node-cron';
+import express from "express";
+import fetch from "node-fetch";
+import dotenv from "dotenv";
+
+dotenv.config(); // Load .env file
 
 const app = express();
-app.use(express.json());
+app.use(express.json()); // Enable JSON parsing
 
-const ACCESS_TOKEN = "EAAIJpE7bqPgBO8ktaECeILtOyHg5VBCK34LAy5H1dHQrXF3Du8eUU3fYZCNuqDeZBsxErqmOvG81nRd8ZCBaxpT2r50bIZBUE5av24gJvqxuOUr0rZCx7RGR37z0YWgFlqGMgf3lOVe6tgD1oxnpB0pXsLsB2UINs5iC8VwS59wTojx72Qr5FjCZCE";
-const IG_USER_ID = "17841402777728356";
-const CLIENT_ID = "573551255726328";
-const CLIENT_SECRET = "46cbbde0a360da161359e4cab05cf0ee";
+const IG_USER_ID = process.env.IG_USER_ID; // ID akun Instagram
+const ACCESS_TOKEN = process.env.ACCESS_TOKEN; // Token akses awal
+const CLIENT_ID = process.env.CLIENT_ID;
+const CLIENT_SECRET = process.env.CLIENT_SECRET;
 
-// Fungsi untuk unggah media ke Instagram
-const uploadToInstagram = async (imageUrl, caption) => {
-    try {
-        // 1. Upload Media Container
-        const containerRes = await fetch(`https://graph.facebook.com/v19.0/${IG_USER_ID}/media`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                image_url: imageUrl,
-                caption: caption,
-                access_token: ACCESS_TOKEN
-            })
-        });
-        const containerData = await containerRes.json();
-        console.log("Container Response:", containerData);
-        
-        if (!containerData.id) throw new Error("Gagal membuat container media");
+// 🔄 Refresh token otomatis setiap bulan
+async function refreshToken() {
+  try {
+    const url = `https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id=${CLIENT_ID}&client_secret=${CLIENT_SECRET}&fb_exchange_token=${ACCESS_TOKEN}`;
 
-        // 2. Publish Media
-        const publishRes = await fetch(`https://graph.facebook.com/v19.0/${IG_USER_ID}/media_publish`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                creation_id: containerData.id,
-                access_token: ACCESS_TOKEN
-            })
-        });
-        const publishData = await publishRes.json();
-        console.log("Publish Response:", publishData);
+    const response = await fetch(url, { method: "GET" });
+    const data = await response.json();
 
-        return publishData;
-    } catch (error) {
-        console.error("Error uploading to Instagram:", error);
+    if (data.access_token) {
+      console.log("✅ Token diperbarui:", data.access_token);
+    } else {
+      console.error("❌ Gagal memperbarui token:", data);
     }
-};
+  } catch (error) {
+    console.error("❌ Error refreshing token:", error);
+  }
+}
 
-// Endpoint untuk manual posting
-app.post('/post', async (req, res) => {
+// 🔄 Refresh token setiap 30 hari
+setInterval(refreshToken, 30 * 24 * 60 * 60 * 1000);
+
+// 📤 API untuk posting ke Instagram
+app.post("/post", async (req, res) => {
+  try {
     const { imageUrl, caption } = req.body;
-    const response = await uploadToInstagram(imageUrl, caption);
-    res.json(response);
-});
 
-// Fungsi untuk refresh token setiap bulan
-const refreshAccessToken = async () => {
-    try {
-        const refreshRes = await fetch(`https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id=${CLIENT_ID}&client_secret=${CLIENT_SECRET}&fb_exchange_token=${ACCESS_TOKEN}`);
-        const refreshData = await refreshRes.json();
-        console.log("New Access Token:", refreshData.access_token);
-    } catch (error) {
-        console.error("Error refreshing access token:", error);
+    if (!imageUrl || !caption) {
+      return res.status(400).json({ error: "imageUrl dan caption diperlukan" });
     }
-};
 
-// Jadwal refresh token setiap bulan
-cron.schedule('0 0 1 * *', () => {
-    console.log("Refreshing Access Token...");
-    refreshAccessToken();
+    // 1️⃣ Upload gambar ke Instagram
+    const mediaUrl = `https://graph.facebook.com/v17.0/${IG_USER_ID}/media`;
+    const mediaResponse = await fetch(mediaUrl, {
+      method: "POST",
+      body: JSON.stringify({
+        image_url: imageUrl,
+        caption: caption,
+        access_token: ACCESS_TOKEN,
+      }),
+      headers: { "Content-Type": "application/json" },
+    });
+
+    const mediaData = await mediaResponse.json();
+    if (!mediaData.id) {
+      return res.status(500).json({ error: "Gagal mengunggah media", details: mediaData });
+    }
+
+    // 2️⃣ Publish postingan ke Instagram
+    const publishUrl = `https://graph.facebook.com/v17.0/${IG_USER_ID}/media_publish`;
+    const publishResponse = await fetch(publishUrl, {
+      method: "POST",
+      body: JSON.stringify({
+        creation_id: mediaData.id,
+        access_token: ACCESS_TOKEN,
+      }),
+      headers: { "Content-Type": "application/json" },
+    });
+
+    const publishData = await publishResponse.json();
+    if (!publishData.id) {
+      return res.status(500).json({ error: "Gagal memposting ke Instagram", details: publishData });
+    }
+
+    res.json({ success: true, post_id: publishData.id });
+
+  } catch (error) {
+    console.error("❌ Error:", error);
+    res.status(500).json({ error: "Terjadi kesalahan", details: error.message });
+  }
 });
 
-// Jalankan server di Vercel
+// Jalankan server
 app.listen(3000, () => {
-    console.log("Server running on port 3000");
+  console.log("🚀 Server berjalan di port 3000");
 });
 
 export default app;
