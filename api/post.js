@@ -1,9 +1,9 @@
-const { Client } = require('instagram-graph-api');
 const axios = require('axios');
 
-exports.handler = async (event, context) => {
+// Pastikan default export adalah fungsi
+export default async function handler(event, context) {
   try {
-    // Ambil token dari environment variables (diupdate oleh refresh-token.js)
+    // Ambil token dari environment variables
     const accessToken = process.env.INSTAGRAM_ACCESS_TOKEN;
     if (!accessToken) {
       return {
@@ -12,7 +12,7 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Data dari request (misalnya dari body POST)
+    // Data dari request
     const { imageUrl, caption } = JSON.parse(event.body || '{}');
     if (!imageUrl || !caption) {
       return {
@@ -20,9 +20,6 @@ exports.handler = async (event, context) => {
         body: JSON.stringify({ error: 'Image URL and caption are required' }),
       };
     }
-
-    // Inisialisasi Instagram Graph API client
-    const instagramClient = new Client(accessToken);
 
     // Buat media object
     const mediaResponse = await axios.post(
@@ -65,4 +62,4 @@ exports.handler = async (event, context) => {
       body: JSON.stringify({ error: 'Failed to post to Instagram', details: error.message }),
     };
   }
-};
+}
