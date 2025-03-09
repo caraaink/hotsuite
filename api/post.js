@@ -3,7 +3,6 @@ const axios = require('axios');
 // Pastikan default export adalah fungsi
 export default async function handler(event, context) {
   try {
-    // Ambil token dari environment variables
     const accessToken = process.env.INSTAGRAM_ACCESS_TOKEN;
     if (!accessToken) {
       return {
@@ -12,7 +11,6 @@ export default async function handler(event, context) {
       };
     }
 
-    // Data dari request
     const { imageUrl, caption } = JSON.parse(event.body || '{}');
     if (!imageUrl || !caption) {
       return {
@@ -21,7 +19,6 @@ export default async function handler(event, context) {
       };
     }
 
-    // Buat media object
     const mediaResponse = await axios.post(
       `https://graph.facebook.com/v19.0/17841402777728356/media`,
       {
@@ -36,7 +33,6 @@ export default async function handler(event, context) {
 
     const creationId = mediaResponse.data.id;
 
-    // Publikasikan postingan
     const publishResponse = await axios.post(
       `https://graph.facebook.com/v19.0/17841402777728356/media_publish`,
       {
