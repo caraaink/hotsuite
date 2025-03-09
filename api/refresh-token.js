@@ -1,6 +1,7 @@
 const axios = require('axios');
 
-exports.handler = async (event, context) => {
+// Pastikan default export adalah fungsi
+export default async function handler(event, context) {
   try {
     const clientId = process.env.CLIENT_ID;
     const clientSecret = process.env.CLIENT_SECRET;
@@ -62,4 +63,4 @@ exports.handler = async (event, context) => {
       body: JSON.stringify({ error: 'Failed to refresh token', details: error.response?.data || error.message }),
     };
   }
-};
+}
