@@ -4,74 +4,76 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Instagram Auto Poster</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+        }
+        .container {
+            max-width: 500px;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        input, textarea, button {
+            width: 100%;
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
 </head>
 <body>
-    <h1>Instagram Auto Poster</h1>
-    <form id="uploadForm">
-        <label>Upload Gambar: <input type="file" id="imageFile"></label><br><br>
-        <label>Atau Masukkan Link Gambar: <input type="text" id="imageUrl"></label><br><br>
-        <label>Caption: <textarea id="caption"></textarea></label><br><br>
-        <button type="submit">Upload & Post</button>
-    </form>
-    <p id="status"></p>
+    <div class="container">
+        <h2>Instagram Auto Poster</h2>
+        <input type="file" id="fileInput" accept="image/*">
+        <input type="text" id="imageUrl" placeholder="Atau Masukkan Link Gambar">
+        <textarea id="caption" placeholder="Caption"></textarea>
+        <button onclick="uploadAndPost()">Upload & Post</button>
+        <p id="status"></p>
+    </div>
 
     <script>
-        document.getElementById("uploadForm").addEventListener("submit", async function(event) {
-            event.preventDefault();
-            const fileInput = document.getElementById("imageFile").files[0];
-            const imageUrlInput = document.getElementById("imageUrl").value;
+        async function uploadAndPost() {
+            const fileInput = document.getElementById("fileInput").files[0];
+            const imageUrl = document.getElementById("imageUrl").value;
             const caption = document.getElementById("caption").value;
-            const statusText = document.getElementById("status");
-
-            let imageUrl = imageUrlInput;
-
+            const status = document.getElementById("status");
+            status.innerText = "Mengupload...";
+            
+            let finalImageUrl = imageUrl;
             if (fileInput) {
                 const formData = new FormData();
                 formData.append("file", fileInput);
-                formData.append("upload_preset", "YOUR_CLOUDINARY_PRESET"); // Ganti dengan preset Cloudinary jika pakai
-                const uploadResponse = await fetch("https://api.cloudinary.com/v1_1/YOUR_CLOUD_NAME/image/upload", {
+                const uploadRes = await fetch("https://api.imgbb.com/1/upload?key=YOUR_IMGBB_API_KEY", {
                     method: "POST",
                     body: formData
                 });
-                const uploadData = await uploadResponse.json();
-                imageUrl = uploadData.secure_url;
+                const uploadData = await uploadRes.json();
+                finalImageUrl = uploadData.data.url;
             }
-
-            if (!imageUrl) {
-                statusText.innerText = "Harap upload gambar atau masukkan link!";
-                return;
-            }
-
-            statusText.innerText = "Mengupload ke Instagram...";
-
-            const instagramResponse = await fetch("https://graph.facebook.com/v19.0/17841402777728356/media", {
+            
+            const response = await fetch("/api/post-instagram", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    image_url: imageUrl,
-                    caption: caption,
-                    access_token: "EAAIJpE7bqPgBOw1LawGQub2yapjAgc7ssGZAYeSYspWeO4G6gq7M2LM2ut1bcGLy7azYPlNEiXGZBy2haWJDcHDumRtSDSXlupJadULXjNDAV44wj86Cl5PLceBEaEqi3Bnq4ZAHqon2XqWF2hwFKxneQeH0BR7JmmMeTiHxNaeDDJcBo6QMbt3" // Ganti dengan token yang valid
-                })
+                body: JSON.stringify({ image_url: finalImageUrl, caption })
             });
-
-            const mediaData = await instagramResponse.json();
-            if (!mediaData.id) {
-                statusText.innerText = "Gagal mengunggah gambar.";
-                return;
-            }
-
-            const publishResponse = await fetch("https://graph.facebook.com/v19.0/17841402777728356/media_publish", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    creation_id: mediaData.id,
-                    access_token: "EAAIJpE7bqPgBOw1LawGQub2yapjAgc7ssGZAYeSYspWeO4G6gq7M2LM2ut1bcGLy7azYPlNEiXGZBy2haWJDcHDumRtSDSXlupJadULXjNDAV44wj86Cl5PLceBEaEqi3Bnq4ZAHqon2XqWF2hwFKxneQeH0BR7JmmMeTiHxNaeDDJcBo6QMbt3" // Ganti dengan token yang valid
-                })
-            });
-
-            const publishData = await publishResponse.json();
-            statusText.innerText = publishData.id ? "Posting berhasil!" : "Gagal memposting.";
-        });
+            
+            const result = await response.json();
+            status.innerText = result.success ? "Berhasil diposting!" : "Gagal memposting.";
+        }
     </script>
 </body>
 </html>
