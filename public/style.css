@@ -1,0 +1,133 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    min-height: 100vh;
+    background: #f4f4f4;
+    transition: background 0.3s, color 0.3s;
+}
+
+body.dark-mode {
+    background: #1a1a1a;
+    color: #ffffff;
+}
+
+.container {
+    max-width: 500px;
+    margin: 20px auto;
+    padding: 20px;
+    background: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transition: background 0.3s;
+}
+
+body.dark-mode .container {
+    background: #2c2c2c;
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+h2 {
+    font-size: 1.5em;
+    color: #333;
+}
+
+body.dark-mode h2 {
+    color: #ddd;
+}
+
+.theme-btn {
+    background: none;
+    border: none;
+    font-size: 1.2em;
+    cursor: pointer;
+    color: #333;
+}
+
+body.dark-mode .theme-btn {
+    color: #ddd;
+}
+
+main {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+select, input, textarea, button {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 1em;
+    transition: border-color 0.3s, background 0.3s;
+}
+
+body.dark-mode select,
+body.dark-mode input,
+body.dark-mode textarea {
+    background: #333;
+    color: #fff;
+    border-color: #555;
+}
+
+select:focus, input:focus, textarea:focus {
+    outline: none;
+    border-color: #007bff;
+}
+
+.upload-btn {
+    background: #007bff;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background 0.3s;
+}
+
+.upload-btn:hover {
+    background: #0056b3;
+}
+
+body.dark-mode .upload-btn {
+    background: #1e90ff;
+}
+
+body.dark-mode .upload-btn:hover {
+    background: #4682b4;
+}
+
+#status {
+    margin-top: 10px;
+    text-align: center;
+    color: #333;
+}
+
+body.dark-mode #status {
+    color: #ddd;
+}
+
+/* Responsif untuk HP */
+@media (max-width: 600px) {
+    .container {
+        margin: 10px;
+        padding: 15px;
+    }
+    h2 {
+        font-size: 1.2em;
+    }
+    select, input, textarea, button {
+        font-size: 0.9em;
+        padding: 10px;
+    }
+}
