@@ -5,8 +5,8 @@ const formidable = require("formidable");
 const CONFIG_PATH = path.join(__dirname, "../config.json");
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN; // Dari Vercel Environment Variables
 const CLIENT_SECRET = process.env.CLIENT_SECRET; // Dari Vercel Environment Variables
-const REPO_OWNER = "caraaink"; // Ganti dengan username GitHub kamu
-const REPO_NAME = "hotsuite"; // Ganti dengan nama repositori
+const REPO_OWNER = "caraaink"; // Sesuai GitHub kamu
+const REPO_NAME = "hotsuite"; // Sesuai repositori kamu
 const FILE_PATH = "config.json";
 
 // Fungsi untuk membaca config.json
@@ -75,9 +75,9 @@ async function refreshToken(currentToken) {
     }
 }
 
-// Parsing form-data dengan formidable
+// Parsing form-data dengan formidable v2
 async function parseForm(req) {
-    const form = formidable({ multiples: false });
+    const form = new formidable.IncomingForm();
     return new Promise((resolve, reject) => {
         form.parse(req, (err, fields, files) => {
             if (err) return reject(err);
@@ -92,10 +92,10 @@ module.exports = async (req, res) => {
     // Parsing form-data
     try {
         const { fields, files } = await parseForm(req);
-        accountId = fields.accountId ? fields.accountId[0] : null;
-        imageUrl = fields.imageUrl ? fields.imageUrl[0] : null;
-        caption = fields.caption ? fields.caption[0] : null;
-        file = files.image ? files.image[0] : null; // File gambar
+        accountId = fields.accountId;
+        imageUrl = fields.imageUrl;
+        caption = fields.caption;
+        file = files.image; // File gambar
     } catch (error) {
         return res.status(400).json({ message: "Gagal memparsing form: " + error.message });
     }
@@ -117,7 +117,7 @@ module.exports = async (req, res) => {
     let finalImageUrl = imageUrl;
     if (file) {
         const formData = new FormData();
-        formData.append("image", Buffer.from(await fs.readFile(file.filepath)).toString("base64"));
+        formData.append("image", Buffer.from(await fs.readFile(file.path)).toString("base64"));
         formData.append("key", "a54b42bd860469def254d13b8f55f43e");
 
         const imgbbResponse = await fetch("https://api.imgbb.com/1/upload", {
