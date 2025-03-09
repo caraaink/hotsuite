@@ -1,6 +1,5 @@
 const axios = require('axios');
 
-// Default export harus berupa fungsi serverless
 export default async function handler(event, context) {
   try {
     // Ambil token dari environment variables
