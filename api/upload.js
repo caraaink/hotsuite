@@ -1,5 +1,6 @@
 const fs = require("fs").promises;
 const path = require("path");
+const formidable = require("formidable");
 
 const CONFIG_PATH = path.join(__dirname, "../config.json");
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN; // Dari Vercel Environment Variables
@@ -74,10 +75,32 @@ async function refreshToken(currentToken) {
     }
 }
 
-module.exports = async (req, res) => {
-    const { accountId, imageUrl, caption } = req.body;
+// Parsing form-data dengan formidable
+async function parseForm(req) {
+    const form = formidable({ multiples: false });
+    return new Promise((resolve, reject) => {
+        form.parse(req, (err, fields, files) => {
+            if (err) return reject(err);
+            resolve({ fields, files });
+        });
+    });
+}
 
-    if (!imageUrl && !req.file) {
+module.exports = async (req, res) => {
+    let accountId, imageUrl, caption, file;
+
+    // Parsing form-data
+    try {
+        const { fields, files } = await parseForm(req);
+        accountId = fields.accountId ? fields.accountId[0] : null;
+        imageUrl = fields.imageUrl ? fields.imageUrl[0] : null;
+        caption = fields.caption ? fields.caption[0] : null;
+        file = files.image ? files.image[0] : null; // File gambar
+    } catch (error) {
+        return res.status(400).json({ message: "Gagal memparsing form: " + error.message });
+    }
+
+    if (!imageUrl && !file) {
         return res.status(400).json({ message: "Harap masukkan URL gambar atau unggah gambar." });
     }
 
@@ -92,9 +115,9 @@ module.exports = async (req, res) => {
     }
 
     let finalImageUrl = imageUrl;
-    if (req.file) {
+    if (file) {
         const formData = new FormData();
-        formData.append("image", Buffer.from(req.file.buffer).toString("base64"));
+        formData.append("image", Buffer.from(await fs.readFile(file.filepath)).toString("base64"));
         formData.append("key", "a54b42bd860469def254d13b8f55f43e");
 
         const imgbbResponse = await fetch("https://api.imgbb.com/1/upload", {
