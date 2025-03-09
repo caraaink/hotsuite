@@ -20,12 +20,6 @@
       "dest": "api/refresh-token.js"
     }
   ],
-  "schedule": [
-    {
-      "cron": "0 0 1 * *",
-      "path": "/api/refresh-token"
-    }
-  ],
   "env": {
     "CLIENT_ID": "573551255726328",
     "CLIENT_SECRET": "46cbbde0a360da161359e4cab05cf0ee",
