@@ -91,7 +91,8 @@ module.exports = async (req, res) => {
         imageUrl = fields.imageUrl;
         caption = fields.caption;
         file = files.image;
-        console.log("Parsed files:", files); // Debugging: lihat struktur files
+        console.log("Parsed files:", files);
+        console.log("File details:", file);
     } catch (error) {
         return res.status(400).json({ message: "Gagal memparsing form: " + error.message });
     }
@@ -113,7 +114,7 @@ module.exports = async (req, res) => {
     let finalImageUrl = imageUrl;
     if (file) {
         if (!file || !file.path) {
-            return res.status(400).json({ message: "Gagal: File yang diunggah tidak valid atau tidak ditemukan." });
+            return res.status(400).json({ message: "Gagal: File yang diunggah tidak valid atau tidak ditemukan. Pastikan file gambar dipilih dengan benar." });
         }
         const formData = new FormData();
         try {
