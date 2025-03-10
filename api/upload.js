@@ -72,17 +72,20 @@ async function refreshToken(currentToken) {
     }
 }
 
-async function parseForm(req) {
-    const form = new formidable.IncomingForm();
-    return new Promise((resolve, reject) => {
-        form.parse(req, (err, fields, files) => {
-            if (err) return reject(err);
-            resolve({ fields, files });
-        });
-    });
-}
+// Endpoint untuk refresh token secara manual
+module.exports.refreshToken = async (req, res) => {
+    try {
+        const config = await getConfig();
+        const newToken = await refreshToken(config.ACCESS_TOKEN);
+        await updateConfigInGitHub(newToken);
+        res.status(200).json({ message: "Token berhasil direfresh: " + newToken });
+    } catch (error) {
+        res.status(500).json({ message: "Gagal merefresh token: " + error.message });
+    }
+};
 
-module.exports = async (req, res) => {
+// Endpoint untuk upload (tanpa refresh token per submit)
+module.exports.upload = async (req, res) => {
     let accountId, imageUrl, caption;
 
     try {
@@ -102,11 +105,9 @@ module.exports = async (req, res) => {
     let config = await getConfig();
     let ACCESS_TOKEN = config.ACCESS_TOKEN;
 
-    try {
-        ACCESS_TOKEN = await refreshToken(ACCESS_TOKEN);
-        await updateConfigInGitHub(ACCESS_TOKEN);
-    } catch (error) {
-        return res.status(500).json({ message: "Gagal merefresh atau menyimpan token: " + error.message });
+    // Tidak ada refresh token di sini, gunakan token yang ada
+    if (!ACCESS_TOKEN) {
+        return res.status(500).json({ message: "Gagal: Token akses tidak tersedia. Silakan refresh token secara manual." });
     }
 
     const igMediaResponse = await fetch(`https://graph.facebook.com/v19.0/${accountId}/media`, {
@@ -146,3 +147,13 @@ module.exports = async (req, res) => {
         return res.status(500).json({ message: "Gagal mempublikasikan ke Instagram." });
     }
 };
+
+async function parseForm(req) {
+    const form = new formidable.IncomingForm();
+    return new Promise((resolve, reject) => {
+        form.parse(req, (err, fields, files) => {
+            if (err) return reject(err);
+            resolve({ fields, files });
+        });
+    });
+}
