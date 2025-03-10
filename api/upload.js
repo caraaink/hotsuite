@@ -55,16 +55,15 @@ async function isUrlAccessible(url) {
     }
 }
 
-// Fungsi untuk mengunduh gambar dari URL dan mengunggah ke ImgBB
+// Fungsi untuk mengunduh gambar dari URL dan mengunggah ke ImgBB (perbaikan)
 async function uploadToImgBBFromUrl(imageUrl) {
     try {
         const response = await fetch(imageUrl);
         if (!response.ok) throw new Error(`Gagal mengunduh gambar dari ${imageUrl}, status: ${response.status}`);
-        const buffer = await response.buffer();
+        const arrayBuffer = await response.arrayBuffer(); // Menggunakan arrayBuffer untuk kompatibilitas
+        const blob = new Blob([new Uint8Array(arrayBuffer)], { type: response.headers.get("content-type") || "image/jpeg" });
         const formData = new FormData();
         const randomNum = Math.floor(10000 + Math.random() * 90000).toString();
-        // Konversi buffer ke Blob
-        const blob = new Blob([buffer], { type: "image/jpeg" }); // Sesuaikan type jika perlu
         formData.append("image", blob, `${randomNum}.jpg`);
         formData.append("key", "a54b42bd860469def254d13b8f55f43e");
 
@@ -230,8 +229,15 @@ module.exports = async (req, res) => {
             const userAccessToken = config.ACCESS_TOKEN;
 
             const accountId = fields.accountId || "";
+            let photoUrl = fields.imageUrl || "";
             const caption = fields.caption || "Foto baru diunggah!";
-            let photoUrl = "";
+
+            if (Array.isArray(photoUrl)) {
+                console.log("photoUrl received as array, using first element:", photoUrl);
+                photoUrl = photoUrl[0];
+            } else if (typeof photoUrl !== "string" || !photoUrl) {
+                photoUrl = ""; // Reset jika tidak valid
+            }
 
             if (!accountId) {
                 return res.status(400).json({ message: "Gagal: Pilih akun Instagram terlebih dahulu!" });
@@ -242,11 +248,9 @@ module.exports = async (req, res) => {
                 return res.status(400).json({ message: "Gagal: ID halaman Facebook untuk akun ini tidak ditemukan!" });
             }
 
-            // Proses file atau URL
             if (files.photo) {
                 const formData = new FormData();
-                const sanitizedFile = sanitizeFileName(files.photo[0]);
-                formData.append("image", sanitizedFile);
+                formData.append("image", files.photo[0]);
                 formData.append("key", "a54b42bd860469def254d13b8f55f43e");
 
                 const response = await fetch("https://api.imgbb.com/1/upload", {
@@ -256,10 +260,9 @@ module.exports = async (req, res) => {
                 const result = await response.json();
                 if (!result.success) throw new Error("Gagal mengunggah ke ImgBB: " + JSON.stringify(result));
                 photoUrl = result.data.url;
-            } else if (fields.imageUrl) {
-                const imageUrl = fields.imageUrl[0]; // Ambil URL dari field
-                await isUrlAccessible(imageUrl);
-                photoUrl = await uploadToImgBBFromUrl(imageUrl); // Backend mengunduh dan unggah ke ImgBB
+            } else if (photoUrl) {
+                await isUrlAccessible(photoUrl);
+                photoUrl = await uploadToImgBBFromUrl(photoUrl);
             } else {
                 return res.status(400).json({ message: "Gagal: Tidak ada file atau URL yang diberikan!" });
             }
@@ -284,7 +287,7 @@ module.exports = async (req, res) => {
     }
 };
 
-// Fungsi sanitasi nama file (digunakan di backend untuk file lokal)
+// Fungsi sanitasi nama file (opsional, bisa dihapus jika tidak digunakan)
 function sanitizeFileName(file) {
     const randomNum = Math.floor(10000 + Math.random() * 90000).toString();
     const extension = file.originalFilename.split('.').pop().toLowerCase();
