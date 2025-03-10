@@ -26,14 +26,26 @@ const accountToPageMapping = {
 // Fungsi untuk delay (untuk menghindari rate limit)
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+// Fungsi untuk memeriksa apakah URL dapat diakses
+async function isUrlAccessible(url) {
+    try {
+        const response = await fetch(url, { method: "HEAD" });
+        console.log(`URL ${url} accessibility check: ${response.ok}, Status: ${response.status}`);
+        return response.ok;
+    } catch (error) {
+        console.error(`URL ${url} tidak dapat diakses:`, error.message);
+        return false;
+    }
+}
+
 // Fungsi untuk mendapatkan page access token
 async function getPageAccessToken(pageId, userAccessToken) {
-    const url = `https://graph.facebook.com/${pageId}?fields=access_token&access_token=${userAccessToken}`;
+    const url = `https://graph.facebook.com/v19.0/${pageId}?fields=access_token&access_token=${userAccessToken}`;
     const response = await fetch(url);
     const data = await response.json();
 
     if (!response.ok) {
-        throw new Error(`Gagal mendapatkan page access token: ${data.error?.message || "Unknown error"}`);
+        throw new Error(`Gagal mendapatkan page access token: ${data.error?.message || "Unknown error, status: " + response.status}`);
     }
     return data.access_token;
 }
@@ -41,7 +53,7 @@ async function getPageAccessToken(pageId, userAccessToken) {
 // Fungsi untuk memposting ke halaman Facebook
 async function postToFacebook(pageId, photoUrl, caption, pageAccessToken) {
     console.log(`Posting to Facebook Page ID: ${pageId}, URL: ${photoUrl}`);
-    const fbPostUrl = `https://graph.facebook.com/${pageId}/photos`;
+    const fbPostUrl = `https://graph.facebook.com/v19.0/${pageId}/photos`;
     const fbPostParams = {
         url: photoUrl,
         caption: caption,
@@ -54,22 +66,24 @@ async function postToFacebook(pageId, photoUrl, caption, pageAccessToken) {
         body: new URLSearchParams(fbPostParams).toString(),
         headers: {
             "Content-Type": "application/x-www-form-urlencoded",
+            "User-Agent": "curl/7.83.1", // Meniru User-Agent curl
+            "Accept": "*/*",
         },
     });
 
     const fbData = await fbResponse.json();
-    console.log("Facebook API Response:", fbData);
+    console.log("Facebook API Response:", fbData, "Status:", fbResponse.status);
     if (!fbResponse.ok) {
-        throw new Error(`Gagal memposting ke Facebook: ${fbData.error?.message || "Unknown error, response: " + JSON.stringify(fbData)}`);
+        throw new Error(`Gagal memposting ke Facebook: ${fbData.error?.message || "Unknown error, status: " + fbResponse.status}`);
     }
 
     return fbData.id; // ID postingan Facebook
 }
 
 // Fungsi untuk memposting ke Instagram dengan retry mechanism
-async function postToInstagram(igAccountId, photoUrl, caption, userAccessToken, retries = 3) {
+async function postToInstagram(igAccountId, photoUrl, caption, userAccessToken, retries = 2) {
     console.log(`Posting to Instagram Account ID: ${igAccountId}, URL: ${photoUrl}`);
-    const igMediaUrl = `https://graph.instagram.com/v20.0/${igAccountId}/media`;
+    const igMediaUrl = `https://graph.facebook.com/v19.0/${igAccountId}/media`;
     const igMediaParams = {
         image_url: photoUrl,
         caption: caption,
@@ -78,15 +92,25 @@ async function postToInstagram(igAccountId, photoUrl, caption, userAccessToken, 
 
     for (let attempt = 1; attempt <= retries; attempt++) {
         try {
+            // Periksa apakah URL dapat diakses
+            const isAccessible = await isUrlAccessible(photoUrl);
+            if (!isAccessible) {
+                throw new Error(`URL gambar ${photoUrl} tidak dapat diakses oleh Instagram API.`);
+            }
+
             const igMediaResponse = await fetch(igMediaUrl, {
                 method: "POST",
                 body: new URLSearchParams(igMediaParams).toString(),
                 headers: {
                     "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "curl/7.83.1", // Meniru User-Agent curl
+                    "Accept": "*/*",
                 },
             });
 
-            // Periksa rate limit dari header
+            // Log header dan status
+            console.log("Instagram Response Status:", igMediaResponse.status);
+            console.log("Instagram Response Headers:", Object.fromEntries(igMediaResponse.headers.entries()));
             const rateLimitRemaining = igMediaResponse.headers.get("x-app-usage");
             console.log("Instagram Rate Limit Remaining:", rateLimitRemaining);
 
@@ -107,16 +131,16 @@ async function postToInstagram(igAccountId, photoUrl, caption, userAccessToken, 
             console.log("Instagram Media Creation Parsed Response:", igMediaData);
 
             if (!igMediaResponse.ok) {
-                if (igMediaData.error && igMediaData.error.message.includes("rate limit")) {
+                if (igMediaResponse.status === 429 || (igMediaData.error && igMediaData.error.message.includes("rate limit"))) {
                     console.log(`Rate limit terdeteksi, mencoba ulang (${attempt}/${retries})...`);
-                    await delay(5000); // Delay 5 detik sebelum retry
+                    await delay(10000); // Delay 10 detik sebelum retry
                     continue;
                 }
-                throw new Error(`Gagal membuat media Instagram: ${igMediaData.error?.message || "Unknown error, response: " + JSON.stringify(igMediaData)}`);
+                throw new Error(`Gagal membuat media Instagram: ${igMediaData.error?.message || "Unknown error, status: " + igMediaResponse.status}`);
             }
 
             // Publish media
-            const igPublishUrl = `https://graph.instagram.com/v20.0/${igAccountId}/media_publish`;
+            const igPublishUrl = `https://graph.facebook.com/v19.0/${igAccountId}/media_publish`;
             const igPublishParams = {
                 creation_id: igMediaData.id,
                 access_token: userAccessToken,
@@ -127,13 +151,15 @@ async function postToInstagram(igAccountId, photoUrl, caption, userAccessToken, 
                 body: new URLSearchParams(igPublishParams).toString(),
                 headers: {
                     "Content-Type": "application/x-www-form-urlencoded",
+                    "User-Agent": "curl/7.83.1",
+                    "Accept": "*/*",
                 },
             });
 
             const igPublishData = await igPublishResponse.json();
-            console.log("Instagram Publish Response:", igPublishData);
+            console.log("Instagram Publish Response:", igPublishData, "Status:", igPublishResponse.status);
             if (!igPublishResponse.ok) {
-                throw new Error(`Gagal mempublikasikan ke Instagram: ${igPublishData.error?.message || "Unknown error, response: " + JSON.stringify(igPublishData)}`);
+                throw new Error(`Gagal mempublikasikan ke Instagram: ${igPublishData.error?.message || "Unknown error, status: " + igPublishResponse.status}`);
             }
 
             return igPublishData.id;
@@ -142,7 +168,7 @@ async function postToInstagram(igAccountId, photoUrl, caption, userAccessToken, 
                 throw error; // Jika sudah mencapai batas retry, lempar error
             }
             console.log(`Gagal memposting ke Instagram, mencoba ulang (${attempt}/${retries})...`);
-            await delay(5000); // Delay 5 detik sebelum retry
+            await delay(10000); // Delay 10 detik sebelum retry
         }
     }
 }
