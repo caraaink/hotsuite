@@ -148,11 +148,11 @@ async function postToInstagram(igAccountId, photoUrl, caption, userAccessToken, 
     }
 }
 
-// Fungsi untuk mengunggah ke ImgBB (opsional, hanya digunakan untuk file lokal)
+// Fungsi untuk mengunggah ke ImgBB (untuk file lokal)
 async function uploadToImgBB(file) {
     const formData = new FormData();
     formData.append("image", file);
-    formData.append("key", "a54b42bd860469def254d13b8f55f43e");
+    formData.append("key", "YOUR_NEW_IMGBB_API_KEY_HERE"); // Ganti dengan kunci API baru
 
     const response = await fetch("https://api.imgbb.com/1/upload", {
         method: "POST",
@@ -160,7 +160,10 @@ async function uploadToImgBB(file) {
     });
 
     const result = await response.json();
-    if (!result.success) throw new Error("Gagal mengunggah ke ImgBB: " + JSON.stringify(result));
+    if (!result.success) {
+        console.error("ImgBB Error Details:", result);
+        throw new Error(`Gagal mengunggah ke ImgBB: ${result.error?.message || "Unknown error"}`);
+    }
     console.log("Upload to ImgBB successful, new URL:", result.data.url);
     return result.data.url;
 }
@@ -197,7 +200,7 @@ module.exports = async (req, res) => {
             // Proses file atau URL
             if (files.photo) {
                 const sanitizedFile = sanitizeFileName(files.photo[0]);
-                photoUrl = await uploadToImgBB(sanitizedFile); // File lokal harus diunggah ke ImgBB
+                photoUrl = await uploadToImgBB(sanitizedFile); // Unggah file lokal ke ImgBB
             } else if (fields.imageUrl) {
                 const imageUrl = fields.imageUrl[0];
                 if (!imageUrl.startsWith("https://")) {
