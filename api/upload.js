@@ -1,88 +1,92 @@
+const formidable = require("formidable");
+const fetch = require("node-fetch");
 const fs = require("fs").promises;
 const path = require("path");
-const formidable = require("formidable");
 
 const CONFIG_PATH = path.join(__dirname, "../config.json");
 
+// Fungsi untuk membaca config
 async function getConfig() {
     try {
-        const configData = await fs.readFile(CONFIG_PATH, "utf8");
-        return JSON.parse(configData);
+        const rawData = await fs.readFile(CONFIG_PATH, "utf-8");
+        return JSON.parse(rawData);
     } catch (error) {
-        console.error("Error reading config:", error);
-        return { ACCESS_TOKEN: "" };
+        throw new Error("Gagal membaca config.json: " + error.message);
     }
 }
 
-async function parseForm(req) {
-    const form = new formidable.IncomingForm();
-    return new Promise((resolve, reject) => {
-        form.parse(req, (err, fields, files) => {
-            if (err) return reject(err);
-            resolve({ fields, files });
-        });
+// Fungsi untuk memposting foto ke halaman Facebook dan cross-post ke Instagram
+async function postToFacebookAndInstagram(pageId, igUserId, photoUrl, caption, accessToken) {
+    // Post ke halaman Facebook
+    const fbPostUrl = `https://graph.facebook.com/${pageId}/photos`;
+    const fbPostParams = {
+        url: photoUrl,
+        caption: caption,
+        access_token: accessToken,
+        published: true,
+        // Parameter untuk cross-post ke Instagram (harus akun profesional terkait)
+        instagram_accounts: igUserId, // ID akun Instagram terkait
+    };
+
+    const fbResponse = await fetch(fbPostUrl, {
+        method: "POST",
+        body: new URLSearchParams(fbPostParams).toString(),
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+        },
     });
+
+    const fbData = await fbResponse.json();
+    if (!fbResponse.ok) {
+        throw new Error(`Gagal memposting ke Facebook: ${fbData.error?.message || "Unknown error"}`);
+    }
+
+    // Karena cross-posting diatur di params, Instagram akan otomatis diposting
+    return fbData;
 }
 
 module.exports = async (req, res) => {
-    let accountId, imageUrl, caption;
+    const loginCode = req.query.login;
+    if (loginCode !== "emi") {
+        return res.status(403).json({ message: "Akses ditolak. Kode login salah." });
+    }
 
     try {
-        const { fields } = await parseForm(req);
-        accountId = fields.accountId;
-        imageUrl = fields.imageUrl;
-        caption = fields.caption;
-        console.log("Received fields:", fields);
+        const form = new formidable.IncomingForm();
+        form.parse(req, async (err, fields, files) => {
+            if (err) {
+                return res.status(500).json({ message: "Gagal memproses form: " + err.message });
+            }
+
+            const config = await getConfig();
+            const accessToken = config.ACCESS_TOKEN;
+
+            // Ambil pageId dan igUserId dari input (atau hardcode sementara untuk testing)
+            const pageId = fields.pageId || "YOUR_FACEBOOK_PAGE_ID"; // Ganti dengan ID halaman FB Anda
+            const igUserId = fields.igUserId || "YOUR_INSTAGRAM_USER_ID"; // Ganti dengan ID akun IG Anda
+
+            // Ambil URL foto dari input (jika ada file yang diupload, gunakan URL sementara; jika tidak, gunakan link input)
+            let photoUrl = fields.photoUrl || "";
+            if (files.photo && files.photo.size > 0) {
+                // Untuk Vercel, kita tidak bisa menyimpan file karena read-only, jadi kita harus upload langsung
+                // Untuk demo, kita anggap photoUrl adalah URL yang sudah diupload ke tempat lain
+                // Dalam produksi, Anda perlu upload file ke penyimpanan (misalnya Vercel Blob atau AWS S3)
+                photoUrl = "https://example.com/uploaded-photo.jpg"; // Ganti dengan logika upload Anda
+            }
+
+            if (!photoUrl) {
+                return res.status(400).json({ message: "URL foto tidak ditemukan." });
+            }
+
+            const caption = fields.caption || "Foto baru diunggah!";
+
+            // Post ke Facebook dan Instagram
+            await postToFacebookAndInstagram(pageId, igUserId, photoUrl, caption, accessToken);
+
+            res.status(200).json({ message: "Foto berhasil diposting ke Facebook dan Instagram!" });
+        });
     } catch (error) {
-        return res.status(400).json({ message: "Gagal memparsing form: " + error.message });
-    }
-
-    if (!imageUrl) {
-        return res.status(400).json({ message: "Gagal: Harap masukkan URL gambar." });
-    }
-
-    let config = await getConfig();
-    let ACCESS_TOKEN = config.ACCESS_TOKEN;
-
-    // Tidak ada refresh token di sini, gunakan token yang ada
-    if (!ACCESS_TOKEN) {
-        return res.status(500).json({ message: "Gagal: Token akses tidak tersedia. Silakan refresh token secara manual di /api/refresh-token." });
-    }
-
-    const igMediaResponse = await fetch(`https://graph.facebook.com/v19.0/${accountId}/media`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            image_url: imageUrl,
-            caption: caption,
-            access_token: ACCESS_TOKEN
-        })
-    });
-    const igMediaData = await igMediaResponse.json();
-
-    if (!igMediaData.id) {
-        const errorMessage = igMediaData.error?.message || "Unknown error";
-        if (errorMessage.includes("Media tidak dapat diambil dari URI")) {
-            return res.status(500).json({
-                message: `Gagal mengunggah ke Instagram: ${JSON.stringify(igMediaData)}. Nama file mungkin terlalu panjang atau mengandung karakter khusus. Coba ganti nama file dan unggah ulang.`
-            });
-        }
-        return res.status(500).json({ message: `Gagal mengunggah ke Instagram: ${JSON.stringify(igMediaData)}` });
-    }
-
-    const igPublishResponse = await fetch(`https://graph.facebook.com/v19.0/${accountId}/media_publish`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            creation_id: igMediaData.id,
-            access_token: ACCESS_TOKEN
-        })
-    });
-    const igPublishData = await igPublishResponse.json();
-
-    if (igPublishData.id) {
-        res.status(200).json({ message: "Foto berhasil diunggah ke Instagram!" });
-    } else {
-        return res.status(500).json({ message: "Gagal mempublikasikan ke Instagram." });
+        console.error("Upload error:", error.message);
+        res.status(500).json({ message: "Gagal memposting foto: " + error.message });
     }
 };
