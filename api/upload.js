@@ -15,8 +15,16 @@ async function getConfig() {
     }
 }
 
+// Mapping antara Instagram accountId dan Facebook pageId berdasarkan data Anda
+const accountToPageMapping = {
+    "17841472299141470": "421553057719120", // Cika Cantika
+    "17841469780026465": "406559659217723", // Raisa Ayunda
+    "17841472886987230": "404952282707350", // Meownime v2
+    "17841402777728356": "119316994437611"  // Meownime official
+};
+
 // Fungsi untuk memposting foto ke halaman Facebook dan cross-post ke Instagram
-async function postToFacebookAndInstagram(pageId, igUserId, photoUrl, caption, accessToken) {
+async function postToFacebookAndInstagram(pageId, igAccountId, photoUrl, caption, accessToken) {
     // Post ke halaman Facebook
     const fbPostUrl = `https://graph.facebook.com/${pageId}/photos`;
     const fbPostParams = {
@@ -24,8 +32,8 @@ async function postToFacebookAndInstagram(pageId, igUserId, photoUrl, caption, a
         caption: caption,
         access_token: accessToken,
         published: true,
-        // Parameter untuk cross-post ke Instagram (harus akun profesional terkait)
-        instagram_accounts: igUserId, // ID akun Instagram terkait
+        // Parameter untuk cross-post ke Instagram
+        instagram_accounts: igAccountId,
     };
 
     const fbResponse = await fetch(fbPostUrl, {
@@ -61,27 +69,27 @@ module.exports = async (req, res) => {
             const config = await getConfig();
             const accessToken = config.ACCESS_TOKEN;
 
-            // Ambil pageId dan igUserId dari input (atau hardcode sementara untuk testing)
-            const pageId = fields.pageId || "YOUR_FACEBOOK_PAGE_ID"; // Ganti dengan ID halaman FB Anda
-            const igUserId = fields.igUserId || "YOUR_INSTAGRAM_USER_ID"; // Ganti dengan ID akun IG Anda
+            // Ambil data dari form
+            const accountId = fields.accountId || "";
+            const photoUrl = fields.imageUrl || "";
+            const caption = fields.caption || "Foto baru diunggah!";
 
-            // Ambil URL foto dari input (jika ada file yang diupload, gunakan URL sementara; jika tidak, gunakan link input)
-            let photoUrl = fields.photoUrl || "";
-            if (files.photo && files.photo.size > 0) {
-                // Untuk Vercel, kita tidak bisa menyimpan file karena read-only, jadi kita harus upload langsung
-                // Untuk demo, kita anggap photoUrl adalah URL yang sudah diupload ke tempat lain
-                // Dalam produksi, Anda perlu upload file ke penyimpanan (misalnya Vercel Blob atau AWS S3)
-                photoUrl = "https://example.com/uploaded-photo.jpg"; // Ganti dengan logika upload Anda
+            if (!accountId) {
+                return res.status(400).json({ message: "Gagal: Pilih akun Instagram terlebih dahulu!" });
             }
 
             if (!photoUrl) {
-                return res.status(400).json({ message: "URL foto tidak ditemukan." });
+                return res.status(400).json({ message: "Gagal: URL foto tidak ditemukan!" });
             }
 
-            const caption = fields.caption || "Foto baru diunggah!";
+            // Dapatkan pageId berdasarkan accountId
+            const pageId = accountToPageMapping[accountId];
+            if (!pageId) {
+                return res.status(400).json({ message: "Gagal: ID halaman Facebook untuk akun ini tidak ditemukan!" });
+            }
 
             // Post ke Facebook dan Instagram
-            await postToFacebookAndInstagram(pageId, igUserId, photoUrl, caption, accessToken);
+            await postToFacebookAndInstagram(pageId, accountId, photoUrl, caption, accessToken);
 
             res.status(200).json({ message: "Foto berhasil diposting ke Facebook dan Instagram!" });
         });
