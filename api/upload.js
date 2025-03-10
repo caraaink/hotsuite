@@ -15,7 +15,7 @@ async function getConfig() {
     }
 }
 
-// Mapping antara Instagram accountId dan Facebook pageId berdasarkan data Anda
+// Mapping antara Instagram accountId dan Facebook pageId
 const accountToPageMapping = {
     "17841472299141470": "421553057719120", // Cika Cantika
     "17841469780026465": "406559659217723", // Raisa Ayunda
@@ -23,16 +23,27 @@ const accountToPageMapping = {
     "17841402777728356": "119316994437611"  // Meownime official
 };
 
-// Fungsi untuk memposting foto ke halaman Facebook dan cross-post ke Instagram
-async function postToFacebookAndInstagram(pageId, igAccountId, photoUrl, caption, accessToken) {
-    console.log(`Posting to Facebook Page ID: ${pageId}, Instagram Account ID: ${igAccountId}, URL: ${photoUrl}`);
+// Fungsi untuk mendapatkan page access token
+async function getPageAccessToken(pageId, userAccessToken) {
+    const url = `https://graph.facebook.com/${pageId}?fields=access_token&access_token=${userAccessToken}`;
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (!response.ok) {
+        throw new Error(`Gagal mendapatkan page access token: ${data.error?.message || "Unknown error"}`);
+    }
+    return data.access_token;
+}
+
+// Fungsi untuk memposting ke halaman Facebook
+async function postToFacebook(pageId, photoUrl, caption, pageAccessToken) {
+    console.log(`Posting to Facebook Page ID: ${pageId}, URL: ${photoUrl}`);
     const fbPostUrl = `https://graph.facebook.com/${pageId}/photos`;
     const fbPostParams = {
         url: photoUrl,
         caption: caption,
-        access_token: accessToken,
+        access_token: pageAccessToken,
         published: true,
-        instagram_accounts: igAccountId,
     };
 
     const fbResponse = await fetch(fbPostUrl, {
@@ -49,7 +60,55 @@ async function postToFacebookAndInstagram(pageId, igAccountId, photoUrl, caption
         throw new Error(`Gagal memposting ke Facebook: ${fbData.error?.message || "Unknown error, response: " + JSON.stringify(fbData)}`);
     }
 
-    return fbData;
+    return fbData.id; // ID postingan Facebook
+}
+
+// Fungsi untuk memposting ke Instagram
+async function postToInstagram(igAccountId, photoUrl, caption, userAccessToken) {
+    console.log(`Posting to Instagram Account ID: ${igAccountId}, URL: ${photoUrl}`);
+    const igMediaUrl = `https://graph.instagram.com/v20.0/${igAccountId}/media`;
+    const igMediaParams = {
+        image_url: photoUrl,
+        caption: caption,
+        access_token: userAccessToken,
+    };
+
+    const igMediaResponse = await fetch(igMediaUrl, {
+        method: "POST",
+        body: new URLSearchParams(igMediaParams).toString(),
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+        },
+    });
+
+    const igMediaData = await igMediaResponse.json();
+    console.log("Instagram Media Creation Response:", igMediaData);
+    if (!igMediaResponse.ok) {
+        throw new Error(`Gagal membuat media Instagram: ${igMediaData.error?.message || "Unknown error, response: " + JSON.stringify(igMediaData)}`);
+    }
+
+    // Publish media
+    const igPublishUrl = `https://graph.instagram.com/v20.0/${igAccountId}/media_publish`;
+    const igPublishParams = {
+        creation_id: igMediaData.id,
+        access_token: userAccessToken,
+    };
+
+    const igPublishResponse = await fetch(igPublishUrl, {
+        method: "POST",
+        body: new URLSearchParams(igPublishParams).toString(),
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+        },
+    });
+
+    const igPublishData = await igPublishResponse.json();
+    console.log("Instagram Publish Response:", igPublishData);
+    if (!igPublishResponse.ok) {
+        throw new Error(`Gagal mempublikasikan ke Instagram: ${igPublishData.error?.message || "Unknown error, response: " + JSON.stringify(igPublishData)}`);
+    }
+
+    return igPublishData.id;
 }
 
 module.exports = async (req, res) => {
@@ -66,7 +125,7 @@ module.exports = async (req, res) => {
             }
 
             const config = await getConfig();
-            const accessToken = config.ACCESS_TOKEN;
+            const userAccessToken = config.ACCESS_TOKEN;
 
             // Ambil data dari form
             const accountId = fields.accountId || "";
@@ -87,10 +146,20 @@ module.exports = async (req, res) => {
                 return res.status(400).json({ message: "Gagal: ID halaman Facebook untuk akun ini tidak ditemukan!" });
             }
 
-            // Post ke Facebook dan Instagram
-            await postToFacebookAndInstagram(pageId, accountId, photoUrl, caption, accessToken);
+            // Dapatkan page access token
+            const pageAccessToken = await getPageAccessToken(pageId, userAccessToken);
 
-            res.status(200).json({ message: "Foto berhasil diposting ke Facebook dan Instagram!" });
+            // Post ke Facebook
+            const fbPostId = await postToFacebook(pageId, photoUrl, caption, pageAccessToken);
+
+            // Post ke Instagram
+            const igPostId = await postToInstagram(accountId, photoUrl, caption, userAccessToken);
+
+            res.status(200).json({
+                message: "Foto berhasil diposting ke Facebook dan Instagram!",
+                facebookPostId: fbPostId,
+                instagramPostId: igPostId,
+            });
         });
     } catch (error) {
         console.error("Upload error:", error.message);
