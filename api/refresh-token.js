@@ -1,99 +1,89 @@
-const path = require("path");
-const fs = require("fs").promises;
-const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args)); // Dynamic import untuk kompatibilitas
-
 const CONFIG_PATH = path.join(__dirname, "../config.json");
-
-async function getConfig() {
-    try {
-        const rawData = await fs.readFile(CONFIG_PATH, "utf-8");
-        return JSON.parse(rawData);
-    } catch (error) {
-        throw new Error("Gagal membaca config.json: " + error.message);
-    }
-}
-
-async function exchangeToLongLivedToken(shortLivedToken) {
-    const appId = "573551255726328";
-    const appSecret = process.env.CLIENT_SECRET || "46cbbde0a360da161359e4cab05cf0ee";
-
-    const url = `https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${shortLivedToken}`;
-    const response = await fetch(url);
-    const text = await response.text(); // Ambil teks terlebih dahulu
-    console.log("Raw Response:", text);
-
-    let data;
-    try {
-        data = JSON.parse(text);
-    } catch (parseError) {
-        throw new Error(`Invalid JSON response: ${text.substring(0, 50)}... (Parse error: ${parseError.message})`);
-    }
-
-    if (!response.ok) {
-        throw new Error(`Gagal tukar token: ${data.error?.message || "Unknown error"} (Status: ${response.status})`);
-    }
-    return data.access_token;
-}
-
-async function updateConfigInGitHub(newToken) {
-    const config = await getConfig();
-    const githubToken = process.env.GITHUB_TOKEN;
-    if (!githubToken) throw new Error("GITHUB_TOKEN tidak ditemukan di environment variables.");
-
-    config.ACCESS_TOKEN = newToken;
-    const updatedConfig = JSON.stringify(config, null, 2);
-
-    const repoOwner = "caraaink";
-    const repoName = "hotsuite";
-    const filePath = "config.json";
-    const getFileUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/${filePath}`;
-
-    const getFileResponse = await fetch(getFileUrl, {
-        headers: { Authorization: `token ${githubToken}`, Accept: "application/vnd.github.v3+json" },
-    });
-    const fileData = await getFileResponse.json();
-
-    if (!getFileResponse.ok) {
-        throw new Error(`Gagal mengambil file dari GitHub: ${fileData.message} (Status: ${getFileResponse.status})`);
-    }
-
-    const updateFileUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/${filePath}`;
-    const updateResponse = await fetch(updateFileUrl, {
-        method: "PUT",
-        headers: { Authorization: `token ${githubToken}`, Accept: "application/vnd.github.v3+json" },
-        body: JSON.stringify({
-            message: "Update ACCESS_TOKEN in config.json",
-            content: Buffer.from(updatedConfig).toString("base64"),
-            sha: fileData.sha,
-            branch: "main",
-        }),
-    });
-    const updateData = await updateResponse.json();
-
-    if (!updateResponse.ok) {
-        throw new Error(`Gagal memperbarui file di GitHub: ${updateData.message} (Status: ${updateResponse.status})`);
-    }
-
-    await fs.writeFile(CONFIG_PATH, updatedConfig, "utf-8");
-}
-
-module.exports = async (req, res) => {
-    const loginCode = req.query.login;
-    if (loginCode !== "emi") {
-        return res.status(403).json({ message: "Akses ditolak. Kode login salah." });
-    }
-
-    try {
-        const config = await getConfig();
-        console.log("Current Access Token:", config.ACCESS_TOKEN);
-
-        const shortLivedToken = config.ACCESS_TOKEN;
-        const newToken = await exchangeToLongLivedToken(shortLivedToken);
-        await updateConfigInGitHub(newToken);
-
-        res.status(200).json({ message: "Token berhasil ditukar ke long-lived: " + newToken });
-    } catch (error) {
-        console.error("Error in token exchange:", error);
-        res.status(500).json({ message: "Gagal menukar token: " + error.message });
-    }
-};
+ 
+ // Fungsi untuk membaca config
+ async function getConfig() {
+     try {
+         const rawData = await fs.readFile(CONFIG_PATH, "utf-8");
+ @@ -13,28 +14,36 @@ async function getConfig() {
+     }
+ }
+ 
+ async function refreshToken(accessToken) {
+     const url = `https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=${accessToken}`;
+ // Fungsi untuk menukar token short-lived ke long-lived token (Facebook)
+ async function exchangeToLongLivedToken(shortLivedToken) {
+     const appId = process.env.FACEBOOK_APP_ID || "573551255726328"; // Ambil dari env atau fallback ke default
+     const appSecret = process.env.CLIENT_SECRET; // Ambil dari env (sudah diatur di Vercel)
+     if (!appSecret) throw new Error("CLIENT_SECRET tidak ditemukan di environment variables.");
+ 
+     const url = `https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${shortLivedToken}`;
+     const response = await fetch(url);
+     const data = await response.json(); // Hanya panggil ini sekali
+     const data = await response.json();
+ 
+     console.log("Refresh Token Response:", data); // Log data JSON
+     if (!response.ok) {
+         throw new Error(`Gagal merefresh token: ${data.error?.message || "Unknown error"}`);
+         throw new Error(`Gagal tukar token: ${data.error?.message || "Unknown error"}`);
+     }
+     return data.access_token;
+ }
+ 
+ // Fungsi untuk merefresh token (Instagram)
+ async function refreshToken(accessToken) {
+     const url = `https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=${accessToken}`;
+     const response = await fetch(url);
+     const text = await response.text(); // Log raw response
+     console.log("Refresh Token Response:", text);
+     const data = await response.json();
+     if (!response.ok) throw new Error("Gagal merefresh token: " + (data.error?.message || "Invalid JSON: " + text));
+ 
+     console.log("Refresh Token Response:", data); // Log response untuk debugging
+     if (!response.ok) {
+         throw new Error(`Gagal merefresh token: ${data.error?.message || "Unknown error"}`);
+     }
+     return data.access_token;
+ }
+ 
+ // Fungsi untuk memperbarui config di GitHub
+ async function updateConfigInGitHub(newToken) {
+     const config = await getConfig();
+     const githubToken = process.env.GITHUB_TOKEN;
+ @@ -71,6 +80,7 @@ async function updateConfigInGitHub(newToken) {
+     await fs.writeFile(CONFIG_PATH, updatedConfig, "utf-8");
+ }
+ 
+ // Handler utama untuk endpoint /api/refresh-token
+ module.exports = async (req, res) => {
+     const loginCode = req.query.login;
+     if (loginCode !== "emi") {
+ @@ -79,17 +89,22 @@ module.exports = async (req, res) => {
+ 
+     try {
+         const config = await getConfig();
+         console.log("Access Token:", config.ACCESS_TOKEN);
+         let currentToken = config.ACCESS_TOKEN;
+ 
+         // Tukar ke long-lived token jika perlu
+         let longLivedToken = config.ACCESS_TOKEN;
+         // Uncomment dan isi appId jika perlu tukar token
+         // longLivedToken = await exchangeToLongLivedToken(config.ACCESS_TOKEN);
+         // Jika token adalah token Facebook (dimulai dengan "EAA"), tukar ke long-lived token
+         if (currentToken.startsWith("EAA")) {
+             currentToken = await exchangeToLongLivedToken(currentToken);
+         }
+ 
+         const newToken = await refreshToken(longLivedToken);
+         // Refresh token yang sudah long-lived
+         const newToken = await refreshToken(currentToken);
+ 
+         // Simpan token baru ke GitHub
+         await updateConfigInGitHub(newToken);
+         res.status(200).json({ message: "Token berhasil direfresh: " + newToken });
+ 
+         res.status(200).json({ message: "Token berhasil direfresh." });
+     } catch (error) {
+         console.error("Refresh token error:", error.message);
+         res.status(500).json({ message: "Gagal merefresh token: " + error.message });
+     }
+ };
