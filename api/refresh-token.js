@@ -16,11 +16,10 @@ async function getConfig() {
 
 // Fungsi untuk menukar token Facebook ke token Instagram long-lived
 async function exchangeToInstagramToken(fbToken) {
-    const appId = process.env.FACEBOOK_APP_ID || "573551255726328";
-    const appSecret = process.env.FACEBOOK_APP_SECRET || process.env.CLIENT_SECRET;
-    if (!appSecret) throw new Error("FACEBOOK_APP_SECRET tidak ditemukan di environment variables.");
+    const appSecret = process.env.CLIENT_SECRET;
+    if (!appSecret) throw new Error("CLIENT_SECRET tidak ditemukan di environment variables.");
 
-    const url = `https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${fbToken}`;
+    const url = `https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id=573551255726328&client_secret=${appSecret}&fb_exchange_token=${fbToken}`;
     const response = await fetch(url);
     const data = await response.json();
 
