@@ -76,23 +76,6 @@
             return new File([file], newFileName, { type: file.type });
         }
 
-        // Fungsi untuk memverifikasi URL
-        async function verifyImageUrl(url) {
-            try {
-                const response = await fetch(url, { method: "HEAD" });
-                if (!response.ok) {
-                    throw new Error("URL gambar tidak dapat diakses.");
-                }
-                const contentType = response.headers.get("content-type");
-                if (!contentType || !contentType.startsWith("image/")) {
-                    throw new Error("URL tidak mengarah ke gambar yang valid.");
-                }
-                return true;
-            } catch (error) {
-                throw new Error("Gagal memverifikasi URL gambar: " + error.message);
-            }
-        }
-
         async function uploadToImgBB(file) {
             const sanitizedFile = sanitizeFileName(file);
             const formData = new FormData();
@@ -141,9 +124,6 @@
                 if (fileInput) {
                     imageUrl = await uploadToImgBB(fileInput);
                 }
-
-                // Verifikasi URL sebelum mengirim ke backend
-                await verifyImageUrl(imageUrl);
 
                 // Kirim data ke backend (hanya URL, caption, dan accountId)
                 const formData = new FormData();
