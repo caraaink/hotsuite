@@ -28,7 +28,6 @@ const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Fungsi untuk memeriksa apakah URL dapat diakses dan valid
 async function isUrlAccessible(url) {
-    // Pastikan url adalah string
     let urlString = url;
     if (Array.isArray(url)) {
         console.log("URL received as array, using first element:", url);
@@ -38,7 +37,6 @@ async function isUrlAccessible(url) {
     }
 
     console.log("Checking URL accessibility for:", urlString, "Type:", typeof urlString);
-    // Validasi format URL
     const imageExtensions = /\.(jpg|jpeg|png)$/i;
     if (!urlString.startsWith("https://") || !imageExtensions.test(urlString)) {
         throw new Error(`URL gambar ${urlString} tidak valid. Harus menggunakan HTTPS dan berakhiran .jpg, .jpeg, atau .png.`);
@@ -64,7 +62,8 @@ async function uploadToImgBBFromUrl(imageUrl) {
         if (!response.ok) throw new Error(`Gagal mengunduh gambar dari ${imageUrl}, status: ${response.status}`);
         const buffer = await response.buffer();
         const formData = new FormData();
-        formData.append("image", buffer, "image.jpg"); // Nama file sementara
+        const randomNum = Math.floor(10000 + Math.random() * 90000).toString();
+        formData.append("image", buffer, `${randomNum}.jpg`);
         formData.append("key", "a54b42bd860469def254d13b8f55f43e");
 
         const uploadResponse = await fetch("https://api.imgbb.com/1/upload", {
@@ -121,7 +120,7 @@ async function postToFacebook(pageId, photoUrl, caption, pageAccessToken) {
         throw new Error(`Gagal memposting ke Facebook: ${fbData.error?.message || "Unknown error, status: " + fbResponse.status}`);
     }
 
-    return fbData.id; // ID postingan Facebook
+    return fbData.id;
 }
 
 // Fungsi untuk memposting ke Instagram dengan retry mechanism dan fallback
@@ -130,10 +129,8 @@ async function postToInstagram(igAccountId, photoUrl, caption, userAccessToken, 
     const igMediaUrl = `https://graph.facebook.com/v19.0/${igAccountId}/media`;
     let finalPhotoUrl = photoUrl;
 
-    // Coba fallback ke ImgBB jika URL asli gagal
     for (let attempt = 1; attempt <= retries; attempt++) {
         try {
-            // Periksa apakah URL dapat diakses
             await isUrlAccessible(finalPhotoUrl);
 
             const igMediaParams = {
@@ -152,7 +149,6 @@ async function postToInstagram(igAccountId, photoUrl, caption, userAccessToken, 
                 },
             });
 
-            // Log header dan status
             console.log("Instagram Response Status:", igMediaResponse.status);
             console.log("Instagram Response Headers:", Object.fromEntries(igMediaResponse.headers.entries()));
             const rateLimitRemaining = igMediaResponse.headers.get("x-app-usage");
@@ -165,29 +161,25 @@ async function postToInstagram(igAccountId, photoUrl, caption, userAccessToken, 
             try {
                 igMediaData = JSON.parse(igMediaText);
             } catch (parseError) {
-                console.error("Invalid JSON from Instagram:", igMediaText);
+                console.error("Failed to parse Instagram response as JSON:", igMediaText);
                 if (igMediaText.includes("Sorry, this content isn't available right now")) {
                     throw new Error("Gagal memposting ke Instagram: Akun atau izin tidak valid. Pastikan token memiliki 'instagram_content_publish' dan akun terkait dengan aplikasi.");
-                } else {
-                    throw new Error(`Gagal memparsing respons Instagram: ${parseError.message}, Raw response: ${igMediaText}`);
                 }
+                throw new Error(`Gagal memparsing respons Instagram: ${parseError.message}, Raw response: ${igMediaText}`);
             }
             console.log("Instagram Media Creation Parsed Response:", igMediaData);
 
             if (!igMediaResponse.ok) {
                 if (igMediaResponse.status === 429 || (igMediaData.error && igMediaData.error.message.includes("rate limit"))) {
                     console.log(`Rate limit terdeteksi, mencoba ulang (${attempt}/${retries})...`);
-                    await delay(10000); // Delay 10 detik sebelum retry
+                    await delay(10000);
                     continue;
-                } else if (igMediaData.error && igMediaData.error.message.includes("Media not available from URI")) {
-                    console.log("Original URL failed, attempting fallback to ImgBB...");
-                    finalPhotoUrl = await uploadToImgBBFromUrl(photoUrl);
-                    continue; // Coba lagi dengan URL baru dari ImgBB
                 }
-                throw new Error(`Gagal membuat media Instagram: ${igMediaData.error?.message || "Unknown error, status: " + igMediaResponse.status}`);
+                console.log("Instagram API failed, attempting fallback to ImgBB...");
+                finalPhotoUrl = await uploadToImgBBFromUrl(photoUrl);
+                continue;
             }
 
-            // Publish media
             const igPublishUrl = `https://graph.facebook.com/v19.0/${igAccountId}/media_publish`;
             const igPublishParams = {
                 creation_id: igMediaData.id,
@@ -213,10 +205,10 @@ async function postToInstagram(igAccountId, photoUrl, caption, userAccessToken, 
             return igPublishData.id;
         } catch (error) {
             if (attempt === retries) {
-                throw error; // Jika sudah mencapai batas retry, lempar error
+                throw error;
             }
             console.log(`Gagal memposting ke Instagram, mencoba ulang (${attempt}/${retries})...`);
-            await delay(10000); // Delay 10 detik sebelum retry
+            await delay(10000);
         }
     }
 }
@@ -237,12 +229,10 @@ module.exports = async (req, res) => {
             const config = await getConfig();
             const userAccessToken = config.ACCESS_TOKEN;
 
-            // Ambil data dari form
             const accountId = fields.accountId || "";
             let photoUrl = fields.imageUrl || "";
             const caption = fields.caption || "Foto baru diunggah!";
 
-            // Pastikan photoUrl adalah string
             if (Array.isArray(photoUrl)) {
                 console.log("photoUrl received as array, using first element:", photoUrl);
                 photoUrl = photoUrl[0];
@@ -254,22 +244,17 @@ module.exports = async (req, res) => {
                 return res.status(400).json({ message: "Gagal: Pilih akun Instagram terlebih dahulu!" });
             }
 
-            // Dapatkan pageId berdasarkan accountId
             const pageId = accountToPageMapping[accountId];
             if (!pageId) {
                 return res.status(400).json({ message: "Gagal: ID halaman Facebook untuk akun ini tidak ditemukan!" });
             }
 
-            // Dapatkan page access token
             const pageAccessToken = await getPageAccessToken(pageId, userAccessToken);
 
-            // Post ke Facebook
             const fbPostId = await postToFacebook(pageId, photoUrl, caption, pageAccessToken);
 
-            // Post ke Instagram
             const igPostId = await postToInstagram(accountId, photoUrl, caption, userAccessToken);
 
-            // Buat pesan respons
             const message = "Foto berhasil diposting ke Facebook dan Instagram!";
 
             res.status(200).json({
