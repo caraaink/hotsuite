@@ -85,12 +85,10 @@
             document.getElementById("spinner").classList.add("hidden");
         }
 
-        // Fungsi untuk menghasilkan angka random 5 huruf
         function generateRandomFiveDigit() {
             return Math.floor(10000 + Math.random() * 90000).toString();
         }
 
-        // Fungsi untuk mengubah nama file menjadi format random 5 digit
         function sanitizeFileName(file) {
             const randomNum = generateRandomFiveDigit();
             const extension = file.name.split('.').pop().toLowerCase();
@@ -154,7 +152,7 @@
                 if (fileInput) {
                     imageUrl = await uploadToImgBB(fileInput);
                 } else if (imageUrl) {
-                    imageUrl = await uploadToImgBB(imageUrl); // Unduh dan unggah link ke ImgBB
+                    imageUrl = await uploadToImgBB(imageUrl);
                 }
 
                 // Kirim data ke backend
@@ -168,7 +166,17 @@
                     body: formData
                 });
 
-                const result = await response.json();
+                const responseText = await response.text(); // Ambil teks mentah terlebih dahulu
+                console.log("Raw server response:", responseText);
+
+                let result;
+                try {
+                    result = JSON.parse(responseText);
+                } catch (parseError) {
+                    statusText.innerText = `Gagal: Respons server tidak valid (${parseError.message}). Raw response: ${responseText}`;
+                    return;
+                }
+
                 if (response.ok) {
                     statusText.innerText = result.message;
                 } else {
