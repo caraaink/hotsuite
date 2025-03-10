@@ -10,7 +10,7 @@
       "use": "@vercel/node"
     },
     {
-      "src": "public/index.html",
+      "src": "public/**",
       "use": "@vercel/static"
     }
   ],
@@ -20,8 +20,12 @@
       "dest": "api/upload.js"
     },
     {
-      "src": "/api/refresh-token",  
+      "src": "/api/refresh-token",
       "dest": "api/refresh-token.js"
+    },
+    {
+      "src": "/style.css",
+      "dest": "public/style.css"
     },
     {
       "src": "/(.*)",
