@@ -34,10 +34,10 @@
   },
   "functions": {
     "api/upload.js": {
-      "includeFiles": ["api/**"]
+      "includeFiles": "api/**"
     },
     "api/refresh-token.js": {
-      "includeFiles": ["api/**"]
+      "includeFiles": "api/**"
     }
   }
 }
