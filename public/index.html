@@ -24,12 +24,15 @@
                 <option value="17841402777728356" data-username="meownime.official">Meownime (meownime.official)</option>
             </select>
 
-            <input type="file" id="imageInput" accept="image/*">
+            <input type="file" id="imageInput" accept="image/*" onchange="validateFile()">
             <input type="text" id="imageUrl" placeholder="Atau masukkan link gambar">
             <textarea id="caption" placeholder="Masukkan caption"></textarea>
             <button onclick="uploadToInstagram()" class="upload-btn">Upload ke IG</button>
 
-            <p id="status"></p>
+            <div class="status-container">
+                <div id="spinner" class="spinner hidden"></div>
+                <p id="status"></p>
+            </div>
         </main>
     </div>
 
@@ -46,6 +49,23 @@
         if (localStorage.getItem("theme") === "dark") {
             document.body.classList.add("dark-mode");
             themeToggle.querySelector("i").classList.replace("fa-moon", "fa-sun");
+        }
+
+        function validateFile() {
+            const fileInput = document.getElementById("imageInput");
+            const statusText = document.getElementById("status");
+            if (fileInput.files.length > 0 && fileInput.files[0].size === 0) {
+                statusText.innerText = "Gagal: File gambar kosong atau tidak valid!";
+                fileInput.value = ""; // Reset input jika tidak valid
+            }
+        }
+
+        function showSpinner() {
+            document.getElementById("spinner").classList.remove("hidden");
+        }
+
+        function hideSpinner() {
+            document.getElementById("spinner").classList.add("hidden");
         }
 
         async function uploadToInstagram() {
@@ -71,6 +91,7 @@
             }
 
             statusText.innerText = "Mengunggah...";
+            showSpinner();
 
             const formData = new FormData();
             if (fileInput) {
@@ -94,6 +115,8 @@
                 }
             } catch (error) {
                 statusText.innerText = "Gagal: Terjadi kesalahan jaringan atau server.";
+            } finally {
+                hideSpinner();
             }
         }
     </script>
