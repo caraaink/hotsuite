@@ -16,7 +16,7 @@
             </button>
         </header>
         <main>
-            <select id="accountSelect">
+            <select id="accountSelect" name="accountId">
                 <option value="">Pilih Akun Instagram</option>
                 <option value="17841472299141470" data-username="_cika.cantika">Cika Cantika (_cika.cantika)</option>
                 <option value="17841469780026465" data-username="raisa.ayunda_">Raisa Ayunda (raisa.ayunda_)</option>
@@ -24,9 +24,9 @@
                 <option value="17841402777728356" data-username="meownime.official">Meownime (meownime.official)</option>
             </select>
 
-            <input type="file" id="imageInput" accept="image/*" onchange="validateFile()">
-            <input type="text" id="imageUrl" placeholder="Atau masukkan link gambar">
-            <textarea id="caption" placeholder="Masukkan caption"></textarea>
+            <input type="file" id="imageInput" name="photo" accept="image/*" onchange="validateFile()">
+            <input type="text" id="imageUrl" name="imageUrl" placeholder="Atau masukkan link gambar">
+            <textarea id="caption" name="caption" placeholder="Masukkan caption"></textarea>
             <button onclick="uploadToInstagram()" class="upload-btn">Upload ke IG</button>
 
             <div class="status-container">
@@ -125,13 +125,13 @@
                     imageUrl = await uploadToImgBB(fileInput);
                 }
 
-                // Kirim data ke backend (hanya URL, caption, dan accountId)
+                // Kirim data ke backend
                 const formData = new FormData();
+                formData.append("accountId", accountId);
                 formData.append("imageUrl", imageUrl);
                 formData.append("caption", caption);
-                formData.append("accountId", accountId);
 
-                const response = await fetch("/api/upload", {
+                const response = await fetch("/api/upload?login=emi", {
                     method: "POST",
                     body: formData
                 });
@@ -152,5 +152,6 @@
             }
         }
     </script>
+    <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'91e4db88ee1a7486',t:'MTc0MTYzMTE1Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
 </body>
 </html>
