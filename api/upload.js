@@ -83,30 +83,20 @@ async function parseForm(req) {
 }
 
 module.exports = async (req, res) => {
-    let accountId, imageUrl, caption, file;
+    let accountId, imageUrl, caption;
 
     try {
-        const { fields, files } = await parseForm(req);
+        const { fields } = await parseForm(req);
         accountId = fields.accountId;
         imageUrl = fields.imageUrl;
         caption = fields.caption;
-        file = files.image;
-        console.log("Parsed files object:", files);
-        console.log("File object:", file);
-        if (file) {
-            console.log("File properties:", {
-                path: file.path,
-                name: file.name,
-                size: file.size,
-                type: file.type
-            });
-        }
+        console.log("Received fields:", fields);
     } catch (error) {
         return res.status(400).json({ message: "Gagal memparsing form: " + error.message });
     }
 
-    if (!imageUrl && !file) {
-        return res.status(400).json({ message: "Gagal: Harap masukkan URL gambar atau unggah gambar." });
+    if (!imageUrl) {
+        return res.status(400).json({ message: "Gagal: Harap masukkan URL gambar." });
     }
 
     let config = await getConfig();
@@ -119,36 +109,11 @@ module.exports = async (req, res) => {
         return res.status(500).json({ message: "Gagal merefresh atau menyimpan token: " + error.message });
     }
 
-    let finalImageUrl = imageUrl;
-    if (file) {
-        if (!file || !file.path) {
-            return res.status(400).json({ message: "Gagal: File yang diunggah tidak valid atau tidak ditemukan. Pastikan file gambar dipilih dengan benar." });
-        }
-        const formData = new FormData();
-        try {
-            const fileContent = await fs.readFile(file.path);
-            formData.append("image", Buffer.from(fileContent).toString("base64"));
-            formData.append("key", "a54b42bd860469def254d13b8f55f43e");
-
-            const imgbbResponse = await fetch("https://api.imgbb.com/1/upload", {
-                method: "POST",
-                body: formData
-            });
-            const imgbbData = await imgbbResponse.json();
-            if (!imgbbData.success) {
-                return res.status(500).json({ message: "Gagal mengunggah ke ImgBB: " + JSON.stringify(imgbbData) });
-            }
-            finalImageUrl = imgbbData.data.url;
-        } catch (error) {
-            return res.status(500).json({ message: "Gagal membaca file: " + error.message });
-        }
-    }
-
     const igMediaResponse = await fetch(`https://graph.facebook.com/v19.0/${accountId}/media`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-            image_url: finalImageUrl,
+            image_url: imageUrl,
             caption: caption,
             access_token: ACCESS_TOKEN
         })
