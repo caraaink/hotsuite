@@ -1,6 +1,6 @@
 const path = require("path");
 const fs = require("fs").promises;
-const fetch = require("node-fetch");
+const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args)); // Dynamic import untuk kompatibilitas
 
 const CONFIG_PATH = path.join(__dirname, "../config.json");
 
@@ -14,14 +14,20 @@ async function getConfig() {
 }
 
 async function exchangeToLongLivedToken(shortLivedToken) {
-    const appId = "573551255726328"; // Hardcoded sesuai yang kamu berikan
-    const appSecret = process.env.CLIENT_SECRET || "46cbbde0a360da161359e4cab05cf0ee"; // Ambil dari env atau fallback
+    const appId = "573551255726328";
+    const appSecret = process.env.CLIENT_SECRET || "46cbbde0a360da161359e4cab05cf0ee";
 
     const url = `https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${shortLivedToken}`;
     const response = await fetch(url);
-    const data = await response.json();
+    const text = await response.text(); // Ambil teks terlebih dahulu
+    console.log("Raw Response:", text);
 
-    console.log("Exchange Token Response:", JSON.stringify(data, null, 2));
+    let data;
+    try {
+        data = JSON.parse(text);
+    } catch (parseError) {
+        throw new Error(`Invalid JSON response: ${text.substring(0, 50)}... (Parse error: ${parseError.message})`);
+    }
 
     if (!response.ok) {
         throw new Error(`Gagal tukar token: ${data.error?.message || "Unknown error"} (Status: ${response.status})`);
@@ -73,7 +79,7 @@ async function updateConfigInGitHub(newToken) {
 
 module.exports = async (req, res) => {
     const loginCode = req.query.login;
-    if (loginCode !== "emi") { // Hardcoded sesuai yang kamu gunakan
+    if (loginCode !== "emi") {
         return res.status(403).json({ message: "Akses ditolak. Kode login salah." });
     }
 
@@ -81,7 +87,6 @@ module.exports = async (req, res) => {
         const config = await getConfig();
         console.log("Current Access Token:", config.ACCESS_TOKEN);
 
-        // Pastikan ACCESS_TOKEN adalah short-lived token
         const shortLivedToken = config.ACCESS_TOKEN;
         const newToken = await exchangeToLongLivedToken(shortLivedToken);
         await updateConfigInGitHub(newToken);
