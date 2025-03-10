@@ -28,26 +28,31 @@ const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Fungsi untuk memeriksa apakah URL dapat diakses dan valid
 async function isUrlAccessible(url) {
-    console.log("Checking URL accessibility for:", url, "Type:", typeof url);
-    if (typeof url !== "string" || !url) {
+    // Pastikan url adalah string
+    let urlString = url;
+    if (Array.isArray(url)) {
+        console.log("URL received as array, using first element:", url);
+        urlString = url[0];
+    } else if (typeof url !== "string" || !url) {
         throw new Error(`URL ${url} tidak valid: Harus berupa string yang tidak kosong.`);
     }
 
+    console.log("Checking URL accessibility for:", urlString, "Type:", typeof urlString);
     // Validasi format URL
     const imageExtensions = /\.(jpg|jpeg|png)$/i;
-    if (!url.startsWith("https://") || !imageExtensions.test(url)) {
-        throw new Error(`URL gambar ${url} tidak valid. Harus menggunakan HTTPS dan berakhiran .jpg, .jpeg, atau .png.`);
+    if (!urlString.startsWith("https://") || !imageExtensions.test(urlString)) {
+        throw new Error(`URL gambar ${urlString} tidak valid. Harus menggunakan HTTPS dan berakhiran .jpg, .jpeg, atau .png.`);
     }
 
     try {
-        const response = await fetch(url, { method: "HEAD" });
-        console.log(`URL ${url} accessibility check: ${response.ok}, Status: ${response.status}`);
+        const response = await fetch(urlString, { method: "HEAD" });
+        console.log(`URL ${urlString} accessibility check: ${response.ok}, Status: ${response.status}`);
         if (!response.ok) {
-            throw new Error(`URL ${url} tidak dapat diakses, status: ${response.status}`);
+            throw new Error(`URL ${urlString} tidak dapat diakses, status: ${response.status}`);
         }
         return true;
     } catch (error) {
-        console.error(`URL ${url} tidak dapat diakses:`, error.message);
+        console.error(`URL ${urlString} tidak dapat diakses:`, error.message);
         throw error;
     }
 }
@@ -234,15 +239,19 @@ module.exports = async (req, res) => {
 
             // Ambil data dari form
             const accountId = fields.accountId || "";
-            const photoUrl = fields.imageUrl || "";
+            let photoUrl = fields.imageUrl || "";
             const caption = fields.caption || "Foto baru diunggah!";
+
+            // Pastikan photoUrl adalah string
+            if (Array.isArray(photoUrl)) {
+                console.log("photoUrl received as array, using first element:", photoUrl);
+                photoUrl = photoUrl[0];
+            } else if (typeof photoUrl !== "string" || !photoUrl) {
+                return res.status(400).json({ message: "Gagal: URL foto tidak valid!" });
+            }
 
             if (!accountId) {
                 return res.status(400).json({ message: "Gagal: Pilih akun Instagram terlebih dahulu!" });
-            }
-
-            if (!photoUrl) {
-                return res.status(400).json({ message: "Gagal: URL foto tidak ditemukan!" });
             }
 
             // Dapatkan pageId berdasarkan accountId
