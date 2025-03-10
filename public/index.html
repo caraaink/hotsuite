@@ -134,7 +134,7 @@
         async function uploadToInstagram() {
             const accountId = document.getElementById("accountSelect").value;
             const fileInput = document.getElementById("imageInput").files[0];
-            let imageUrl = document.getElementById("imageUrl").value;
+            let imageUrl = document.getElementById("imageUrl").value.trim(); // Hapus spasi berlebih
             const caption = document.getElementById("caption").value;
             const statusText = document.getElementById("status");
 
@@ -148,6 +148,7 @@
                 return;
             }
 
+            // Validasi URL sebelum melanjutkan
             if (imageUrl && !validateImageUrl(imageUrl)) {
                 statusText.innerText = `Gagal: Link gambar ${imageUrl} tidak valid. Harus menggunakan HTTPS dan berakhiran .jpg, .jpeg, atau .png!`;
                 return;
