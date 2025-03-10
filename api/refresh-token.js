@@ -14,8 +14,8 @@ async function getConfig() {
     }
 }
 
-// Fungsi untuk menukar token Facebook ke token Instagram long-lived
-async function exchangeToInstagramToken(fbToken) {
+// Fungsi untuk menukar token Facebook short-lived ke long-lived
+async function exchangeToLongLivedToken(fbToken) {
     const clientId = process.env.CLIENT_ID;
     const clientSecret = process.env.CLIENT_SECRET;
 
@@ -30,19 +30,26 @@ async function exchangeToInstagramToken(fbToken) {
     if (!response.ok) {
         throw new Error(`Gagal tukar token: ${data.error?.message || "Unknown error"}`);
     }
-    return data.access_token; // Ini adalah token long-lived Instagram
+    return data.access_token; // Ini adalah token Facebook long-lived
 }
 
-// Fungsi untuk refresh token Instagram
-async function refreshToken(accessToken) {
-    const url = `https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=${accessToken}`;
+// Fungsi untuk refresh token Facebook long-lived
+async function refreshLongLivedToken(accessToken) {
+    const clientId = process.env.CLIENT_ID;
+    const clientSecret = process.env.CLIENT_SECRET;
+
+    if (!clientId || !clientSecret) {
+        throw new Error("CLIENT_ID atau CLIENT_SECRET tidak ditemukan di environment variables.");
+    }
+
+    const url = `https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id=${clientId}&client_secret=${clientSecret}&fb_exchange_token=${accessToken}`;
     const response = await fetch(url);
     const data = await response.json();
 
     if (!response.ok) {
         throw new Error(`Gagal merefresh token: ${data.error?.message || "Unknown error"}`);
     }
-    return data.access_token;
+    return data.access_token; // Token Facebook long-lived diperpanjang
 }
 
 // Fungsi untuk memperbarui config di GitHub
@@ -93,12 +100,12 @@ module.exports = async (req, res) => {
         console.log("Processing token refresh...");
 
         let newToken;
-        // Jika token adalah token Facebook (dimulai dengan EAA), tukar ke token Instagram
+        // Jika token adalah token Facebook (dimulai dengan EAA), tukar ke long-lived lalu refresh
         if (config.ACCESS_TOKEN && config.ACCESS_TOKEN.startsWith("EAA")) {
-            const instagramToken = await exchangeToInstagramToken(config.ACCESS_TOKEN);
-            newToken = await refreshToken(instagramToken);
+            const longLivedToken = await exchangeToLongLivedToken(config.ACCESS_TOKEN);
+            newToken = await refreshLongLivedToken(longLivedToken);
         } else {
-            newToken = await refreshToken(config.ACCESS_TOKEN);
+            newToken = await refreshLongLivedToken(config.ACCESS_TOKEN);
         }
 
         await updateConfigInGitHub(newToken);
