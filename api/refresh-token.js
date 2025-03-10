@@ -14,7 +14,7 @@ async function getConfig() {
 }
 
 async function exchangeToLongLivedToken(shortLivedToken) {
-    const appId = "573551255726328"; // Hardcoded karena tidak ada APP_ID di env
+    const appId = "573551255726328"; // Hardcoded sesuai yang kamu berikan
     const appSecret = process.env.CLIENT_SECRET || "46cbbde0a360da161359e4cab05cf0ee"; // Ambil dari env atau fallback
 
     const url = `https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${shortLivedToken}`;
@@ -73,7 +73,7 @@ async function updateConfigInGitHub(newToken) {
 
 module.exports = async (req, res) => {
     const loginCode = req.query.login;
-    if (loginCode !== "emi") { // Hardcoded karena tidak ada LOGIN_CODE di env
+    if (loginCode !== "emi") { // Hardcoded sesuai yang kamu gunakan
         return res.status(403).json({ message: "Akses ditolak. Kode login salah." });
     }
 
