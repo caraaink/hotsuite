@@ -60,6 +60,16 @@
                 return;
             }
 
+            if (!fileInput && !imageUrl) {
+                statusText.innerText = "Gagal: Harap unggah file gambar atau masukkan link gambar!";
+                return;
+            }
+
+            if (fileInput && fileInput.size === 0) {
+                statusText.innerText = "Gagal: File gambar kosong atau tidak valid!";
+                return;
+            }
+
             statusText.innerText = "Mengunggah...";
 
             const formData = new FormData();
@@ -78,9 +88,9 @@
 
                 const result = await response.json();
                 if (response.ok) {
-                    statusText.innerText = result.message; // "Foto berhasil diunggah ke Instagram!"
+                    statusText.innerText = result.message;
                 } else {
-                    statusText.innerText = `Gagal: ${result.message}`; // Tampilkan pesan error spesifik
+                    statusText.innerText = `Gagal: ${result.message}`;
                 }
             } catch (error) {
                 statusText.innerText = "Gagal: Terjadi kesalahan jaringan atau server.";
