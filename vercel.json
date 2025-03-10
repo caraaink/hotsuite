@@ -25,7 +25,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "public/index.html"  // Ubah dari "public/$1" ke "public/index.html"
+      "dest": "public/index.html"
     }
   ],
   "env": {
