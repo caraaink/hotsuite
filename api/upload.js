@@ -26,15 +26,24 @@ const accountToPageMapping = {
 // Fungsi untuk delay (untuk menghindari rate limit)
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-// Fungsi untuk memeriksa apakah URL dapat diakses
+// Fungsi untuk memeriksa apakah URL dapat diakses dan valid
 async function isUrlAccessible(url) {
     try {
+        // Validasi format URL
+        const imageExtensions = /\.(jpg|jpeg|png)$/i;
+        if (!url.startsWith("https://") || !imageExtensions.test(url)) {
+            throw new Error(`URL gambar ${url} tidak valid. Harus menggunakan HTTPS dan berakhiran .jpg, .jpeg, atau .png.`);
+        }
+
         const response = await fetch(url, { method: "HEAD" });
         console.log(`URL ${url} accessibility check: ${response.ok}, Status: ${response.status}`);
-        return response.ok;
+        if (!response.ok) {
+            throw new Error(`URL ${url} tidak dapat diakses, status: ${response.status}`);
+        }
+        return true;
     } catch (error) {
         console.error(`URL ${url} tidak dapat diakses:`, error.message);
-        return false;
+        throw error;
     }
 }
 
@@ -66,7 +75,7 @@ async function postToFacebook(pageId, photoUrl, caption, pageAccessToken) {
         body: new URLSearchParams(fbPostParams).toString(),
         headers: {
             "Content-Type": "application/x-www-form-urlencoded",
-            "User-Agent": "curl/7.83.1", // Meniru User-Agent curl
+            "User-Agent": "curl/7.83.1",
             "Accept": "*/*",
         },
     });
@@ -93,17 +102,14 @@ async function postToInstagram(igAccountId, photoUrl, caption, userAccessToken, 
     for (let attempt = 1; attempt <= retries; attempt++) {
         try {
             // Periksa apakah URL dapat diakses
-            const isAccessible = await isUrlAccessible(photoUrl);
-            if (!isAccessible) {
-                throw new Error(`URL gambar ${photoUrl} tidak dapat diakses oleh Instagram API.`);
-            }
+            await isUrlAccessible(photoUrl);
 
             const igMediaResponse = await fetch(igMediaUrl, {
                 method: "POST",
                 body: new URLSearchParams(igMediaParams).toString(),
                 headers: {
                     "Content-Type": "application/x-www-form-urlencoded",
-                    "User-Agent": "curl/7.83.1", // Meniru User-Agent curl
+                    "User-Agent": "curl/7.83.1",
                     "Accept": "*/*",
                 },
             });
@@ -195,6 +201,8 @@ module.exports = async (req, res) => {
             const caption = fields.caption || "Foto baru diunggah!";
             const postTarget = fields.postTarget || "both"; // Default ke "both" jika tidak ada
 
+            console.log("Received postTarget:", postTarget);
+
             if (!accountId) {
                 return res.status(400).json({ message: "Gagal: Pilih akun Instagram terlebih dahulu!" });
             }
@@ -221,21 +229,27 @@ module.exports = async (req, res) => {
             // Post ke Facebook jika dipilih
             if (postTarget === "both" || postTarget === "facebook") {
                 fbPostId = await postToFacebook(pageId, photoUrl, caption, pageAccessToken);
+            } else {
+                console.log("Skipping Facebook post as postTarget is:", postTarget);
             }
 
             // Post ke Instagram jika dipilih
             if (postTarget === "both" || postTarget === "instagram") {
                 igPostId = await postToInstagram(accountId, photoUrl, caption, userAccessToken);
+            } else {
+                console.log("Skipping Instagram post as postTarget is:", postTarget);
             }
 
             // Buat pesan respons berdasarkan target
-            let message = "Foto berhasil diposting ke ";
-            if (postTarget === "both") {
-                message += "Facebook dan Instagram!";
-            } else if (postTarget === "instagram") {
-                message += "Instagram!";
+            let message = "";
+            if (postTarget === "both" && fbPostId && igPostId) {
+                message = "Foto berhasil diposting ke Facebook dan Instagram!";
+            } else if (postTarget === "instagram" && igPostId) {
+                message = "Foto berhasil diposting ke Instagram!";
+            } else if (postTarget === "facebook" && fbPostId) {
+                message = "Foto berhasil diposting ke Facebook!";
             } else {
-                message += "Facebook!";
+                throw new Error("Gagal memposting: Tidak ada postingan yang berhasil dibuat.");
             }
 
             res.status(200).json({
