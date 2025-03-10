@@ -25,14 +25,13 @@ const accountToPageMapping = {
 
 // Fungsi untuk memposting foto ke halaman Facebook dan cross-post ke Instagram
 async function postToFacebookAndInstagram(pageId, igAccountId, photoUrl, caption, accessToken) {
-    // Post ke halaman Facebook
+    console.log(`Posting to Facebook Page ID: ${pageId}, Instagram Account ID: ${igAccountId}, URL: ${photoUrl}`);
     const fbPostUrl = `https://graph.facebook.com/${pageId}/photos`;
     const fbPostParams = {
         url: photoUrl,
         caption: caption,
         access_token: accessToken,
         published: true,
-        // Parameter untuk cross-post ke Instagram
         instagram_accounts: igAccountId,
     };
 
@@ -45,11 +44,11 @@ async function postToFacebookAndInstagram(pageId, igAccountId, photoUrl, caption
     });
 
     const fbData = await fbResponse.json();
+    console.log("Facebook API Response:", fbData);
     if (!fbResponse.ok) {
-        throw new Error(`Gagal memposting ke Facebook: ${fbData.error?.message || "Unknown error"}`);
+        throw new Error(`Gagal memposting ke Facebook: ${fbData.error?.message || "Unknown error, response: " + JSON.stringify(fbData)}`);
     }
 
-    // Karena cross-posting diatur di params, Instagram akan otomatis diposting
     return fbData;
 }
 
