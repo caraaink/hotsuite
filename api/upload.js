@@ -121,7 +121,13 @@ module.exports = async (req, res) => {
     const igMediaData = await igMediaResponse.json();
 
     if (!igMediaData.id) {
-        return res.status(500).json({ message: "Gagal mengunggah ke Instagram: " + JSON.stringify(igMediaData) });
+        const errorMessage = igMediaData.error?.message || "Unknown error";
+        if (errorMessage.includes("Media tidak dapat diambil dari URI")) {
+            return res.status(500).json({
+                message: `Gagal mengunggah ke Instagram: ${JSON.stringify(igMediaData)}. Nama file mungkin terlalu panjang atau mengandung karakter khusus. Coba ganti nama file dan unggah ulang.`
+            });
+        }
+        return res.status(500).json({ message: `Gagal mengunggah ke Instagram: ${JSON.stringify(igMediaData)}` });
     }
 
     const igPublishResponse = await fetch(`https://graph.facebook.com/v19.0/${accountId}/media_publish`, {
