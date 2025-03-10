@@ -10,7 +10,7 @@
       "use": "@vercel/node"
     },
     {
-      "src": "public/**",
+      "src": "public/index.html",
       "use": "@vercel/static"
     }
   ],
@@ -20,46 +20,8 @@
       "dest": "api/upload.js"
     },
     {
-      "src": "/api/refresh-token",
+      "src": "/api/refresh-token",  
       "dest": "api/refresh-token.js"
-    },
-    {
-      "src": "/style.css",
-      "dest": "public/style.css"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "public/index.html"
-    }
-  ]
-}{
-  "version": 2,
-  "builds": [
-    {
-      "src": "api/upload.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "api/refresh-token.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "public/**",
-      "use": "@vercel/static"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/upload",
-      "dest": "api/upload.js"
-    },
-    {
-      "src": "/api/refresh-token",
-      "dest": "api/refresh-token.js"
-    },
-    {
-      "src": "/style.css",
-      "dest": "public/style.css"
     },
     {
       "src": "/(.*)",
