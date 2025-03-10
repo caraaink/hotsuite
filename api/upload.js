@@ -81,15 +81,19 @@ async function postToInstagram(igAccountId, photoUrl, caption, userAccessToken) 
         },
     });
 
-    // Coba parsing respons meskipun mungkin error
+    // Baca body sebagai teks terlebih dahulu
+    const igMediaText = await igMediaResponse.text();
+    console.log("Instagram Media Creation Raw Response:", igMediaText);
+
+    // Coba parsing teks sebagai JSON
     let igMediaData;
     try {
-        igMediaData = await igMediaResponse.json();
+        igMediaData = JSON.parse(igMediaText);
     } catch (parseError) {
-        console.error("Invalid JSON from Instagram:", await igMediaResponse.text());
-        throw new Error(`Gagal memparsing respons Instagram: ${parseError.message}, Raw response: ${await igMediaResponse.text()}`);
+        console.error("Invalid JSON from Instagram:", igMediaText);
+        throw new Error(`Gagal memparsing respons Instagram: ${parseError.message}, Raw response: ${igMediaText}`);
     }
-    console.log("Instagram Media Creation Response:", igMediaData);
+    console.log("Instagram Media Creation Parsed Response:", igMediaData);
 
     if (!igMediaResponse.ok) {
         throw new Error(`Gagal membuat media Instagram: ${igMediaData.error?.message || "Unknown error, response: " + JSON.stringify(igMediaData)}`);
