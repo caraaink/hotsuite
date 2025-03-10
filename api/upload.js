@@ -152,7 +152,7 @@ async function postToInstagram(igAccountId, photoUrl, caption, userAccessToken, 
 async function uploadToImgBB(file) {
     const formData = new FormData();
     formData.append("image", file);
-    formData.append("key", "YOUR_NEW_IMGBB_API_KEY_HERE"); // Ganti dengan kunci API baru
+    formData.append("key", "f8090506470d163e4dec407b37ce0d12"); // Ganti dengan kunci API baru
 
     const response = await fetch("https://api.imgbb.com/1/upload", {
         method: "POST",
