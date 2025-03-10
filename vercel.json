@@ -1,23 +1,43 @@
 {
-    "version": 2,
-    "builds": [
-        {
-            "src": "api/upload.js",
-            "use": "@vercel/node"
-        },
-        {
-            "src": "public/**/*",
-            "use": "@vercel/static"
-        }
-    ],
-    "routes": [
-        {
-            "src": "/api/upload",
-            "dest": "/api/upload.js"
-        },
-        {
-            "src": "/(.*)",
-            "dest": "/public/$1"
-        }
-    ]
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/upload.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/refresh-token.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "public/index.html",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/upload",
+      "dest": "api/upload.js"
+    },
+    {
+      "src": "/api/refresh-token",
+      "dest": "api/refresh-token.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "public/index.html"
+    }
+  ],
+  "env": {
+    "GITHUB_TOKEN": "@github_token",
+    "CLIENT_SECRET": "@client_secret"
+  },
+  "functions": {
+    "api/upload.js": {
+      "includeFiles": ["api/**"]
+    },
+    "api/refresh-token.js": {
+      "includeFiles": ["api/**"]
+    }
+  }
 }
