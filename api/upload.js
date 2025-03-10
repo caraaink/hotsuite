@@ -91,6 +91,7 @@ module.exports = async (req, res) => {
         imageUrl = fields.imageUrl;
         caption = fields.caption;
         file = files.image;
+        console.log("Parsed files:", files); // Debugging: lihat struktur files
     } catch (error) {
         return res.status(400).json({ message: "Gagal memparsing form: " + error.message });
     }
@@ -111,8 +112,8 @@ module.exports = async (req, res) => {
 
     let finalImageUrl = imageUrl;
     if (file) {
-        if (!file.path) {
-            return res.status(500).json({ message: "Gagal: Path file tidak valid." });
+        if (!file || !file.path) {
+            return res.status(400).json({ message: "Gagal: File yang diunggah tidak valid atau tidak ditemukan." });
         }
         const formData = new FormData();
         try {
@@ -126,7 +127,7 @@ module.exports = async (req, res) => {
             });
             const imgbbData = await imgbbResponse.json();
             if (!imgbbData.success) {
-                return res.status(500).json({ message: "Gagal mengunggah ke ImgBB." });
+                return res.status(500).json({ message: "Gagal mengunggah ke ImgBB: " + JSON.stringify(imgbbData) });
             }
             finalImageUrl = imgbbData.data.url;
         } catch (error) {
