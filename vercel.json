@@ -20,16 +20,12 @@
       "dest": "api/upload.js"
     },
     {
-      "src": "/refresh-token",  
+      "src": "/refresh-token",
       "dest": "api/refresh-token.js"
     },
     {
       "src": "/(.*)",
       "dest": "public/index.html"
     }
-  ],
-  "env": {
-    "GITHUB_TOKEN": "@github_token",
-    "CLIENT_SECRET": "@client_secret"
-  }
+  ]
 }
