@@ -14,29 +14,28 @@ async function getConfig() {
     }
 }
 
-// Fungsi untuk menukar token short-lived ke long-lived token (Facebook)
-async function exchangeToLongLivedToken(shortLivedToken) {
-    const appId = process.env.FACEBOOK_APP_ID || "573551255726328"; // Ambil dari env atau fallback ke default
-    const appSecret = process.env.CLIENT_SECRET; // Ambil dari env (sudah diatur di Vercel)
-    if (!appSecret) throw new Error("CLIENT_SECRET tidak ditemukan di environment variables.");
+// Fungsi untuk menukar token Facebook ke token Instagram long-lived
+async function exchangeToInstagramToken(fbToken) {
+    const appId = process.env.FACEBOOK_APP_ID || "573551255726328";
+    const appSecret = process.env.FACEBOOK_APP_SECRET || process.env.CLIENT_SECRET;
+    if (!appSecret) throw new Error("FACEBOOK_APP_SECRET tidak ditemukan di environment variables.");
 
-    const url = `https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${shortLivedToken}`;
+    const url = `https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${fbToken}`;
     const response = await fetch(url);
     const data = await response.json();
 
     if (!response.ok) {
         throw new Error(`Gagal tukar token: ${data.error?.message || "Unknown error"}`);
     }
-    return data.access_token;
+    return data.access_token; // Ini adalah token long-lived Instagram
 }
 
-// Fungsi untuk merefresh token (Instagram)
+// Fungsi untuk refresh token Instagram
 async function refreshToken(accessToken) {
     const url = `https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=${accessToken}`;
     const response = await fetch(url);
     const data = await response.json();
 
-    console.log("Refresh Token Response:", data); // Log response untuk debugging
     if (!response.ok) {
         throw new Error(`Gagal merefresh token: ${data.error?.message || "Unknown error"}`);
     }
@@ -80,7 +79,6 @@ async function updateConfigInGitHub(newToken) {
     await fs.writeFile(CONFIG_PATH, updatedConfig, "utf-8");
 }
 
-// Handler utama untuk endpoint /api/refresh-token
 module.exports = async (req, res) => {
     const loginCode = req.query.login;
     if (loginCode !== "emi") {
@@ -89,19 +87,18 @@ module.exports = async (req, res) => {
 
     try {
         const config = await getConfig();
-        let currentToken = config.ACCESS_TOKEN;
+        console.log("Processing token refresh...");
 
-        // Jika token adalah token Facebook (dimulai dengan "EAA"), tukar ke long-lived token
-        if (currentToken.startsWith("EAA")) {
-            currentToken = await exchangeToLongLivedToken(currentToken);
+        let newToken;
+        // Jika token adalah token Facebook (dimulai dengan EAA), tukar ke token Instagram
+        if (config.ACCESS_TOKEN && config.ACCESS_TOKEN.startsWith("EAA")) {
+            const instagramToken = await exchangeToInstagramToken(config.ACCESS_TOKEN);
+            newToken = await refreshToken(instagramToken);
+        } else {
+            newToken = await refreshToken(config.ACCESS_TOKEN);
         }
 
-        // Refresh token yang sudah long-lived
-        const newToken = await refreshToken(currentToken);
-
-        // Simpan token baru ke GitHub
         await updateConfigInGitHub(newToken);
-
         res.status(200).json({ message: "Token berhasil direfresh." });
     } catch (error) {
         console.error("Refresh token error:", error.message);
