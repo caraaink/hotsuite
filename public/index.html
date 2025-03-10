@@ -34,7 +34,6 @@
     </div>
 
     <script>
-        // Toggle tema gelap/terang
         const themeToggle = document.getElementById("themeToggle");
         themeToggle.addEventListener("click", () => {
             document.body.classList.toggle("dark-mode");
@@ -44,7 +43,6 @@
             localStorage.setItem("theme", document.body.classList.contains("dark-mode") ? "dark" : "light");
         });
 
-        // Muat tema dari localStorage
         if (localStorage.getItem("theme") === "dark") {
             document.body.classList.add("dark-mode");
             themeToggle.querySelector("i").classList.replace("fa-moon", "fa-sun");
@@ -58,7 +56,7 @@
             const statusText = document.getElementById("status");
 
             if (!accountId) {
-                statusText.innerText = "Pilih akun Instagram terlebih dahulu!";
+                statusText.innerText = "Gagal: Pilih akun Instagram terlebih dahulu!";
                 return;
             }
 
@@ -72,13 +70,21 @@
             formData.append("caption", caption);
             formData.append("accountId", accountId);
 
-            const response = await fetch("/api/upload", {
-                method: "POST",
-                body: formData
-            });
+            try {
+                const response = await fetch("/api/upload", {
+                    method: "POST",
+                    body: formData
+                });
 
-            const result = await response.json();
-            statusText.innerText = result.message;
+                const result = await response.json();
+                if (response.ok) {
+                    statusText.innerText = result.message; // "Foto berhasil diunggah ke Instagram!"
+                } else {
+                    statusText.innerText = `Gagal: ${result.message}`; // Tampilkan pesan error spesifik
+                }
+            } catch (error) {
+                statusText.innerText = "Gagal: Terjadi kesalahan jaringan atau server.";
+            }
         }
     </script>
 </body>
