@@ -26,61 +26,6 @@ const accountToPageMapping = {
 // Fungsi untuk delay (untuk menghindari rate limit)
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-// Fungsi untuk memeriksa apakah URL dapat diakses
-async function isUrlAccessible(url) {
-    let urlString = url;
-    if (Array.isArray(url)) {
-        console.log("URL received as array, using first element:", url);
-        urlString = url[0];
-    } else if (typeof url !== "string" || !url) {
-        throw new Error(`URL ${url} tidak valid: Harus berupa string yang tidak kosong.`);
-    }
-
-    console.log("Checking URL accessibility for:", urlString, "Type:", typeof urlString);
-    if (!urlString.startsWith("https://")) {
-        throw new Error(`URL ${urlString} tidak valid. Harus menggunakan HTTPS.`);
-    }
-
-    try {
-        const response = await fetch(urlString, { method: "HEAD" });
-        console.log(`URL ${urlString} accessibility check: ${response.ok}, Status: ${response.status}`);
-        if (!response.ok) {
-            throw new Error(`URL ${urlString} tidak dapat diakses, status: ${response.status}`);
-        }
-        return true;
-    } catch (error) {
-        console.error(`URL ${urlString} tidak dapat diakses:`, error.message);
-        throw error;
-    }
-}
-
-// Fungsi untuk mengunduh gambar dari URL dan mengunggah ke ImgBB
-async function uploadToImgBBFromUrl(imageUrl) {
-    try {
-        const response = await fetch(imageUrl);
-        if (!response.ok) throw new Error(`Gagal mengunduh gambar dari ${imageUrl}, status: ${response.status}`);
-        const arrayBuffer = await response.arrayBuffer(); // Gunakan arrayBuffer untuk kompatibilitas
-        const blob = new Blob([new Uint8Array(arrayBuffer)], { type: response.headers.get("content-type") || "application/octet-stream" });
-        const formData = new FormData();
-        const randomNum = Math.floor(10000 + Math.random() * 90000).toString();
-        formData.append("image", blob, `${randomNum}.jpg`); // Gunakan ekstensi default .jpg
-        formData.append("key", "a54b42bd860469def254d13b8f55f43e");
-
-        const uploadResponse = await fetch("https://api.imgbb.com/1/upload", {
-            method: "POST",
-            body: formData,
-        });
-
-        const result = await uploadResponse.json();
-        if (!result.success) throw new Error("Gagal mengunggah ke ImgBB: " + JSON.stringify(result));
-        console.log("Upload to ImgBB successful, new URL:", result.data.url);
-        return result.data.url;
-    } catch (error) {
-        console.error("Upload to ImgBB failed:", error.message);
-        throw error;
-    }
-}
-
 // Fungsi untuk mendapatkan page access token
 async function getPageAccessToken(pageId, userAccessToken) {
     const url = `https://graph.facebook.com/v19.0/${pageId}?fields=access_token&access_token=${userAccessToken}`;
@@ -130,8 +75,6 @@ async function postToInstagram(igAccountId, photoUrl, caption, userAccessToken, 
 
     for (let attempt = 1; attempt <= retries; attempt++) {
         try {
-            await isUrlAccessible(photoUrl);
-
             const igMediaParams = {
                 image_url: photoUrl,
                 caption: caption,
@@ -205,6 +148,23 @@ async function postToInstagram(igAccountId, photoUrl, caption, userAccessToken, 
     }
 }
 
+// Fungsi untuk mengunggah ke ImgBB (opsional, hanya digunakan untuk file lokal)
+async function uploadToImgBB(file) {
+    const formData = new FormData();
+    formData.append("image", file);
+    formData.append("key", "a54b42bd860469def254d13b8f55f43e");
+
+    const response = await fetch("https://api.imgbb.com/1/upload", {
+        method: "POST",
+        body: formData,
+    });
+
+    const result = await response.json();
+    if (!result.success) throw new Error("Gagal mengunggah ke ImgBB: " + JSON.stringify(result));
+    console.log("Upload to ImgBB successful, new URL:", result.data.url);
+    return result.data.url;
+}
+
 module.exports = async (req, res) => {
     const loginCode = req.query.login;
     if (loginCode !== "emi") {
@@ -236,24 +196,14 @@ module.exports = async (req, res) => {
 
             // Proses file atau URL
             if (files.photo) {
-                const formData = new FormData();
                 const sanitizedFile = sanitizeFileName(files.photo[0]);
-                formData.append("image", sanitizedFile);
-                formData.append("key", "a54b42bd860469def254d13b8f55f43e");
-
-                const response = await fetch("https://api.imgbb.com/1/upload", {
-                    method: "POST",
-                    body: formData,
-                });
-                const result = await response.json();
-                if (!result.success) throw new Error("Gagal mengunggah ke ImgBB: " + JSON.stringify(result));
-                photoUrl = result.data.url;
+                photoUrl = await uploadToImgBB(sanitizedFile); // File lokal harus diunggah ke ImgBB
             } else if (fields.imageUrl) {
                 const imageUrl = fields.imageUrl[0];
-                await isUrlAccessible(imageUrl);
-                photoUrl = imageUrl; // Gunakan URL langsung untuk posting ke Instagram/Facebook
-                // Opsional: Jika ingin tetap unggah ke ImgBB, aktifkan baris di bawah
-                // photoUrl = await uploadToImgBBFromUrl(imageUrl);
+                if (!imageUrl.startsWith("https://")) {
+                    return res.status(400).json({ message: `Gagal: URL ${imageUrl} tidak valid. Harus menggunakan HTTPS.` });
+                }
+                photoUrl = imageUrl; // Gunakan URL langsung
             } else {
                 return res.status(400).json({ message: "Gagal: Tidak ada file atau URL yang diberikan!" });
             }
