@@ -13,13 +13,15 @@ async function getConfig() {
     }
 }
 
-async function exchangeToLongLivedToken(shortLivedToken) {
-    const appId = "573551255726328"; // Ganti dengan App ID dari Facebook Developer
-    const appSecret = process.env.CLIENT_SECRET;
-    const url = `https://graph.instagram.com/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${shortLivedToken}`;
+async function refreshToken(accessToken) {
+    const url = `https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=${accessToken}`;
     const response = await fetch(url);
-    const data = await response.json();
-    if (!response.ok) throw new Error("Gagal tukar token: " + data.error?.message);
+    const data = await response.json(); // Hanya panggil ini sekali
+
+    console.log("Refresh Token Response:", data); // Log data JSON
+    if (!response.ok) {
+        throw new Error(`Gagal merefresh token: ${data.error?.message || "Unknown error"}`);
+    }
     return data.access_token;
 }
 
