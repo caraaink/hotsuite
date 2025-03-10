@@ -25,7 +25,7 @@
             </select>
 
             <input type="file" id="imageInput" name="photo" accept="image/*" onchange="validateFile()">
-            <input type="text" id="imageUrl" name="imageUrl" placeholder="Atau masukkan link gambar (harus berakhiran .jpg, .jpeg, atau .png)">
+            <input type="text" id="imageUrl" name="imageUrl" placeholder="Atau masukkan link gambar (harus menggunakan HTTPS)">
             <textarea id="caption" name="caption" placeholder="Masukkan caption"></textarea>
             <button onclick="uploadToInstagram()" class="upload-btn">Upload</button>
 
@@ -62,19 +62,12 @@
                 } else if (file.size > 10 * 1024 * 1024) {
                     statusText.innerText = "Gagal: Ukuran file melebihi 10MB!";
                     fileInput.value = "";
-                } else {
-                    const validTypes = ["image/jpeg", "image/png", "image/jpg"];
-                    if (!validTypes.includes(file.type)) {
-                        statusText.innerText = "Gagal: File harus berformat .jpg, .jpeg, atau .png!";
-                        fileInput.value = "";
-                    }
                 }
             }
         }
 
         function validateImageUrl(url) {
-            const imageExtensions = /\.(jpg|jpeg|png)$/i;
-            const isValid = url.startsWith("https://") && imageExtensions.test(url);
+            const isValid = url.startsWith("https://");
             if (!isValid) console.log("Invalid URL detected:", url);
             return isValid;
         }
@@ -115,7 +108,7 @@
             }
 
             if (imageUrl && !validateImageUrl(imageUrl)) {
-                statusText.innerText = `Gagal: Link gambar ${imageUrl} tidak valid. Harus menggunakan HTTPS dan berakhiran .jpg, .jpeg, atau .png!`;
+                statusText.innerText = `Gagal: Link gambar ${imageUrl} tidak valid. Harus menggunakan HTTPS!`;
                 return;
             }
 
@@ -131,7 +124,7 @@
                     const sanitizedFile = sanitizeFileName(fileInput);
                     formData.append("photo", sanitizedFile);
                 } else if (imageUrl) {
-                    formData.append("imageUrl", imageUrl); // Kirim URL ke backend untuk diproses
+                    formData.append("imageUrl", imageUrl);
                 }
 
                 const response = await fetch("/api/upload?login=emi", {
