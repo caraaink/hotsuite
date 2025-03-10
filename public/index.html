@@ -24,10 +24,16 @@
                 <option value="17841402777728356" data-username="meownime.official">Meownime (meownime.official)</option>
             </select>
 
+            <select id="postTarget" name="postTarget">
+                <option value="both">Facebook & Instagram</option>
+                <option value="instagram">Instagram Saja</option>
+                <option value="facebook">Facebook Saja</option>
+            </select>
+
             <input type="file" id="imageInput" name="photo" accept="image/*" onchange="validateFile()">
             <input type="text" id="imageUrl" name="imageUrl" placeholder="Atau masukkan link gambar">
             <textarea id="caption" name="caption" placeholder="Masukkan caption"></textarea>
-            <button onclick="uploadToInstagram()" class="upload-btn">Upload ke IG</button>
+            <button onclick="uploadToInstagram()" class="upload-btn">Upload</button>
 
             <div class="status-container">
                 <div id="spinner" class="spinner hidden"></div>
@@ -96,6 +102,7 @@
 
         async function uploadToInstagram() {
             const accountId = document.getElementById("accountSelect").value;
+            const postTarget = document.getElementById("postTarget").value;
             const fileInput = document.getElementById("imageInput").files[0];
             let imageUrl = document.getElementById("imageUrl").value;
             const caption = document.getElementById("caption").value;
@@ -130,6 +137,7 @@
                 formData.append("accountId", accountId);
                 formData.append("imageUrl", imageUrl);
                 formData.append("caption", caption);
+                formData.append("postTarget", postTarget);
 
                 const response = await fetch("/api/upload?login=emi", {
                     method: "POST",
