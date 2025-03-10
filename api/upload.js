@@ -199,9 +199,6 @@ module.exports = async (req, res) => {
             const accountId = fields.accountId || "";
             const photoUrl = fields.imageUrl || "";
             const caption = fields.caption || "Foto baru diunggah!";
-            const postTarget = fields.postTarget || "both"; // Default ke "both" jika tidak ada
-
-            console.log("Received postTarget:", postTarget);
 
             if (!accountId) {
                 return res.status(400).json({ message: "Gagal: Pilih akun Instagram terlebih dahulu!" });
@@ -217,40 +214,17 @@ module.exports = async (req, res) => {
                 return res.status(400).json({ message: "Gagal: ID halaman Facebook untuk akun ini tidak ditemukan!" });
             }
 
-            let fbPostId = null;
-            let igPostId = null;
+            // Dapatkan page access token
+            const pageAccessToken = await getPageAccessToken(pageId, userAccessToken);
 
-            // Dapatkan page access token jika akan memposting ke Facebook
-            let pageAccessToken = null;
-            if (postTarget === "both" || postTarget === "facebook") {
-                pageAccessToken = await getPageAccessToken(pageId, userAccessToken);
-            }
+            // Post ke Facebook
+            const fbPostId = await postToFacebook(pageId, photoUrl, caption, pageAccessToken);
 
-            // Post ke Facebook jika dipilih
-            if (postTarget === "both" || postTarget === "facebook") {
-                fbPostId = await postToFacebook(pageId, photoUrl, caption, pageAccessToken);
-            } else {
-                console.log("Skipping Facebook post as postTarget is:", postTarget);
-            }
+            // Post ke Instagram
+            const igPostId = await postToInstagram(accountId, photoUrl, caption, userAccessToken);
 
-            // Post ke Instagram jika dipilih
-            if (postTarget === "both" || postTarget === "instagram") {
-                igPostId = await postToInstagram(accountId, photoUrl, caption, userAccessToken);
-            } else {
-                console.log("Skipping Instagram post as postTarget is:", postTarget);
-            }
-
-            // Buat pesan respons berdasarkan target
-            let message = "";
-            if (postTarget === "both" && fbPostId && igPostId) {
-                message = "Foto berhasil diposting ke Facebook dan Instagram!";
-            } else if (postTarget === "instagram" && igPostId) {
-                message = "Foto berhasil diposting ke Instagram!";
-            } else if (postTarget === "facebook" && fbPostId) {
-                message = "Foto berhasil diposting ke Facebook!";
-            } else {
-                throw new Error("Gagal memposting: Tidak ada postingan yang berhasil dibuat.");
-            }
+            // Buat pesan respons
+            const message = "Foto berhasil diposting ke Facebook dan Instagram!";
 
             res.status(200).json({
                 message: message,
