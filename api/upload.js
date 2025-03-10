@@ -63,7 +63,9 @@ async function uploadToImgBBFromUrl(imageUrl) {
         const buffer = await response.buffer();
         const formData = new FormData();
         const randomNum = Math.floor(10000 + Math.random() * 90000).toString();
-        formData.append("image", buffer, `${randomNum}.jpg`);
+        // Konversi buffer ke Blob
+        const blob = new Blob([buffer], { type: "image/jpeg" }); // Sesuaikan type jika perlu
+        formData.append("image", blob, `${randomNum}.jpg`);
         formData.append("key", "a54b42bd860469def254d13b8f55f43e");
 
         const uploadResponse = await fetch("https://api.imgbb.com/1/upload", {
