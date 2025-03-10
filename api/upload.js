@@ -28,13 +28,18 @@ const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Fungsi untuk memeriksa apakah URL dapat diakses dan valid
 async function isUrlAccessible(url) {
-    try {
-        // Validasi format URL
-        const imageExtensions = /\.(jpg|jpeg|png)$/i;
-        if (!url.startsWith("https://") || !imageExtensions.test(url)) {
-            throw new Error(`URL gambar ${url} tidak valid. Harus menggunakan HTTPS dan berakhiran .jpg, .jpeg, atau .png.`);
-        }
+    console.log("Checking URL accessibility for:", url, "Type:", typeof url);
+    if (typeof url !== "string" || !url) {
+        throw new Error(`URL ${url} tidak valid: Harus berupa string yang tidak kosong.`);
+    }
 
+    // Validasi format URL
+    const imageExtensions = /\.(jpg|jpeg|png)$/i;
+    if (!url.startsWith("https://") || !imageExtensions.test(url)) {
+        throw new Error(`URL gambar ${url} tidak valid. Harus menggunakan HTTPS dan berakhiran .jpg, .jpeg, atau .png.`);
+    }
+
+    try {
         const response = await fetch(url, { method: "HEAD" });
         console.log(`URL ${url} accessibility check: ${response.ok}, Status: ${response.status}`);
         if (!response.ok) {
@@ -43,6 +48,31 @@ async function isUrlAccessible(url) {
         return true;
     } catch (error) {
         console.error(`URL ${url} tidak dapat diakses:`, error.message);
+        throw error;
+    }
+}
+
+// Fungsi untuk mengunduh gambar dari URL dan mengunggah ke ImgBB sebagai fallback
+async function uploadToImgBBFromUrl(imageUrl) {
+    try {
+        const response = await fetch(imageUrl);
+        if (!response.ok) throw new Error(`Gagal mengunduh gambar dari ${imageUrl}, status: ${response.status}`);
+        const buffer = await response.buffer();
+        const formData = new FormData();
+        formData.append("image", buffer, "image.jpg"); // Nama file sementara
+        formData.append("key", "a54b42bd860469def254d13b8f55f43e");
+
+        const uploadResponse = await fetch("https://api.imgbb.com/1/upload", {
+            method: "POST",
+            body: formData,
+        });
+
+        const result = await uploadResponse.json();
+        if (!result.success) throw new Error("Gagal mengunggah ke ImgBB: " + JSON.stringify(result));
+        console.log("Fallback upload to ImgBB successful, new URL:", result.data.url);
+        return result.data.url;
+    } catch (error) {
+        console.error("Fallback upload to ImgBB failed:", error.message);
         throw error;
     }
 }
@@ -89,20 +119,23 @@ async function postToFacebook(pageId, photoUrl, caption, pageAccessToken) {
     return fbData.id; // ID postingan Facebook
 }
 
-// Fungsi untuk memposting ke Instagram dengan retry mechanism
+// Fungsi untuk memposting ke Instagram dengan retry mechanism dan fallback
 async function postToInstagram(igAccountId, photoUrl, caption, userAccessToken, retries = 2) {
     console.log(`Posting to Instagram Account ID: ${igAccountId}, URL: ${photoUrl}`);
     const igMediaUrl = `https://graph.facebook.com/v19.0/${igAccountId}/media`;
-    const igMediaParams = {
-        image_url: photoUrl,
-        caption: caption,
-        access_token: userAccessToken,
-    };
+    let finalPhotoUrl = photoUrl;
 
+    // Coba fallback ke ImgBB jika URL asli gagal
     for (let attempt = 1; attempt <= retries; attempt++) {
         try {
             // Periksa apakah URL dapat diakses
-            await isUrlAccessible(photoUrl);
+            await isUrlAccessible(finalPhotoUrl);
+
+            const igMediaParams = {
+                image_url: finalPhotoUrl,
+                caption: caption,
+                access_token: userAccessToken,
+            };
 
             const igMediaResponse = await fetch(igMediaUrl, {
                 method: "POST",
@@ -141,6 +174,10 @@ async function postToInstagram(igAccountId, photoUrl, caption, userAccessToken, 
                     console.log(`Rate limit terdeteksi, mencoba ulang (${attempt}/${retries})...`);
                     await delay(10000); // Delay 10 detik sebelum retry
                     continue;
+                } else if (igMediaData.error && igMediaData.error.message.includes("Media not available from URI")) {
+                    console.log("Original URL failed, attempting fallback to ImgBB...");
+                    finalPhotoUrl = await uploadToImgBBFromUrl(photoUrl);
+                    continue; // Coba lagi dengan URL baru dari ImgBB
                 }
                 throw new Error(`Gagal membuat media Instagram: ${igMediaData.error?.message || "Unknown error, status: " + igMediaResponse.status}`);
             }
