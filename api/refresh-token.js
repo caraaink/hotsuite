@@ -86,7 +86,8 @@ async function updateConfigInGitHub(newToken) {
     const updateData = await updateResponse.json();
     if (!updateResponse.ok) throw new Error("Gagal memperbarui file di GitHub: " + updateData.message);
 
-    await fs.writeFile(CONFIG_PATH, updatedConfig, "utf-8");
+    // Hapus penulisan lokal ke config.json karena read-only di Vercel
+    // await fs.writeFile(CONFIG_PATH, updatedConfig, "utf-8"); // Komentari atau hapus baris ini
 }
 
 module.exports = async (req, res) => {
