@@ -1,10 +1,7 @@
 {
-    "name": "hotsuite",
-    "version": "1.0.0",
-    "dependencies": {
-        "formidable": "^2.1.2"
-    },
-    "engines": {
-        "node": "22.x"
-    }
+  "name": "hotsuite",
+  "version": "1.0.0",
+  "dependencies": {
+    "formidable": "^3.5.1"
+  }
 }
