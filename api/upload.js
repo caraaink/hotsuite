@@ -91,8 +91,16 @@ module.exports = async (req, res) => {
         imageUrl = fields.imageUrl;
         caption = fields.caption;
         file = files.image;
-        console.log("Parsed files:", files);
-        console.log("File details:", file);
+        console.log("Parsed files object:", files);
+        console.log("File object:", file);
+        if (file) {
+            console.log("File properties:", {
+                path: file.path,
+                name: file.name,
+                size: file.size,
+                type: file.type
+            });
+        }
     } catch (error) {
         return res.status(400).json({ message: "Gagal memparsing form: " + error.message });
     }
