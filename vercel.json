@@ -31,13 +31,5 @@
   "env": {
     "GITHUB_TOKEN": "@github_token",
     "CLIENT_SECRET": "@client_secret"
-  },
-  "functions": {
-    "api/upload.js": {
-      "includeFiles": "{api/**,config.json}"
-    },
-    "api/refresh-token.js": {
-      "includeFiles": "{api/**,config.json}"
-    }
   }
 }
