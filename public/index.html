@@ -31,7 +31,7 @@
             </select>
 
             <input type="file" id="imageInput" name="photo" accept="image/*" onchange="validateFile()">
-            <input type="text" id="imageUrl" name="imageUrl" placeholder="Atau masukkan link gambar">
+            <input type="text" id="imageUrl" name="imageUrl" placeholder="Atau masukkan link gambar (harus berakhiran .jpg, .jpeg, atau .png)">
             <textarea id="caption" name="caption" placeholder="Masukkan caption"></textarea>
             <button onclick="uploadToInstagram()" class="upload-btn">Upload</button>
 
@@ -64,6 +64,13 @@
                 statusText.innerText = "Gagal: File gambar kosong atau tidak valid!";
                 fileInput.value = ""; // Reset input jika tidak valid
             }
+        }
+
+        // Validasi URL gambar
+        function validateImageUrl(url) {
+            const imageExtensions = /\.(jpg|jpeg|png)$/i;
+            const isValidUrl = url.startsWith("https://") && imageExtensions.test(url);
+            return isValidUrl;
         }
 
         function showSpinner() {
@@ -120,6 +127,12 @@
 
             if (fileInput && fileInput.size === 0) {
                 statusText.innerText = "Gagal: File gambar kosong atau tidak valid!";
+                return;
+            }
+
+            // Validasi URL jika dimasukkan secara manual
+            if (imageUrl && !validateImageUrl(imageUrl)) {
+                statusText.innerText = "Gagal: Link gambar harus menggunakan HTTPS dan berakhiran .jpg, .jpeg, atau .png!";
                 return;
             }
 
