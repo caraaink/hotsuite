@@ -20,7 +20,7 @@
       "dest": "api/upload.js"
     },
     {
-      "src": "/api/refresh-token",
+      "src": "/refresh-token",  
       "dest": "api/refresh-token.js"
     },
     {
