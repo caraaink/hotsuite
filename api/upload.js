@@ -61,7 +61,7 @@ async function postToFacebook(pageId, photoUrl, caption, pageAccessToken) {
 
     const fbData = await fbResponse.json();
     console.log("Facebook API Response:", fbData, "Status:", fbResponse.status);
-    if (!fbResponse.ok) {
+    if (!response.ok) {
         throw new Error(`Gagal memposting ke Facebook: ${fbData.error?.message || "Unknown error, status: " + fbResponse.status}`);
     }
 
@@ -148,14 +148,15 @@ async function postToInstagram(igAccountId, photoUrl, caption, userAccessToken, 
     }
 }
 
-// Fungsi untuk mengunggah file lokal ke ImgBB
+// Fungsi untuk mengunggah ke ImgBB (untuk file lokal)
 async function uploadToImgBB(file) {
     const formData = new FormData();
     const apiKey = "a54b42bd860469def254d13b8f55f43e"; // Pastikan kunci ini benar
-    console.log("Using ImgBB API Key for local upload:", apiKey); // Log untuk verifikasi
+    console.log("Using ImgBB API Key:", apiKey); // Log untuk verifikasi
     formData.append("image", file);
     formData.append("key", apiKey);
 
+    // Tambahkan header eksplisit untuk memastikan kompatibilitas
     const response = await fetch("https://api.imgbb.com/1/upload", {
         method: "POST",
         body: formData,
@@ -166,72 +167,11 @@ async function uploadToImgBB(file) {
 
     const result = await response.json();
     if (!result.success) {
-        console.error("ImgBB Error Details for local upload:", result);
+        console.error("ImgBB Error Details:", result);
         throw new Error(`Gagal mengunggah ke ImgBB: ${result.error?.message || "Unknown error"}`);
     }
-    console.log("Local upload to ImgBB successful, new URL:", result.data.url);
+    console.log("Upload to ImgBB successful, new URL:", result.data.url);
     return result.data.url;
-}
-
-// Fungsi untuk mengunduh gambar dari URL dan mengunggah ke ImgBB sebagai fallback
-async function uploadToImgBBFromUrl(imageUrl) {
-    try {
-        const response = await fetch(imageUrl);
-        if (!response.ok) throw new Error(`Gagal mengunduh gambar dari ${imageUrl}, status: ${response.status}`);
-        const arrayBuffer = await response.arrayBuffer(); // Gunakan arrayBuffer untuk kompatibilitas
-        const blob = new Blob([new Uint8Array(arrayBuffer)], { type: response.headers.get("content-type") || "application/octet-stream" });
-        const formData = new FormData();
-        const randomNum = Math.floor(10000 + Math.random() * 90000).toString();
-        formData.append("image", blob, `${randomNum}.jpg`);
-        formData.append("key", "a54b42bd860469def254d13b8f55f43e");
-
-        const uploadResponse = await fetch("https://api.imgbb.com/1/upload", {
-            method: "POST",
-            body: formData,
-            headers: {
-                ...formData.getHeaders(), // Ambil header default dari FormData
-            },
-        });
-
-        const result = await uploadResponse.json();
-        if (!result.success) throw new Error("Gagal mengunggah ke ImgBB: " + JSON.stringify(result));
-        console.log("Fallback upload to ImgBB successful, new URL:", result.data.url);
-        return result.data.url;
-    } catch (error) {
-        console.error("Fallback upload to ImgBB failed:", error.message);
-        throw error;
-    }
-}
-
-// Fungsi utama untuk memproses unggahan
-async function processUpload(fileOrUrl) {
-    try {
-        let photoUrl;
-        if (fileOrUrl instanceof formidable.File) {
-            console.log("Attempting local file upload to ImgBB...");
-            photoUrl = await uploadToImgBB(fileOrUrl); // Coba unggah file lokal
-        } else if (typeof fileOrUrl === "string") {
-            console.log("Using URL directly:", fileOrUrl);
-            photoUrl = fileOrUrl; // Gunakan URL langsung
-        } else {
-            throw new Error("Tidak ada file atau URL yang valid!");
-        }
-
-        // Jika gagal di atas (untuk file lokal), coba fallback dengan mengonversi ke URL
-        if (!photoUrl && fileOrUrl instanceof formidable.File) {
-            console.log("Falling back to URL upload for local file...");
-            const tempBuffer = await fs.promises.readFile(fileOrUrl.filepath); // Baca file lokal
-            const tempBlob = new Blob([tempBuffer], { type: fileOrUrl.mimetype });
-            const tempUrl = URL.createObjectURL(tempBlob); // Buat URL sementara
-            photoUrl = await uploadToImgBBFromUrl(tempUrl); // Unggah sebagai fallback
-            URL.revokeObjectURL(tempUrl); // Bersihkan URL sementara
-        }
-
-        return photoUrl;
-    } catch (error) {
-        console.error("Upload process failed:", error.message);
-        throw error;
-    }
 }
 
 module.exports = async (req, res) => {
@@ -252,6 +192,7 @@ module.exports = async (req, res) => {
 
             const accountId = fields.accountId || "";
             const caption = fields.caption || "Foto baru diunggah!";
+            let photoUrl = "";
 
             if (!accountId) {
                 return res.status(400).json({ message: "Gagal: Pilih akun Instagram terlebih dahulu!" });
@@ -262,16 +203,20 @@ module.exports = async (req, res) => {
                 return res.status(400).json({ message: "Gagal: ID halaman Facebook untuk akun ini tidak ditemukan!" });
             }
 
-            // Proses unggahan
-            let photoUrl;
-            if (files.photo && files.photo.length > 0) {
-                photoUrl = await processUpload(files.photo[0]);
-            } else if (fields.imageUrl && fields.imageUrl.length > 0) {
+            // Proses file atau URL
+            if (files.photo) {
+                const sanitizedFile = sanitizeFileName(files.photo[0]);
+                try {
+                    photoUrl = await uploadToImgBB(sanitizedFile); // Unggah file lokal ke ImgBB
+                } catch (imgbbError) {
+                    return res.status(500).json({ message: `Gagal mengunggah ke ImgBB: ${imgbbError.message}. Coba periksa kunci API atau unggah ulang.` });
+                }
+            } else if (fields.imageUrl) {
                 const imageUrl = fields.imageUrl[0];
                 if (!imageUrl.startsWith("https://")) {
                     return res.status(400).json({ message: `Gagal: URL ${imageUrl} tidak valid. Harus menggunakan HTTPS.` });
                 }
-                photoUrl = await processUpload(imageUrl);
+                photoUrl = imageUrl; // Gunakan URL langsung
             } else {
                 return res.status(400).json({ message: "Gagal: Tidak ada file atau URL yang diberikan!" });
             }
