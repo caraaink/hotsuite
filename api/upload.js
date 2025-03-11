@@ -61,7 +61,7 @@ async function postToFacebook(pageId, photoUrl, caption, pageAccessToken) {
 
     const fbData = await fbResponse.json();
     console.log("Facebook API Response:", fbData, "Status:", fbResponse.status);
-    if (!fbResponse.ok) {
+    if (!response.ok) {
         throw new Error(`Gagal memposting ke Facebook: ${fbData.error?.message || "Unknown error, status: " + fbResponse.status}`);
     }
 
@@ -156,9 +156,13 @@ async function uploadToImgBB(file) {
     formData.append("image", file);
     formData.append("key", apiKey);
 
+    // Tambahkan header eksplisit untuk memastikan kompatibilitas
     const response = await fetch("https://api.imgbb.com/1/upload", {
         method: "POST",
         body: formData,
+        headers: {
+            ...formData.getHeaders(), // Ambil header default dari FormData
+        },
     });
 
     const result = await response.json();
