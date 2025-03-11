@@ -6,7 +6,6 @@ const FormData = require("form-data");
 
 const CONFIG_PATH = path.join(__dirname, "../config.json");
 
-// Fungsi untuk membaca config
 async function getConfig() {
     try {
         const rawData = await fs.readFile(CONFIG_PATH, "utf-8");
@@ -16,7 +15,6 @@ async function getConfig() {
     }
 }
 
-// Mapping antara Instagram accountId dan Facebook pageId
 const accountToPageMapping = {
     "17841472299141470": "421553057719120", // Cika Cantika
     "17841469780026465": "406559659217723", // Raisa Ayunda
@@ -24,10 +22,8 @@ const accountToPageMapping = {
     "17841402777728356": "119316994437611"  // Meownime official
 };
 
-// Fungsi untuk delay (untuk menghindari rate limit)
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-// Fungsi untuk mendapatkan page access token
 async function getPageAccessToken(pageId, userAccessToken) {
     const url = `https://graph.facebook.com/v19.0/${pageId}?fields=access_token&access_token=${userAccessToken}`;
     const response = await fetch(url);
@@ -39,7 +35,6 @@ async function getPageAccessToken(pageId, userAccessToken) {
     return data.access_token;
 }
 
-// Fungsi untuk memposting ke halaman Facebook
 async function postToFacebook(pageId, photoUrl, caption, pageAccessToken) {
     console.log(`Posting to Facebook Page ID: ${pageId}, URL: ${photoUrl}`);
     const fbPostUrl = `https://graph.facebook.com/v19.0/${pageId}/photos`;
@@ -65,10 +60,10 @@ async function postToFacebook(pageId, photoUrl, caption, pageAccessToken) {
     if (!fbResponse.ok) {
         throw new Error(`Gagal memposting ke Facebook: ${fbData.error?.message || "Unknown error, status: " + fbResponse.status}`);
     }
+
     return fbData.id;
 }
 
-// Fungsi untuk memposting ke Instagram dengan retry mechanism
 async function postToInstagram(igAccountId, photoUrl, caption, userAccessToken, retries = 2) {
     console.log(`Posting to Instagram Account ID: ${igAccountId}, URL: ${photoUrl}`);
     const igMediaUrl = `https://graph.facebook.com/v19.0/${igAccountId}/media`;
@@ -136,10 +131,9 @@ async function postToInstagram(igAccountId, photoUrl, caption, userAccessToken, 
     }
 }
 
-// Fungsi untuk mengunggah ke ImgBB (untuk file lokal)
 async function uploadToImgBB(file) {
     const formData = new FormData();
-    const apiKey = "a54b42bd860469def254d13b8f55f43e"; // Ganti dengan API key Anda jika berbeda
+    const apiKey = "a54b42bd860469def254d13b8f55f43e";
     console.log("Mengunggah ke ImgBB:", file.originalFilename, file.size);
 
     const fileBuffer = await fs.readFile(file.filepath);
@@ -162,7 +156,6 @@ async function uploadToImgBB(file) {
     return result.data.url;
 }
 
-// Handler utama
 module.exports = async (req, res) => {
     const loginCode = req.query.login;
     if (loginCode !== "emi") {
@@ -171,7 +164,7 @@ module.exports = async (req, res) => {
 
     const form = new formidable.IncomingForm({
         keepExtensions: true,
-        maxFileSize: 10 * 1024 * 1024, // Batas 10MB
+        maxFileSize: 10 * 1024 * 1024,
     });
 
     try {
