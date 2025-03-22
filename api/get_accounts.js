@@ -1,5 +1,5 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import fetch from 'node-fetch';
+import axios from 'axios';
 
 export default async function handler(req, res) {
   const { account_key } = req.query;
@@ -9,36 +9,49 @@ export default async function handler(req, res) {
   }
 
   const accountNum = account_key.split(' ')[1];
-  const instagramToken = process.env[`TOKEN_${accountNum}`];
+  const facebookToken = process.env[`TOKEN_${accountNum}`];
 
-  if (!instagramToken) {
-    return res.status(500).json({ error: `Instagram token for account ${accountNum} not configured` });
+  if (!facebookToken) {
+    return res.status(500).json({ error: `Facebook token for account ${accountNum} not configured` });
   }
 
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-    const response = await fetch('https://graph.instagram.com/me/accounts', {
+    // Mengambil akun Instagram yang terkait dengan user Facebook
+    const response = await axios.get('https://graph.facebook.com/v20.0/me/accounts', {
       headers: {
-        Authorization: `Bearer ${instagramToken}`,
+        Authorization: `Bearer ${facebookToken}`,
       },
-      signal: controller.signal,
+      timeout: 5000, // Timeout 5 detik
     });
 
-    clearTimeout(timeoutId);
+    const data = response.data;
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to fetch Instagram accounts: ${response.statusText} - ${errorText}`);
-    }
+    // Filter untuk hanya mengambil akun yang memiliki Instagram Business Account
+    const instagramAccounts = await Promise.all(
+      data.data.map(async (account) => {
+        const igResponse = await axios.get(
+          `https://graph.facebook.com/v20.0/${account.id}?fields=instagram_business_account&access_token=${facebookToken}`,
+          { timeout: 5000 }
+        );
+        const igData = igResponse.data;
+        if (igData.instagram_business_account) {
+          return {
+            id: account.id,
+            name: account.name,
+            instagram_business_account: igData.instagram_business_account.id,
+          };
+        }
+        return null;
+      })
+    );
 
-    const data = await response.json();
-    res.status(200).json({ accounts: { [account_key]: data } });
+    const filteredAccounts = instagramAccounts.filter((account) => account !== null);
+
+    res.status(200).json({ accounts: { [account_key]: filteredAccounts } });
   } catch (error) {
-    console.error('Error fetching Instagram accounts:', error);
-    if (error.name === 'AbortError') {
-      return res.status(504).json({ error: 'Request to Instagram API timed out' });
+    console.error('Error fetching Facebook accounts:', error);
+    if (error.code === 'ECONNABORTED') {
+      return res.status(504).json({ error: 'Request to Facebook API timed out' });
     }
     res.status(500).json({ error: 'Failed to fetch accounts', details: error.message });
   }
