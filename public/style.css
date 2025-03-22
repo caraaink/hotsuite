@@ -231,3 +231,36 @@ body.dark-mode .delete-btn {
 body.dark-mode .delete-btn:hover {
     background-color: #a71d2a;
 }
+/* Tombol edit */
+.edit-btn {
+    padding: 5px 10px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.9em;
+    cursor: pointer;
+    margin-right: 5px;
+    transition: background-color 0.3s;
+}
+
+.edit-btn:hover {
+    background-color: #0056b3;
+}
+
+.edit-btn:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+body.dark-mode .edit-btn {
+    background-color: #1a73e8;
+}
+
+body.dark-mode .edit-btn:hover {
+    background-color: #1557b0;
+}
+
+body.dark-mode .edit-btn:disabled {
+    background-color: #666;
+}
