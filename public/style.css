@@ -114,6 +114,14 @@ body.dark-mode .schedule-list th {
     background: #444;
 }
 
+body.dark-mode .gallery {
+    background: #3a3a3a;
+}
+
+body.dark-mode .gallery-item {
+    background: #444;
+}
+
 /* Upload Form */
 .upload-form {
     display: grid;
@@ -257,8 +265,6 @@ body.dark-mode .schedule-list th {
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     gap: 15px;
     margin-top: 20px;
-    max-height: 400px;
-    overflow-y: auto;
     padding: 10px;
     background: #f9f9f9;
     border-radius: 8px;
