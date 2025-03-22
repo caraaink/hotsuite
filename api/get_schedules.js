@@ -5,14 +5,13 @@ export default async function handler(req, res) {
   try {
     const repoOwner = 'caraaink';
     const repoName = 'hotsuite';
-    const filePath = 'data/schedules.json'; 
+    const filePath = 'data/schedules.json';
     const githubToken = process.env.GITHUB_TOKEN;
 
     if (!githubToken) {
       return res.status(500).json({ error: 'GitHub token not configured' });
     }
 
-    // Ambil konten file schedules.json dari GitHub
     const response = await fetch(
       `https://api.github.com/repos/${repoOwner}/${repoName}/contents/${filePath}`,
       {
