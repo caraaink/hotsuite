@@ -43,7 +43,7 @@ module.exports = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Error fetching accounts:', error);
+    console.error('Error fetching accounts:', error.response?.data || error.message);
     res.status(500).json({ message: `Failed to fetch accounts: ${error.message}` });
   }
 };
