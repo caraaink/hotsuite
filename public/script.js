@@ -12,6 +12,8 @@ const scheduleTableBody = document.getElementById('scheduleTableBody');
 const themeToggle = document.getElementById('themeToggle');
 const themeMenu = document.getElementById('themeMenu');
 const toggleDarkMode = document.getElementById('toggleDarkMode');
+const selectAll = document.getElementById('selectAll');
+const deleteSelected = document.getElementById('deleteSelected');
 let selectedToken = null;
 let selectedUsername = null;
 let selectedAccountNum = null;
@@ -528,9 +530,30 @@ async function deleteSchedule(index) {
     }
 }
 
+async function deleteSelectedSchedules() {
+    const checkboxes = document.querySelectorAll('.schedule-checkbox:checked');
+    if (checkboxes.length === 0) {
+        status.innerText = 'Pilih setidaknya satu jadwal untuk dihapus.';
+        return;
+    }
+
+    const indices = Array.from(checkboxes).map(checkbox => parseInt(checkbox.dataset.index, 10));
+    indices.sort((a, b) => b - a); // Urutkan dari besar ke kecil agar penghapusan tidak mengganggu indeks
+
+    try {
+        for (const index of indices) {
+            await deleteSchedule(index);
+        }
+        status.innerText = `${indices.length} jadwal berhasil dihapus!`;
+    } catch (error) {
+        status.innerText = `Error deleting schedules: ${error.message}`;
+        console.error('Error deleting schedules:', error);
+    }
+}
+
 async function loadSchedules() {
     try {
-        scheduleTableBody.innerHTML = '<tr><td colspan="6">Memuat jadwal...</td></tr>';
+        scheduleTableBody.innerHTML = '<tr><td colspan="7">Memuat jadwal...</td></tr>';
         const res = await fetch('/api/get_schedules');
         if (!res.ok) {
             throw new Error(`HTTP error fetching schedules! status: ${res.status}`);
@@ -549,6 +572,7 @@ async function loadSchedules() {
             filteredSchedules.forEach((schedule, index) => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
+                    <td><input type="checkbox" class="schedule-checkbox" data-index="${index}"></td>
                     <td>${schedule.username || schedule.accountId}</td>
                     <td><a href="${schedule.mediaUrl}" target="_blank">Lihat Media</a></td>
                     <td>${schedule.caption}</td>
@@ -569,13 +593,28 @@ async function loadSchedules() {
                     }
                 });
             });
+
+            // Select All Checkbox
+            selectAll.addEventListener('change', () => {
+                const checkboxes = document.querySelectorAll('.schedule-checkbox');
+                checkboxes.forEach(checkbox => {
+                    checkbox.checked = selectAll.checked;
+                });
+            });
+
+            // Delete Selected Button
+            deleteSelected.addEventListener('click', () => {
+                if (confirm('Apakah Anda yakin ingin menghapus jadwal yang dipilih?')) {
+                    deleteSelectedSchedules();
+                }
+            });
         } else {
-            scheduleTableBody.innerHTML = '<tr><td colspan="6">Belum ada jadwal untuk akun ini.</td></tr>';
+            scheduleTableBody.innerHTML = '<tr><td colspan="7">Belum ada jadwal untuk akun ini.</td></tr>';
         }
     } catch (error) {
         status.innerText = `Error loading schedules: ${error.message}`;
         console.error('Error fetching schedules:', error);
-        scheduleTableBody.innerHTML = '<tr><td colspan="6">Gagal memuat jadwal.</td></tr>';
+        scheduleTableBody.innerHTML = '<tr><td colspan="7">Gagal memuat jadwal.</td></tr>';
     }
 }
 
