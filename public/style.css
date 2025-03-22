@@ -1,105 +1,210 @@
+/* Reset default styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
 body {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  padding: 0;
-  background-color: #f4f4f4;
-  color: #333;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background-color: #f5f5f5;
+    color: #333;
+    line-height: 1.6;
+    transition: background-color 0.3s, color 0.3s;
 }
 
 .container {
-  max-width: 800px;
-  margin: 20px auto;
-  padding: 20px;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 20px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+h2 {
+    margin-bottom: 20px;
+    font-size: 1.5em;
+    color: #333;
 }
 
 .upload-form {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
 }
 
-select, input[type="text"], textarea, input[type="datetime-local"] {
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 14px;
+.upload-form label {
+    font-weight: 500;
+    margin-bottom: 5px;
+    color: #555;
 }
 
-textarea {
-  resize: vertical;
-  min-height: 100px;
+.upload-form select,
+.upload-form input,
+.upload-form textarea {
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1em;
+    width: 100%;
+    background: #fff;
+    color: #333;
+}
+
+.upload-form textarea {
+    resize: vertical;
+    min-height: 100px;
 }
 
 .upload-btn {
-  padding: 10px 20px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
+    padding: 10px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    font-size: 1em;
+    cursor: pointer;
+    transition: background-color 0.3s;
 }
 
 .upload-btn:hover {
-  background-color: #0056b3;
+    background-color: #0056b3;
 }
 
 .status-container {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+    margin-top: 20px;
+    text-align: center;
 }
 
 .spinner {
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #007bff;
-  border-radius: 50%;
-  width: 20px;
-  height: 20px;
-  animation: spin 1s linear infinite;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #007bff;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
 .hidden {
-  display: none;
-}
-
-input[readonly] {
-  background-color: #f0f0f0;
+    display: none;
 }
 
 .schedule-list {
-  margin-top: 20px;
+    margin-top: 30px;
 }
 
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 10px;
+.schedule-list table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
 }
 
-th, td {
-  padding: 10px;
-  border: 1px solid #ddd;
-  text-align: left;
+.schedule-list th,
+.schedule-list td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
 }
 
-th {
-  background-color: #f4f4f4;
-  font-weight: bold;
+.schedule-list th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #555;
 }
 
-td a {
-  color: #007bff;
-  text-decoration: none;
+.schedule-list td a {
+    color: #007bff;
+    text-decoration: none;
 }
 
-td a:hover {
-  text-decoration: underline;
+.schedule-list td a:hover {
+    text-decoration: underline;
+}
+
+/* Tombol toggle tema */
+.theme-toggle-btn {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 8px 16px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: background-color 0.3s;
+}
+
+.theme-toggle-btn:hover {
+    background-color: #0056b3;
+}
+
+/* Dark Mode */
+body.dark-mode {
+    background-color: #1e1e1e;
+    color: #d4d4d4;
+}
+
+body.dark-mode .container {
+    background: #2d2d2d;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+body.dark-mode h2 {
+    color: #d4d4d4;
+}
+
+body.dark-mode .upload-form label {
+    color: #a0a0a0;
+}
+
+body.dark-mode .upload-form select,
+body.dark-mode .upload-form input,
+body.dark-mode .upload-form textarea {
+    background: #3c3c3c;
+    color: #d4d4d4;
+    border-color: #555;
+}
+
+body.dark-mode .upload-btn {
+    background-color: #1a73e8;
+}
+
+body.dark-mode .upload-btn:hover {
+    background-color: #1557b0;
+}
+
+body.dark-mode .schedule-list table {
+    background: #2d2d2d;
+}
+
+body.dark-mode .schedule-list th {
+    background-color: #3c3c3c;
+    color: #a0a0a0;
+}
+
+body.dark-mode .schedule-list td {
+    border-color: #444;
+}
+
+body.dark-mode .schedule-list td a {
+    color: #1a73e8;
+}
+
+body.dark-mode .theme-toggle-btn {
+    background-color: #1a73e8;
+}
+
+body.dark-mode .theme-toggle-btn:hover {
+    background-color: #1557b0;
 }
