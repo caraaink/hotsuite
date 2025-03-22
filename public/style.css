@@ -1,105 +1,212 @@
-body {
-    font-family: Arial, sans-serif;
+/* Reset dan Font */
+* {
     margin: 0;
     padding: 0;
-    background-color: #f4f4f4;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: #f7f9fc;
+    color: #333;
+    line-height: 1.6;
 }
 
 .container {
-    max-width: 800px;
-    margin: 20px auto;
+    max-width: 1200px;
+    margin: 30px auto;
     padding: 20px;
-    background: white;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
 }
 
-body.dark-mode {
-    background-color: #222;
+/* Header */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.header h2 {
+    font-size: 24px;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+/* Theme Toggle */
+.theme-toggle-btn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.theme-toggle-btn:hover {
+    transform: rotate(90deg);
+}
+
+.theme-menu {
+    position: absolute;
+    top: 50px;
+    right: 20px;
+    background: #2c3e50;
     color: #fff;
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+}
+
+.theme-menu button {
+    background: none;
+    border: none;
+    color: #fff;
+    padding: 8px 12px;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+    font-size: 14px;
+}
+
+.theme-menu button:hover {
+    background: #34495e;
+}
+
+/* Dark Mode */
+body.dark-mode {
+    background-color: #1a1a1a;
+    color: #e0e0e0;
 }
 
 body.dark-mode .container {
-    background: #333;
-    color: #fff;
+    background: #2c2c2c;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
 body.dark-mode .upload-form input,
 body.dark-mode .upload-form select,
 body.dark-mode .upload-form textarea {
-    background: #444;
-    color: #fff;
-    border: 1px solid #555;
+    background: #3a3a3a;
+    color: #e0e0e0;
+    border: 1px solid #4a4a4a;
 }
 
 body.dark-mode .upload-btn,
 body.dark-mode .btn {
-    background: #555;
+    background: #4a4a4a;
     color: #fff;
 }
 
 body.dark-mode .schedule-list table {
-    background: #444;
-    color: #fff;
+    background: #3a3a3a;
+    color: #e0e0e0;
 }
 
 body.dark-mode .schedule-list th,
 body.dark-mode .schedule-list td {
-    border: 1px solid #555;
+    border: 1px solid #4a4a4a;
 }
 
+body.dark-mode .schedule-list th {
+    background: #444;
+}
+
+/* Upload Form */
 .upload-form {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+    display: grid;
+    gap: 15px;
+    margin-bottom: 30px;
 }
 
 .upload-form label {
-    font-weight: bold;
+    font-weight: 500;
+    color: #2c3e50;
 }
 
-.upload-form input,
 .upload-form select,
+.upload-form input,
 .upload-form textarea {
-    padding: 8px;
+    padding: 10px;
     font-size: 16px;
     border: 1px solid #ddd;
-    border-radius: 4px;
+    border-radius: 6px;
     width: 100%;
-    box-sizing: border-box;
+    background: #f9f9f9;
+    transition: border-color 0.3s ease;
+}
+
+.upload-form select:focus,
+.upload-form input:focus,
+.upload-form textarea:focus {
+    border-color: #3498db;
+    outline: none;
 }
 
 .upload-form textarea {
     resize: vertical;
-    height: 100px;
+    height: 120px;
 }
 
+/* Buttons */
 .upload-btn,
 .btn {
-    padding: 10px;
-    background-color: #007bff;
-    color: white;
+    padding: 10px 20px;
+    background-color: #3498db;
+    color: #fff;
     border: none;
-    border-radius: 4px;
+    border-radius: 6px;
     cursor: pointer;
     font-size: 16px;
+    font-weight: 500;
+    transition: background-color 0.3s ease;
 }
 
 .upload-btn:hover,
 .btn:hover {
-    background-color: #0056b3;
+    background-color: #2980b9;
 }
 
+.edit-btn,
+.delete-btn {
+    padding: 6px 12px;
+    margin-right: 5px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.edit-btn {
+    background-color: #2ecc71;
+    color: #fff;
+}
+
+.delete-btn {
+    background-color: #e74c3c;
+    color: #fff;
+}
+
+.edit-btn:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+/* Status Container */
 .status-container {
-    margin-top: 20px;
     text-align: center;
+    margin: 20px 0;
 }
 
 .spinner {
     border: 4px solid rgba(0, 0, 0, 0.1);
-    border-left: 4px solid #007bff;
+    border-left: 4px solid #3498db;
     border-radius: 50%;
-    width: 24px;
-    height: 24px;
+    width: 30px;
+    height: 30px;
     animation: spin 1s linear infinite;
     margin: 0 auto;
 }
@@ -109,29 +216,34 @@ body.dark-mode .schedule-list td {
     100% { transform: rotate(360deg); }
 }
 
+/* Schedule List */
 .schedule-list {
-    margin-top: 20px;
+    margin-top: 30px;
 }
 
 .schedule-list table {
     width: 100%;
     border-collapse: collapse;
     background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
 }
 
 .schedule-list th,
 .schedule-list td {
-    border: 1px solid #ddd;
-    padding: 8px;
+    padding: 12px 15px;
     text-align: left;
+    border-bottom: 1px solid #eee;
 }
 
 .schedule-list th {
     background-color: #f4f4f4;
+    font-weight: 600;
+    color: #2c3e50;
 }
 
 .schedule-list td a {
-    color: #007bff;
+    color: #3498db;
     text-decoration: none;
 }
 
@@ -139,159 +251,196 @@ body.dark-mode .schedule-list td {
     text-decoration: underline;
 }
 
-.edit-btn,
-.delete-btn {
-    padding: 5px 10px;
-    margin-right: 5px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-.edit-btn {
-    background-color: #28a745;
-    color: white;
-}
-
-.delete-btn {
-    background-color: #dc3545;
-    color: white;
-}
-
-.edit-btn:disabled {
-    background-color: #ccc;
-    cursor: not-allowed;
-}
-
-.header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-}
-
-.theme-toggle-btn {
-    background: none;
-    border: none;
-    font-size: 20px;
-    cursor: pointer;
-}
-
-.theme-menu {
-    position: absolute;
-    top: 40px;
-    right: 10px;
-    background: #333;
-    color: white;
-    padding: 10px;
-    border-radius: 5px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-    z-index: 1000;
-}
-
-.theme-menu button {
-    background: none;
-    border: none;
-    color: white;
-    padding: 5px 10px;
-    cursor: pointer;
-    width: 100%;
-    text-align: left;
-}
-
-.theme-menu button:hover {
-    background: #555;
-}
-
+/* Gallery */
 .gallery {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-top: 10px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 15px;
+    margin-top: 20px;
     max-height: 400px;
     overflow-y: auto;
+    padding: 10px;
+    background: #f9f9f9;
+    border-radius: 8px;
 }
 
 .gallery-item {
     text-align: center;
     position: relative;
+    background: #fff;
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .gallery-item img {
-    width: 100px;
-    height: 100px;
+    width: 100%;
+    height: 120px;
     object-fit: cover;
+    border-radius: 6px;
     cursor: pointer;
     border: 2px solid transparent;
-    transition: border 0.3s;
+    transition: border 0.3s ease;
 }
 
-.gallery-item img:hover {
-    border: 2px solid #007bff;
-}
-
+.gallery-item img:hover,
 .gallery-item img.selected {
-    border: 2px solid #007bff;
+    border: 2px solid #3498db;
 }
 
 .gallery-item p {
-    margin: 5px 0 0 0;
-    font-size: 12px;
+    margin: 8px 0 0;
+    font-size: 14px;
+    color: #555;
 }
 
 .gallery-item .caption-text {
-    font-size: 10px;
-    color: #555;
-    margin-top: 2px;
+    font-size: 12px;
+    color: #777;
+    margin-top: 5px;
     word-wrap: break-word;
 }
 
 .gallery-item .btn {
     margin: 5px 2px;
-    padding: 5px 10px;
-    font-size: 12px;
-    cursor: pointer;
+    padding: 6px 10px;
+    font-size: 14px;
 }
 
 .gallery-item .btn.edit {
-    background-color: #007bff;
-    color: white;
+    background-color: #3498db;
 }
 
 .gallery-item .btn.publish {
-    background-color: #28a745;
-    color: white;
+    background-color: #2ecc71;
 }
 
 .gallery-item .btn.schedule {
-    background-color: #ff9800;
-    color: white;
+    background-color: #f39c12;
 }
 
-.caption-editor, .schedule-editor {
+/* Editors */
+.caption-editor,
+.schedule-editor {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0,0,0,0.8);
+    background: rgba(0, 0, 0, 0.85);
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     z-index: 10;
+    border-radius: 8px;
 }
 
-.caption-editor textarea {
-    width: 80%;
-    height: 60%;
-    margin-bottom: 10px;
-}
-
+.caption-editor textarea,
 .schedule-editor input {
+    width: 80%;
     margin-bottom: 10px;
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    font-size: 14px;
 }
 
+.caption-editor button,
+.schedule-editor button {
+    padding: 6px 12px;
+    margin: 5px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.caption-editor button:first-child,
+.schedule-editor button:first-child {
+    background-color: #2ecc71;
+    color: #fff;
+}
+
+.caption-editor button:last-child,
+.schedule-editor button:last-child {
+    background-color: #e74c3c;
+    color: #fff;
+}
+
+/* Hidden Class */
 .hidden {
     display: none;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .container {
+        margin: 15px;
+        padding: 15px;
+    }
+
+    .header h2 {
+        font-size: 20px;
+    }
+
+    .upload-form {
+        gap: 10px;
+    }
+
+    .upload-form select,
+    .upload-form input,
+    .upload-form textarea {
+        font-size: 14px;
+        padding: 8px;
+    }
+
+    .gallery {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    }
+
+    .gallery-item img {
+        height: 100px;
+    }
+
+    .schedule-list th,
+    .schedule-list td {
+        padding: 8px 10px;
+        font-size: 14px;
+    }
+
+    .schedule-list table {
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 480px) {
+    .header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .theme-toggle-btn {
+        font-size: 20px;
+    }
+
+    .theme-menu {
+        top: 70px;
+        right: 10px;
+    }
+
+    .gallery {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    }
+
+    .gallery-item img {
+        height: 80px;
+    }
+
+    .schedule-list th,
+    .schedule-list td {
+        font-size: 12px;
+        padding: 6px 8px;
+    }
 }
