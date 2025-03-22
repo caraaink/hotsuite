@@ -48,8 +48,17 @@ async function runScheduledPosts() {
       return;
     }
 
-    // Hanya catat log jika ada jadwal
-    console.log('Schedules fetched:', schedules);
+    // Filter jadwal yang belum selesai
+    const pendingSchedules = schedules.filter(schedule => !schedule.completed);
+    
+    // Jika tidak ada jadwal yang belum selesai, catat log minimal dan keluar
+    if (pendingSchedules.length === 0) {
+      console.log('No pending schedules to process.');
+      return;
+    }
+
+    // Hanya catat log jika ada jadwal yang belum selesai
+    console.log('Pending schedules fetched:', pendingSchedules);
 
     const now = new Date();
     console.log('Current time (UTC):', now.toISOString());
@@ -57,6 +66,12 @@ async function runScheduledPosts() {
     const updatedSchedules = [];
 
     for (const schedule of schedules) {
+      // Hanya proses jadwal yang belum selesai
+      if (schedule.completed) {
+        updatedSchedules.push(schedule);
+        continue; // Lewati jadwal yang sudah selesai tanpa log
+      }
+
       // Asumsikan waktu yang disimpan adalah WIB (UTC+7), konversi ke UTC
       const scheduledTimeWIB = new Date(schedule.time + ':00'); // Tambahkan detik
       const scheduledTimeUTC = new Date(scheduledTimeWIB.getTime() - 7 * 60 * 60 * 1000); // Kurangi 7 jam untuk konversi ke UTC
