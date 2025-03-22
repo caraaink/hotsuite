@@ -21,12 +21,6 @@
       "maxDuration": 10
     }
   },
-  "crons": [
-    {
-      "path": "/api/schedule",
-      "schedule": "0 5 * * *"
-    }
-  ],
   "rewrites": [
     {
       "source": "/(.*)",
