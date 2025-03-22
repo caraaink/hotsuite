@@ -69,3 +69,7 @@ textarea {
 .hidden {
   display: none;
 }
+
+input[readonly] {
+  background-color: #f0f0f0;
+}
