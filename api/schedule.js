@@ -7,7 +7,7 @@ const SCHEDULE_FILE = path.join(__dirname, '../data/schedules.json');
 // Fungsi untuk memposting ke Instagram dengan jadwal
 async function postToInstagram(igAccountId, mediaUrl, caption, userToken, scheduledTime) {
   try {
-    const isVideo = mediaUrl.toLowerCase().endswith('.mp4');
+    const isVideo = mediaUrl.toLowerCase().endsWith('.mp4'); // Perbaikan: endsWith
     const mediaEndpoint = `https://graph.facebook.com/v19.0/${igAccountId}/media`;
     const params = {
       [isVideo ? 'video_url' : 'image_url']: mediaUrl,
