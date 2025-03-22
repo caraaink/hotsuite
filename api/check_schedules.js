@@ -3,16 +3,15 @@ import fetch from 'node-fetch';
 
 export default async function handler(req, res) {
   try {
-    const repoOwner = 'caraaink'; 
-    const repoName = 'hotsuite'; 
-    const filePath = 'data/schedules.json'; 
+    const repoOwner = 'caraaink';
+    const repoName = 'hotsuite';
+    const filePath = 'data/schedules.json';
     const githubToken = process.env.GITHUB_TOKEN;
 
     if (!githubToken) {
       return res.status(500).json({ error: 'GitHub token not configured' });
     }
 
-    // Ambil file schedules.json yang ada
     const getFileResponse = await fetch(
       `https://api.github.com/repos/${repoOwner}/${repoName}/contents/${filePath}`,
       {
@@ -41,7 +40,6 @@ export default async function handler(req, res) {
 
       const scheduleTime = new Date(schedule.time);
       if (now >= scheduleTime) {
-        // Publikasikan postingan
         const publishResponse = await fetch('https://hotsuite.vercel.app/api/publish', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -63,10 +61,8 @@ export default async function handler(req, res) {
     }
 
     if (updated) {
-      // Encode konten baru ke base64
       const newContent = Buffer.from(JSON.stringify({ schedules }, null, 2)).toString('base64');
 
-      // Update file di GitHub
       const updateResponse = await fetch(
         `https://api.github.com/repos/${repoOwner}/${repoName}/contents/${filePath}`,
         {
