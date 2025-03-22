@@ -2,44 +2,16 @@ import { VercelRequest, VercelResponse } from '@vercel/node';
 import { Redis } from '@upstash/redis';
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
   try {
-    const { accountId, username, mediaUrl, caption, time, userToken, accountNum, completed } = req.body;
-
-    if (!accountId || !mediaUrl || !time || !userToken || !accountNum) {
-      return res.status(400).json({ error: 'Missing required fields' });
-    }
-
     const redis = new Redis({
-      url: process.env.UPSTASH_REDIS_REST_URL,
-      token: process.env.UPSTASH_REDIS_REST_TOKEN,
+      url: process.env.KV_URL,
+      token: process.env.KV_REST_API_TOKEN,
     });
 
-    // Ambil jadwal yang ada dari Upstash
-    let schedules = await redis.get('schedules');
-    schedules = schedules || [];
-
-    // Tambahkan jadwal baru
-    schedules.push({
-      accountId,
-      username,
-      mediaUrl,
-      caption,
-      time,
-      userToken,
-      accountNum,
-      completed: completed || false,
-    });
-
-    // Simpan kembali ke Upstash
-    await redis.set('schedules', schedules);
-
-    res.status(200).json({ message: 'Schedule added successfully' });
+    const schedules = await redis.get('schedules');
+    res.status(200).json({ schedules: schedules || [] });
   } catch (error) {
-    console.error('Error scheduling post:', error);
-    res.status(500).json({ error: 'Failed to schedule post', details: error.message });
+    console.error('Error fetching schedules from Upstash:', error);
+    res.status(500).json({ error: 'Failed to fetch schedules', details: error.message });
   }
 }
