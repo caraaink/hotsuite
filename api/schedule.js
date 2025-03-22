@@ -3,6 +3,10 @@ const { kv } = require('@vercel/kv');
 
 const SCHEDULE_KEY = 'schedules';
 
+// Tambahkan logging untuk debugging
+console.log('KV_REST_API_URL:', process.env.KV_REST_API_URL);
+console.log('KV_REST_API_TOKEN:', process.env.KV_REST_API_TOKEN);
+
 // Fungsi untuk memposting ke Instagram dengan jadwal
 async function postToInstagram(igAccountId, mediaUrl, caption, userToken, scheduledTime) {
   try {
