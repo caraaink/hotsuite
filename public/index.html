@@ -23,7 +23,6 @@
             <label for="userToken">User Token:</label>
             <select id="userToken" name="userToken" required>
                 <option value="">-- Pilih Token --</option>
-                <!-- Token akan diisi via JS -->
             </select>
             <button type="submit" class="upload-btn">Jadwalkan</button>
         </form>
@@ -54,26 +53,42 @@
                     }
                 }
             })
-            .catch(err => status.innerText = `Error loading tokens: ${err.message}`);
+            .catch(err => {
+                status.innerText = `Error loading tokens: ${err.message}`;
+                console.error('Error fetching tokens:', err);
+            });
 
         userToken.addEventListener('change', async () => {
             const token = userToken.value;
-            if (!token) return;
+            if (!token) {
+                accountId.innerHTML = '<option value="">-- Pilih Akun --</option>';
+                return;
+            }
 
-            const accountNum = Array.from(userToken.options).findIndex(opt => opt.value === token) + 1;
-            const res = await fetch(`/api/get_accounts?account_key=Akun ${accountNum}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await res.json();
-            accountId.innerHTML = '<option value="">-- Pilih Akun --</option>';
-            data.accounts[`Akun ${accountNum}`].accounts.forEach(acc => {
-                if (acc.type === 'ig') {
-                    const option = document.createElement('option');
-                    option.value = acc.id;
-                    option.textContent = acc.name;
-                    accountId.appendChild(option);
+            try {
+                const accountNum = Array.from(userToken.options).findIndex(opt => opt.value === token) + 1;
+                const res = await fetch(`/api/get_accounts?account_key=Akun ${accountNum}`);
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
                 }
-            });
+                const data = await res.json();
+                accountId.innerHTML = '<option value="">-- Pilih Akun --</option>';
+                if (data.accounts && data.accounts[`Akun ${accountNum}`]) {
+                    data.accounts[`Akun ${accountNum}`].accounts.forEach(acc => {
+                        if (acc.type === 'ig') {
+                            const option = document.createElement('option');
+                            option.value = acc.id;
+                            option.textContent = acc.name;
+                            accountId.appendChild(option);
+                        }
+                    });
+                } else {
+                    status.innerText = 'No Instagram accounts found for this token.';
+                }
+            } catch (error) {
+                status.innerText = `Error fetching accounts: ${error.message}`;
+                console.error('Error fetching accounts:', error);
+            }
         });
 
         form.addEventListener('submit', async (e) => {
@@ -95,10 +110,14 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(formData),
                 });
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
                 const result = await response.json();
                 status.innerText = result.message || 'Gagal menjadwalkan!';
             } catch (error) {
                 status.innerText = `Error: ${error.message}`;
+                console.error('Error scheduling post:', error);
             } finally {
                 spinner.classList.add('hidden');
             }
