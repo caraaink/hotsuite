@@ -39,6 +39,11 @@
                 <option value="ig">-- Pilih Folder --</option>
             </select>
 
+            <label for="githubSubfolder">Pilih Subfolder:</label>
+            <select id="githubSubfolder" name="githubSubfolder">
+                <option value="">-- Pilih Subfolder --</option>
+            </select>
+
             <label for="githubFile">Pilih File:</label>
             <select id="githubFile" name="githubFile" required>
                 <option value="">-- Pilih File --</option>
@@ -87,13 +92,15 @@
         const accountId = document.getElementById('accountId');
         const userAccount = document.getElementById('userAccount');
         const githubFolder = document.getElementById('githubFolder');
+        const githubSubfolder = document.getElementById('githubSubfolder');
         const githubFile = document.getElementById('githubFile');
         const mediaUrl = document.getElementById('mediaUrl');
         const caption = document.getElementById('caption');
         const scheduleTableBody = document.getElementById('scheduleTableBody');
         const themeToggle = document.getElementById('themeToggle');
         let selectedToken = null; // Simpan token yang dipilih
-        let allMediaFiles = []; // Simpan semua file media yang ditemukan secara rekursif
+        let allSubfolders = []; // Simpan daftar subfolder
+        let allMediaFiles = []; // Simpan semua file media di subfolder yang dipilih
 
         // Load dark mode preference from localStorage
         if (localStorage.getItem('theme') === 'dark') {
@@ -198,8 +205,35 @@
             }
         }
 
-        // Fungsi rekursif untuk mengambil semua file media di dalam folder dan subfolder
-        async function fetchAllMediaFiles(path) {
+        // Load subfolders when a folder is selected
+        async function fetchSubfolders(path) {
+            try {
+                const res = await fetch(`/api/get_github_files?path=${path}`);
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                const data = await res.json();
+                console.log(`Subfolders fetched for path ${path}:`, data);
+
+                allSubfolders = [];
+                data.files.forEach(item => {
+                    if (item.type === 'dir') {
+                        allSubfolders.push({
+                            name: item.name,
+                            path: item.path,
+                        });
+                    }
+                });
+
+                return allSubfolders;
+            } catch (error) {
+                console.error(`Error fetching subfolders for path ${path}:`, error);
+                return [];
+            }
+        }
+
+        // Load files in the selected subfolder
+        async function fetchFilesInSubfolder(path) {
             try {
                 const res = await fetch(`/api/get_github_files?path=${path}`);
                 if (!res.ok) {
@@ -208,21 +242,21 @@
                 const data = await res.json();
                 console.log(`Files fetched for path ${path}:`, data);
 
-                for (const item of data.files) {
-                    if (item.type === 'dir') {
-                        // Jika item adalah folder, lakukan rekursi
-                        await fetchAllMediaFiles(item.path);
-                    } else if (item.type === 'file' && (item.name.endsWith('.jpg') || item.name.endsWith('.png') || item.name.endsWith('.mp4'))) {
-                        // Jika item adalah file media, tambahkan ke daftar
+                allMediaFiles = [];
+                data.files.forEach(item => {
+                    if (item.type === 'file' && (item.name.endsWith('.jpg') || item.name.endsWith('.png') || item.name.endsWith('.mp4'))) {
                         allMediaFiles.push({
                             name: item.name,
                             path: item.path,
                             download_url: item.download_url,
                         });
                     }
-                }
+                });
+
+                return allMediaFiles;
             } catch (error) {
                 console.error(`Error fetching files for path ${path}:`, error);
+                return [];
             }
         }
 
@@ -231,10 +265,49 @@
             return a.path.localeCompare(b.path, undefined, { numeric: true, sensitivity: 'base' });
         }
 
-        // Load GitHub files when folder is selected, recursively
+        // Load subfolders when folder is selected
         githubFolder.addEventListener('change', async () => {
             const folderPath = githubFolder.value;
             if (!folderPath) {
+                githubSubfolder.innerHTML = '<option value="">-- Pilih Subfolder --</option>';
+                githubFile.innerHTML = '<option value="">-- Pilih File --</option>';
+                mediaUrl.value = '';
+                caption.value = '';
+                return;
+            }
+
+            status.innerText = 'Loading subfolders...';
+            try {
+                const subfolders = await fetchSubfolders(folderPath);
+                console.log('All subfolders found:', subfolders);
+
+                githubSubfolder.innerHTML = '<option value="">-- Pilih Subfolder --</option>';
+                subfolders.forEach(subfolder => {
+                    const option = document.createElement('option');
+                    option.value = subfolder.path;
+                    option.textContent = subfolder.name;
+                    githubSubfolder.appendChild(option);
+                });
+
+                githubFile.innerHTML = '<option value="">-- Pilih File --</option>';
+                mediaUrl.value = '';
+                caption.value = '';
+
+                if (githubSubfolder.options.length === 1) {
+                    status.innerText = 'No subfolders found in this folder.';
+                } else {
+                    status.innerText = '';
+                }
+            } catch (error) {
+                status.innerText = `Error loading subfolders: ${error.message}`;
+                console.error('Error fetching subfolders:', error);
+            }
+        });
+
+        // Load files when subfolder is selected
+        githubSubfolder.addEventListener('change', async () => {
+            const subfolderPath = githubSubfolder.value;
+            if (!subfolderPath) {
                 githubFile.innerHTML = '<option value="">-- Pilih File --</option>';
                 mediaUrl.value = '';
                 caption.value = '';
@@ -242,31 +315,29 @@
             }
 
             status.innerText = 'Loading files...';
-            allMediaFiles = []; // Reset daftar file media
             try {
-                // Ambil semua file media secara rekursif
-                await fetchAllMediaFiles(folderPath);
-                console.log('All media files found:', allMediaFiles);
+                const files = await fetchFilesInSubfolder(subfolderPath);
+                console.log('All media files found:', files);
 
                 // Urutkan file secara natural
-                allMediaFiles.sort(naturalSort);
+                files.sort(naturalSort);
 
                 githubFile.innerHTML = '<option value="">-- Pilih File --</option>';
-                allMediaFiles.forEach(file => {
+                files.forEach(file => {
                     const option = document.createElement('option');
-                    option.value = JSON.stringify(file); // Simpan seluruh objek file
-                    option.textContent = file.path.replace(`${folderPath}/`, ''); // Tampilkan path relatif
-                    githubFolder.appendChild(option);
+                    option.value = JSON.stringify(file);
+                    option.textContent = file.name;
+                    githubFile.appendChild(option);
                 });
 
                 if (githubFile.options.length === 1) {
-                    status.innerText = 'No supported media files found in this folder or its subfolders.';
+                    status.innerText = 'No supported media files found in this subfolder.';
                 } else {
                     status.innerText = '';
                 }
             } catch (error) {
-                status.innerText = `Error loading GitHub files: ${error.message}`;
-                console.error('Error fetching GitHub files:', error);
+                status.innerText = `Error loading files: ${error.message}`;
+                console.error('Error fetching files:', error);
             }
         });
 
@@ -283,14 +354,10 @@
             status.innerText = 'Fetching caption...';
 
             try {
-                // Ambil path folder dari file (misalnya ig/IGV1-7/4/1.jpg -> ig/IGV1-7/4)
                 const folderPath = fileData.path.substring(0, fileData.path.lastIndexOf('/'));
-
-                // Nama file metadata adalah <nama_file>.meta.json (misalnya 1.jpg.meta.json)
                 const metaFileName = `${fileData.name}.meta.json`;
                 const metaPath = `${folderPath}/${metaFileName}`;
 
-                // Ambil file metadata
                 const metaRes = await fetch(`/api/get_file_content?path=${metaPath}`);
                 if (!metaRes.ok) {
                     throw new Error(`Failed to fetch ${metaFileName}: ${metaRes.status}`);
@@ -298,7 +365,6 @@
                 const metaData = await metaRes.json();
                 console.log(`${metaFileName} content:`, metaData);
 
-                // Asumsi isi meta.json adalah objek dengan properti caption
                 if (metaData && metaData.caption) {
                     caption.value = metaData.caption;
                     status.innerText = '';
@@ -436,6 +502,7 @@
                     form.reset();
                     accountId.innerHTML = '<option value="">-- Pilih Username --</option>';
                     githubFolder.value = 'ig';
+                    githubSubfolder.innerHTML = '<option value="">-- Pilih Subfolder --</option>';
                     githubFile.innerHTML = '<option value="">-- Pilih File --</option>';
                     mediaUrl.value = '';
                     caption.value = '';
