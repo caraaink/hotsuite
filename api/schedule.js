@@ -3,10 +3,10 @@ const { kv } = require('@vercel/kv');
 
 const SCHEDULE_KEY = 'schedules';
 
-// Fungsi untuk memposting ke Instagram dengan jadwal
-async function postToInstagram(igAccountId, mediaUrl, caption, userToken, scheduledTime) {
+// Fungsi untuk memposting ke Instagram
+async function postToInstagram(igAccountId, mediaUrl, caption, userToken) {
   try {
-    console.log('Posting to Instagram with params:', { igAccountId, mediaUrl, caption, scheduledTime });
+    console.log('Posting to Instagram with params:', { igAccountId, mediaUrl, caption });
     const isVideo = mediaUrl.toLowerCase().endsWith('.mp4');
     const mediaEndpoint = `https://graph.facebook.com/v19.0/${igAccountId}/media`;
     const params = {
@@ -14,13 +14,23 @@ async function postToInstagram(igAccountId, mediaUrl, caption, userToken, schedu
       caption,
       access_token: userToken,
       ...(isVideo && { media_type: 'REELS' }),
-      publish_type: 'SCHEDULE',
-      scheduled_publish_time: Math.floor(new Date(scheduledTime).getTime() / 1000),
     };
 
+    // Langkah 1: Buat media container
     const mediaResponse = await axios.post(mediaEndpoint, params);
-    console.log('Instagram API response:', mediaResponse.data);
-    return { success: true, creationId: mediaResponse.data.id };
+    console.log('Media container created:', mediaResponse.data);
+
+    // Langkah 2: Publikasikan media
+    const creationId = mediaResponse.data.id;
+    const publishEndpoint = `https://graph.facebook.com/v19.0/${igAccountId}/media_publish`;
+    const publishParams = {
+      creation_id: creationId,
+      access_token: userToken,
+    };
+
+    const publishResponse = await axios.post(publishEndpoint, publishParams);
+    console.log('Instagram API publish response:', publishResponse.data);
+    return { success: true, creationId: publishResponse.data.id };
   } catch (error) {
     console.error('Error posting to Instagram:', error.response?.data || error.message);
     return { success: false, error: error.message };
@@ -50,12 +60,11 @@ async function runScheduledPosts() {
           schedule.accountId,
           schedule.mediaUrl,
           schedule.caption,
-          schedule.userToken,
-          scheduledTimeUTC
+          schedule.userToken
         );
         if (result.success) {
           schedule.completed = true;
-          console.log(`Scheduled post successful for ${schedule.accountId}: ${result.creationId}`);
+          console.log(`Post successful for ${schedule.accountId}: ${result.creationId}`);
         } else {
           console.error(`Failed to post for ${schedule.accountId}: ${result.error}`);
         }
