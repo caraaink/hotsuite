@@ -1,66 +1,41 @@
-const axios = require('axios');
+import { VercelRequest, VercelResponse } from '@vercel/node';
+import fetch from 'node-fetch';
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   const { path } = req.query;
+
   if (!path) {
     return res.status(400).json({ error: 'Path is required' });
   }
 
   try {
-    const response = await axios.get(`https://api.github.com/repos/caraaink/hotsuite/contents/${path}`, {
-      headers: {
-        Authorization: `token ${process.env.GITHUB_TOKEN}`,
-        Accept: 'application/vnd.github.v3+json',
-      },
-    });
+    const githubToken = process.env.GITHUB_TOKEN;
+    const repoOwner = 'caraaink';
+    const repoName = 'hotsuite';
 
-    const fileData = response.data;
-    if (!fileData.content) {
-      return res.status(404).json({ error: 'File content not found' });
+    if (!githubToken) {
+      return res.status(500).json({ error: 'GitHub token not configured' });
     }
 
-    // Decode base64 content
+    const response = await fetch(
+      `https://api.github.com/repos/${repoOwner}/${repoName}/contents/${path}`,
+      {
+        headers: {
+          Authorization: `token ${githubToken}`,
+          Accept: 'application/vnd.github.v3+json',
+        },
+      }
+    );
+
+    if (!response.ok) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    const fileData = await response.json();
     const content = Buffer.from(fileData.content, 'base64').toString('utf-8');
     res.status(200).json(JSON.parse(content));
   } catch (error) {
-    console.error('Error fetching file content:', error.response?.data || error.message);
-    res.status(500).json({ error: 'Failed to fetch file content' });
+    console.error('Error fetching file content:', error);
+    res.status(500).json({ error: 'Failed to fetch file content', details: error.message });
   }
-};
-const { kv } = require('@vercel/kv');
-
-module.exports = async (req, res) => {
-  const { path } = req.query;
-  if (!path) {
-    return res.status(400).json({ error: 'Path is required' });
-  }
-
-  const cacheKey = `file_content:${path}`;
-  const cachedContent = await kv.get(cacheKey);
-  if (cachedContent) {
-    console.log(`Returning cached content for path: ${path}`);
-    return res.status(200).json(cachedContent);
-  }
-
-  try {
-    const response = await axios.get(`https://api.github.com/repos/caraaink/hotsuite/contents/${path}`, {
-      headers: {
-        Authorization: `token ${process.env.GITHUB_TOKEN}`,
-        Accept: 'application/vnd.github.v3+json',
-      },
-    });
-
-    const fileData = response.data;
-    if (!fileData.content) {
-      return res.status(404).json({ error: 'File content not found' });
-    }
-
-    const content = Buffer.from(fileData.content, 'base64').toString('utf-8');
-    const parsedContent = JSON.parse(content);
-    await kv.set(cacheKey, parsedContent, { ex: 3600 }); // Cache selama 1 jam
-    res.status(200).json(parsedContent);
-  } catch (error) {
-    console.error('Error fetching file content:', error.response?.data || error.message);
-    res.status(500).json({ error: 'Failed to fetch file content' });
-  }
-};
+}
