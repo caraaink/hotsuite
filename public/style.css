@@ -202,6 +202,21 @@ body.dark-mode .gallery-item .schedule-time {
     margin-top: 20px;
 }
 
+.skip-day-option {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.skip-day-option label {
+    font-size: 14px;
+    color: #2c3e50;
+}
+
+body.dark-mode .skip-day-option label {
+    color: #e0e0e0;
+}
+
 .schedule-all-btn {
     padding: 10px 20px;
     background-color: #f39c12;
