@@ -1,54 +1,28 @@
-const axios = require('axios');
+import { VercelRequest, VercelResponse } from '@vercel/node';
+import fetch from 'node-fetch';
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   const { account_key } = req.query;
 
   if (!account_key) {
-    return res.status(400).json({ error: 'Missing account_key parameter' });
-  }
-
-  const accountNum = account_key.split(' ')[1]; // Ambil nomor akun (misalnya "10" dari "Akun 10")
-  const token = process.env[`TOKEN_${accountNum}`];
-
-  if (!token) {
-    return res.status(404).json({ error: `No token found for ${account_key}` });
+    return res.status(400).json({ error: 'Account key is required' });
   }
 
   try {
-    // Ambil daftar akun Instagram yang terkait dengan token
-    const response = await axios.get('https://graph.facebook.com/v19.0/me/accounts', {
-      params: {
-        access_token: token,
-        fields: 'id,name,instagram_business_account',
+    const response = await fetch('https://graph.instagram.com/me/accounts', {
+      headers: {
+        Authorization: `Bearer ${process.env.INSTAGRAM_TOKEN}`,
       },
     });
 
-    const pages = response.data.data;
-    const igAccounts = [];
-
-    for (const page of pages) {
-      if (page.instagram_business_account) {
-        const igResponse = await axios.get(`https://graph.facebook.com/v19.0/${page.instagram_business_account.id}`, {
-          params: {
-            access_token: token,
-            fields: 'username',
-          },
-        });
-        igAccounts.push({
-          type: 'ig',
-          id: page.instagram_business_account.id,
-          username: igResponse.data.username,
-        });
-      }
+    if (!response.ok) {
+      throw new Error(`Failed to fetch Instagram accounts: ${response.statusText}`);
     }
 
-    const accounts = {
-      [account_key]: { accounts: igAccounts },
-    };
-
-    res.status(200).json({ accounts });
+    const data = await response.json();
+    res.status(200).json({ accounts: { [account_key]: data } });
   } catch (error) {
-    console.error('Error fetching accounts:', error.response?.data || error.message);
-    res.status(500).json({ error: 'Failed to fetch accounts' });
+    console.error('Error fetching Instagram accounts:', error);
+    res.status(500).json({ error: 'Failed to fetch accounts', details: error.message });
   }
-};
+}
