@@ -39,18 +39,19 @@ async function runScheduledPosts() {
     const updatedSchedules = [];
 
     for (const schedule of schedules) {
-      // Pastikan format waktu benar
-      const scheduledTime = new Date(schedule.time + ':00Z'); // Tambahkan detik dan zona waktu UTC
-      console.log(`Checking schedule: ${schedule.accountId}, Scheduled Time: ${scheduledTime.toISOString()}, Now: ${now.toISOString()}`);
-      
-      if (now >= scheduledTime && !schedule.completed) {
+      // Asumsikan waktu yang disimpan adalah WIB (UTC+7), konversi ke UTC
+      const scheduledTimeWIB = new Date(schedule.time + ':00'); // Tambahkan detik
+      const scheduledTimeUTC = new Date(scheduledTimeWIB.getTime() - 7 * 60 * 60 * 1000); // Kurangi 7 jam untuk konversi ke UTC
+      console.log(`Checking schedule: ${schedule.accountId}, Scheduled Time (WIB): ${scheduledTimeWIB.toISOString()}, Scheduled Time (UTC): ${scheduledTimeUTC.toISOString()}, Now: ${now.toISOString()}`);
+
+      if (now >= scheduledTimeUTC && !schedule.completed) {
         console.log(`Processing schedule for account ${schedule.accountId}`);
         const result = await postToInstagram(
           schedule.accountId,
           schedule.mediaUrl,
           schedule.caption,
           schedule.userToken,
-          scheduledTime
+          scheduledTimeUTC
         );
         if (result.success) {
           schedule.completed = true;
@@ -59,7 +60,7 @@ async function runScheduledPosts() {
           console.error(`Failed to post for ${schedule.accountId}: ${result.error}`);
         }
       } else {
-        console.log(`Schedule not processed: ${now >= scheduledTime ? 'Already completed' : 'Time not yet reached'}`);
+        console.log(`Schedule not processed: ${now >= scheduledTimeUTC ? 'Already completed' : 'Time not yet reached'}`);
       }
       updatedSchedules.push(schedule);
     }
