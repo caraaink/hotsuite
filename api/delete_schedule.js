@@ -13,16 +13,15 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Invalid index' });
     }
 
-    const repoOwner = 'caraaink'; 
-    const repoName = 'hotsuite'; 
-    const filePath = 'data/schedules.json'; 
+    const repoOwner = 'caraaink';
+    const repoName = 'hotsuite';
+    const filePath = 'data/schedules.json';
     const githubToken = process.env.GITHUB_TOKEN;
 
     if (!githubToken) {
       return res.status(500).json({ error: 'GitHub token not configured' });
     }
 
-    // Ambil file schedules.json yang ada
     const getFileResponse = await fetch(
       `https://api.github.com/repos/${repoOwner}/${repoName}/contents/${filePath}`,
       {
@@ -42,17 +41,14 @@ export default async function handler(req, res) {
     const schedulesData = JSON.parse(content);
     let schedules = schedulesData.schedules || [];
 
-    // Hapus jadwal berdasarkan indeks
     if (index >= schedules.length) {
       return res.status(400).json({ error: 'Index out of bounds' });
     }
 
     schedules.splice(index, 1);
 
-    // Encode konten baru ke base64
     const newContent = Buffer.from(JSON.stringify({ schedules }, null, 2)).toString('base64');
 
-    // Update file di GitHub
     const updateResponse = await fetch(
       `https://api.github.com/repos/${repoOwner}/${repoName}/contents/${filePath}`,
       {
