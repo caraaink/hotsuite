@@ -256,7 +256,7 @@
                     const option = document.createElement('option');
                     option.value = JSON.stringify(file); // Simpan seluruh objek file
                     option.textContent = file.path.replace(`${folderPath}/`, ''); // Tampilkan path relatif
-                    githubFile.appendChild(option);
+                    githubFolder.appendChild(option);
                 });
 
                 if (githubFile.options.length === 1) {
@@ -269,27 +269,6 @@
                 console.error('Error fetching GitHub files:', error);
             }
         });
-
-        // Fungsi untuk mencari meta.json di folder atau folder induk secara rekursif
-        async function fetchMetaJson(folderPath) {
-            let currentPath = folderPath;
-            while (currentPath.startsWith('ig')) {
-                try {
-                    const metaRes = await fetch(`/api/get_file_content?path=${currentPath}/meta.json`);
-                    if (metaRes.ok) {
-                        const metaData = await metaRes.json();
-                        console.log(`meta.json found at ${currentPath}:`, metaData);
-                        return metaData;
-                    }
-                } catch (error) {
-                    console.log(`meta.json not found at ${currentPath}`);
-                }
-                // Pindah ke folder induk
-                currentPath = currentPath.substring(0, currentPath.lastIndexOf('/'));
-                if (!currentPath) break;
-            }
-            return null;
-        }
 
         // Set media URL and fetch caption when file is selected
         githubFile.addEventListener('change', async () => {
@@ -304,30 +283,33 @@
             status.innerText = 'Fetching caption...';
 
             try {
-                // Ambil path folder dari file (misalnya ig/2023-10/1/image.jpg -> ig/2023-10/1)
+                // Ambil path folder dari file (misalnya ig/IGV1-7/4/1.jpg -> ig/IGV1-7/4)
                 const folderPath = fileData.path.substring(0, fileData.path.lastIndexOf('/'));
 
-                // Cari meta.json di folder atau folder induk
-                const metaData = await fetchMetaJson(folderPath);
-                if (metaData) {
-                    // Cari caption berdasarkan nama file
-                    const fileName = fileData.name;
-                    const metaEntry = metaData[fileName];
-                    if (metaEntry && metaEntry.caption) {
-                        caption.value = metaEntry.caption;
-                        status.innerText = '';
-                    } else {
-                        caption.value = '';
-                        status.innerText = `No caption found for ${fileName} in meta.json.`;
-                    }
+                // Nama file metadata adalah <nama_file>.meta.json (misalnya 1.jpg.meta.json)
+                const metaFileName = `${fileData.name}.meta.json`;
+                const metaPath = `${folderPath}/${metaFileName}`;
+
+                // Ambil file metadata
+                const metaRes = await fetch(`/api/get_file_content?path=${metaPath}`);
+                if (!metaRes.ok) {
+                    throw new Error(`Failed to fetch ${metaFileName}: ${metaRes.status}`);
+                }
+                const metaData = await metaRes.json();
+                console.log(`${metaFileName} content:`, metaData);
+
+                // Asumsi isi meta.json adalah objek dengan properti caption
+                if (metaData && metaData.caption) {
+                    caption.value = metaData.caption;
+                    status.innerText = '';
                 } else {
                     caption.value = '';
-                    status.innerText = 'meta.json not found in this folder or its parent folders.';
+                    status.innerText = `No caption found in ${metaFileName}.`;
                 }
             } catch (error) {
                 caption.value = '';
                 status.innerText = `Error fetching caption: ${error.message}`;
-                console.error('Error fetching meta.json:', error);
+                console.error('Error fetching metadata:', error);
             }
         });
 
