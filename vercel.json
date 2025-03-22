@@ -11,6 +11,10 @@
     "api/get_accounts.js": {
       "memory": 128,
       "maxDuration": 10
+    },
+    "api/get_github_files.js": {
+      "memory": 128,
+      "maxDuration": 10
     }
   },
   "crons": [
