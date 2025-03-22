@@ -1,5 +1,5 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import fetch from 'node-fetch';
+import axios from 'axios';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -13,40 +13,63 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    const instagramToken = process.env[`TOKEN_${accountNum}`];
-    if (!instagramToken || instagramToken !== userToken) {
+    const facebookToken = process.env[`TOKEN_${accountNum}`];
+    if (!facebookToken || facebookToken !== userToken) {
       return res.status(401).json({ error: 'Invalid or mismatched token for this account' });
     }
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    // Ambil Instagram Business Account ID dari Page ID (accountId)
+    const igAccountResponse = await axios.get(
+      `https://graph.facebook.com/v20.0/${accountId}?fields=instagram_business_account&access_token=${facebookToken}`,
+      { timeout: 5000 }
+    );
 
-    const response = await fetch('https://graph.facebook.com/v12.0/me/media', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${userToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        image_url: mediaUrl,
-        caption: caption || '',
-      }),
-      signal: controller.signal,
-    });
+    const igAccountData = igAccountResponse.data;
+    const igBusinessAccountId = igAccountData.instagram_business_account?.id;
 
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to publish to Instagram: ${response.statusText} - ${errorText}`);
+    if (!igBusinessAccountId) {
+      return res.status(400).json({ error: 'No Instagram Business Account linked to this Page' });
     }
 
-    const data = await response.json();
-    res.status(200).json({ message: 'Published successfully', data });
+    // Publikasikan postingan ke Instagram Business Account
+    const response = await axios.post(
+      `https://graph.facebook.com/v20.0/${igBusinessAccountId}/media`,
+      {
+        image_url: mediaUrl,
+        caption: caption || '',
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${facebookToken}`,
+          'Content-Type': 'application/json',
+        },
+        timeout: 5000,
+      }
+    );
+
+    const data = response.data;
+
+    // Publikasikan media yang baru dibuat
+    const publishResponse = await axios.post(
+      `https://graph.facebook.com/v20.0/${igBusinessAccountId}/media_publish`,
+      {
+        creation_id: data.id,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${facebookToken}`,
+          'Content-Type': 'application/json',
+        },
+        timeout: 5000,
+      }
+    );
+
+    const publishData = publishResponse.data;
+    res.status(200).json({ message: 'Published successfully', data: publishData });
   } catch (error) {
     console.error('Error publishing to Instagram:', error);
-    if (error.name === 'AbortError') {
-      return res.status(504).json({ error: 'Request to Instagram API timed out' });
+    if (error.code === 'ECONNABORTED') {
+      return res.status(504).json({ error: 'Request to Facebook API timed out' });
     }
     res.status(500).json({ error: 'Failed to publish', details: error.message });
   }
