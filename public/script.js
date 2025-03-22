@@ -14,12 +14,15 @@ const themeMenu = document.getElementById('themeMenu');
 const toggleDarkMode = document.getElementById('toggleDarkMode');
 const selectAll = document.getElementById('selectAll');
 const deleteSelected = document.getElementById('deleteSelected');
+const startDateTime = document.getElementById('startDateTime');
+const scheduleAll = document.getElementById('scheduleAll');
 let selectedToken = null;
 let selectedUsername = null;
 let selectedAccountNum = null;
 let allSubfolders = [];
 let allMediaFiles = [];
 let captions = {};
+let scheduledTimes = {};
 
 // Load dark mode preference from localStorage
 if (localStorage.getItem('theme') === 'dark') {
@@ -243,6 +246,7 @@ githubFolder.addEventListener('change', async () => {
         gallery.innerHTML = '';
         mediaUrl.value = '';
         captions = {};
+        scheduledTimes = {};
         return;
     }
 
@@ -281,6 +285,7 @@ githubFolder.addEventListener('change', async () => {
             gallery.innerHTML = '';
             mediaUrl.value = '';
             captions = {};
+            scheduledTimes = {};
 
             if (githubSubfolder.options.length === 1) {
                 status.innerText = 'No subfolders found in this folder.';
@@ -301,6 +306,7 @@ githubSubfolder.addEventListener('change', async () => {
         gallery.innerHTML = '';
         mediaUrl.value = '';
         captions = {};
+        scheduledTimes = {};
         return;
     }
 
@@ -338,7 +344,7 @@ function displayGallery(files) {
         return;
     }
 
-    imageFiles.forEach(file => {
+    imageFiles.forEach((file, index) => {
         const container = document.createElement('div');
         container.className = 'gallery-item';
 
@@ -360,6 +366,10 @@ function displayGallery(files) {
         const captionText = document.createElement('p');
         captionText.className = 'caption-text';
         captionText.textContent = captions[file.path] || 'Tidak ada caption';
+
+        const scheduleTime = document.createElement('p');
+        scheduleTime.className = 'schedule-time';
+        scheduleTime.textContent = scheduledTimes[file.path] ? new Date(scheduledTimes[file.path]).toLocaleString() : 'Belum dijadwalkan';
 
         const editBtn = document.createElement('button');
         editBtn.className = 'btn edit';
@@ -394,6 +404,7 @@ function displayGallery(files) {
             editor.className = 'schedule-editor';
             const datetimeInput = document.createElement('input');
             datetimeInput.type = 'datetime-local';
+            datetimeInput.value = scheduledTimes[file.path] || '';
             const saveBtn = document.createElement('button');
             saveBtn.textContent = 'Jadwalkan';
             saveBtn.addEventListener('click', async () => {
@@ -405,6 +416,9 @@ function displayGallery(files) {
                     status.innerText = 'Pilih akun dan username terlebih dahulu.';
                     return;
                 }
+
+                scheduledTimes[file.path] = datetimeInput.value;
+                scheduleTime.textContent = new Date(scheduledTimes[file.path]).toLocaleString();
 
                 const formData = {
                     accountId: accountId.value,
@@ -482,10 +496,83 @@ function displayGallery(files) {
         container.appendChild(img);
         container.appendChild(name);
         container.appendChild(captionText);
+        container.appendChild(scheduleTime);
         container.appendChild(editBtn);
         container.appendChild(scheduleBtn);
         container.appendChild(publishBtn);
         gallery.appendChild(container);
+
+        // Set default schedule time with 1-day interval
+        if (startDateTime.value && !scheduledTimes[file.path]) {
+            const start = new Date(startDateTime.value);
+            start.setDate(start.getDate() + index);
+            scheduledTimes[file.path] = start.toISOString().slice(0, 16);
+            scheduleTime.textContent = new Date(scheduledTimes[file.path]).toLocaleString();
+        }
+    });
+
+    // Update schedule times when startDateTime changes
+    startDateTime.addEventListener('change', () => {
+        const start = new Date(startDateTime.value);
+        imageFiles.forEach((file, index) => {
+            const newDate = new Date(start);
+            newDate.setDate(start.getDate() + index);
+            scheduledTimes[file.path] = newDate.toISOString().slice(0, 16);
+            const scheduleTimeElement = gallery.children[index].querySelector('.schedule-time');
+            scheduleTimeElement.textContent = new Date(scheduledTimes[file.path]).toLocaleString();
+        });
+    });
+
+    // Schedule All Button
+    scheduleAll.addEventListener('click', async () => {
+        if (!startDateTime.value) {
+            status.innerText = 'Pilih tanggal dan jam awal terlebih dahulu.';
+            return;
+        }
+        if (!selectedToken || !accountId.value) {
+            status.innerText = 'Pilih akun dan username terlebih dahulu.';
+            return;
+        }
+
+        status.innerText = 'Menjadwalkan semua foto...';
+        spinner.classList.remove('hidden');
+
+        try {
+            for (const file of imageFiles) {
+                if (!scheduledTimes[file.path]) {
+                    status.innerText = 'Semua foto harus memiliki waktu jadwal.';
+                    spinner.classList.add('hidden');
+                    return;
+                }
+
+                const formData = {
+                    accountId: accountId.value,
+                    username: selectedUsername,
+                    mediaUrl: file.download_url,
+                    caption: captions[file.path] || '',
+                    time: scheduledTimes[file.path],
+                    userToken: selectedToken,
+                    accountNum: userAccount.value,
+                    completed: false,
+                };
+
+                const response = await fetch('/api/schedule', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData),
+                });
+                if (!response.ok) {
+                    throw new Error(`HTTP error scheduling post! status: ${response.status}`);
+                }
+            }
+            status.innerText = `${imageFiles.length} foto berhasil dijadwalkan!`;
+            await loadSchedules();
+        } catch (error) {
+            status.innerText = `Error scheduling: ${error.message}`;
+            console.error('Error scheduling posts:', error);
+        } finally {
+            spinner.classList.add('hidden');
+        }
     });
 }
 
