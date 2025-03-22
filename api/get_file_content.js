@@ -1,5 +1,5 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import fetch from 'node-fetch';
+import axios from 'axios';
 
 export default async function handler(req, res) {
   const { path } = req.query;
@@ -17,32 +17,23 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'GitHub token not configured' });
     }
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-    const response = await fetch(
+    const response = await axios.get(
       `https://api.github.com/repos/${repoOwner}/${repoName}/contents/${path}`,
       {
         headers: {
           Authorization: `token ${githubToken}`,
           Accept: 'application/vnd.github.v3+json',
         },
-        signal: controller.signal,
+        timeout: 5000,
       }
     );
 
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      return res.status(404).json({ error: 'File not found' });
-    }
-
-    const fileData = await response.json();
+    const fileData = response.data;
     const content = Buffer.from(fileData.content, 'base64').toString('utf-8');
     res.status(200).json(JSON.parse(content));
   } catch (error) {
     console.error('Error fetching file content:', error);
-    if (error.name === 'AbortError') {
+    if (error.code === 'ECONNABORTED') {
       return res.status(504).json({ error: 'Request to GitHub timed out' });
     }
     res.status(500).json({ error: 'Failed to fetch file content', details: error.message });
