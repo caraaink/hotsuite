@@ -8,32 +8,43 @@
 </head>
 <body>
     <div class="container">
+        <!-- Tombol untuk toggle dark mode -->
+        <button id="themeToggle" class="theme-toggle-btn">🌙 Dark Mode</button>
+
         <h2>Jadwalkan Posting Instagram</h2>
         <form id="scheduleForm" class="upload-form">
-            <label for="accountId">Pilih Akun IG:</label>
-            <select id="accountId" name="accountId" required>
+            <label for="userToken">Pilih Akun:</label>
+            <select id="userToken" name="userToken" required>
                 <option value="">-- Pilih Akun --</option>
             </select>
-            <label for="userToken">User Token:</label>
-            <select id="userToken" name="userToken" required>
-                <option value="">-- Pilih Token --</option>
+
+            <label for="accountId">Pilih Username IG:</label>
+            <select id="accountId" name="accountId" required>
+                <option value="">-- Pilih Username --</option>
             </select>
+
             <label for="githubFolder">Pilih Folder di GitHub:</label>
             <select id="githubFolder" name="githubFolder">
                 <option value="ig">-- Pilih Folder --</option>
             </select>
+
             <label for="githubFile">Pilih File:</label>
             <select id="githubFile" name="githubFile" required>
                 <option value="">-- Pilih File --</option>
             </select>
+
             <label for="mediaUrl">URL Media (Otomatis dari GitHub):</label>
             <input type="text" id="mediaUrl" name="mediaUrl" placeholder="URL akan diisi otomatis" readonly required>
+
             <label for="caption">Caption:</label>
             <textarea id="caption" name="caption" placeholder="Masukkan caption" required></textarea>
+
             <label for="time">Waktu Posting:</label>
             <input type="datetime-local" id="time" name="time" required>
+
             <button type="submit" class="upload-btn">Jadwalkan</button>
         </form>
+
         <div class="status-container">
             <div id="spinner" class="spinner hidden"></div>
             <p id="status"></p>
@@ -67,6 +78,21 @@
         const githubFile = document.getElementById('githubFile');
         const mediaUrl = document.getElementById('mediaUrl');
         const scheduleTableBody = document.getElementById('scheduleTableBody');
+        const themeToggle = document.getElementById('themeToggle');
+
+        // Load dark mode preference from localStorage
+        if (localStorage.getItem('theme') === 'dark') {
+            document.body.classList.add('dark-mode');
+            themeToggle.textContent = '☀️ Light Mode';
+        }
+
+        // Toggle dark mode
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            const isDarkMode = document.body.classList.contains('dark-mode');
+            themeToggle.textContent = isDarkMode ? '☀️ Light Mode' : '🌙 Dark Mode';
+            localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+        });
 
         // Load tokens dari environment variables via API
         fetch('/api/refresh-token')
@@ -100,6 +126,7 @@
                 console.error('Error fetching tokens:', err);
             });
 
+        // Load Instagram usernames when an account is selected
         userToken.addEventListener('change', async () => {
             const token = userToken.value;
             const selectedOption = userToken.options[userToken.selectedIndex];
@@ -107,7 +134,7 @@
             console.log('Selected token:', token, 'Account number:', accountNum);
 
             if (!token || !accountNum) {
-                accountId.innerHTML = '<option value="">-- Pilih Akun --</option>';
+                accountId.innerHTML = '<option value="">-- Pilih Username --</option>';
                 return;
             }
 
@@ -118,13 +145,13 @@
                 }
                 const data = await res.json();
                 console.log('Accounts fetched:', data);
-                accountId.innerHTML = '<option value="">-- Pilih Akun --</option>';
+                accountId.innerHTML = '<option value="">-- Pilih Username --</option>';
                 if (data.accounts && data.accounts[`Akun ${accountNum}`]) {
                     data.accounts[`Akun ${accountNum}`].accounts.forEach(acc => {
                         if (acc.type === 'ig') {
                             const option = document.createElement('option');
                             option.value = acc.id;
-                            option.textContent = acc.name;
+                            option.textContent = acc.name || acc.username; // Tampilkan username IG
                             accountId.appendChild(option);
                         }
                     });
