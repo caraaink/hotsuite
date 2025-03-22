@@ -5,6 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Instagram Scheduler</title>
     <link rel="stylesheet" href="/style.css">
+    <style>
+        .gallery {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .gallery img {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: border 0.3s;
+        }
+        .gallery img:hover {
+            border: 2px solid #007bff;
+        }
+        .gallery img.selected {
+            border: 2px solid #007bff;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -48,6 +72,9 @@
             <select id="githubFile" name="githubFile" required>
                 <option value="">-- Pilih File --</option>
             </select>
+
+            <!-- Tambahkan galeri untuk pratinjau gambar -->
+            <div id="gallery" class="gallery"></div>
 
             <label for="mediaUrl">URL Media (Otomatis dari GitHub):</label>
             <input type="text" id="mediaUrl" name="mediaUrl" placeholder="URL akan diisi otomatis" readonly required>
@@ -94,15 +121,16 @@
         const githubFolder = document.getElementById('githubFolder');
         const githubSubfolder = document.getElementById('githubSubfolder');
         const githubFile = document.getElementById('githubFile');
+        const gallery = document.getElementById('gallery');
         const mediaUrl = document.getElementById('mediaUrl');
         const caption = document.getElementById('caption');
-        const scheduleTableBody = document.getElementById('scheduleTableBody');
         const timeInput = document.getElementById('time');
+        const scheduleTableBody = document.getElementById('scheduleTableBody');
         const themeToggle = document.getElementById('themeToggle');
-        let selectedToken = null; // Simpan token yang dipilih
-        let selectedUsername = null; // Simpan username yang dipilih
-        let allSubfolders = []; // Simpan daftar subfolder
-        let allMediaFiles = []; // Simpan semua file media di subfolder yang dipilih
+        let selectedToken = null;
+        let selectedUsername = null;
+        let allSubfolders = [];
+        let allMediaFiles = [];
 
         // Load dark mode preference from localStorage
         if (localStorage.getItem('theme') === 'dark') {
@@ -159,7 +187,7 @@
                                 const option = document.createElement('option');
                                 option.value = acc.id;
                                 option.textContent = acc.username;
-                                option.dataset.username = acc.username; // Simpan username di dataset
+                                option.dataset.username = acc.username;
                                 accountId.appendChild(option);
                             }
                         });
@@ -302,6 +330,7 @@
             if (!folderPath) {
                 githubSubfolder.innerHTML = '<option value="">-- Pilih Subfolder --</option>';
                 githubFile.innerHTML = '<option value="">-- Pilih File --</option>';
+                gallery.innerHTML = '';
                 mediaUrl.value = '';
                 caption.value = '';
                 return;
@@ -322,6 +351,9 @@
                         githubFile.appendChild(option);
                     });
 
+                    // Tampilkan galeri untuk gambar
+                    displayGallery(files);
+
                     if (githubFile.options.length === 1) {
                         status.innerText = 'No supported media files found in this folder.';
                     } else {
@@ -337,6 +369,7 @@
                     });
 
                     githubFile.innerHTML = '<option value="">-- Pilih File --</option>';
+                    gallery.innerHTML = '';
                     mediaUrl.value = '';
                     caption.value = '';
 
@@ -357,6 +390,7 @@
             const subfolderPath = githubSubfolder.value;
             if (!subfolderPath) {
                 githubFile.innerHTML = '<option value="">-- Pilih File --</option>';
+                gallery.innerHTML = '';
                 mediaUrl.value = '';
                 caption.value = '';
                 return;
@@ -374,6 +408,9 @@
                     githubFile.appendChild(option);
                 });
 
+                // Tampilkan galeri untuk gambar
+                displayGallery(files);
+
                 if (githubFile.options.length === 1) {
                     status.innerText = 'No supported media files found in this subfolder.';
                 } else {
@@ -385,14 +422,55 @@
             }
         });
 
+        // Fungsi untuk menampilkan galeri gambar
+        function displayGallery(files) {
+            gallery.innerHTML = '';
+            const imageFiles = files.filter(file => file.name.endsWith('.jpg') || file.name.endsWith('.png'));
+
+            if (imageFiles.length === 0) {
+                gallery.innerHTML = '<p>Tidak ada gambar untuk ditampilkan.</p>';
+                return;
+            }
+
+            imageFiles.forEach(file => {
+                const img = document.createElement('img');
+                img.src = file.download_url;
+                img.alt = file.name;
+                img.dataset.fileData = JSON.stringify(file);
+                img.addEventListener('click', () => {
+                    // Hapus class selected dari semua gambar
+                    gallery.querySelectorAll('img').forEach(i => i.classList.remove('selected'));
+                    // Tambahkan class selected ke gambar yang diklik
+                    img.classList.add('selected');
+                    // Pilih file di dropdown
+                    githubFile.value = JSON.stringify(file);
+                    // Panggil event change untuk memicu pengisian URL dan caption
+                    const changeEvent = new Event('change');
+                    githubFile.dispatchEvent(changeEvent);
+                });
+                gallery.appendChild(img);
+            });
+        }
+
         // Set media URL and fetch caption when file is selected
         githubFile.addEventListener('change', async () => {
             const fileData = githubFile.value ? JSON.parse(githubFile.value) : null;
             if (!fileData) {
                 mediaUrl.value = '';
                 caption.value = '';
+                gallery.querySelectorAll('img').forEach(img => img.classList.remove('selected'));
                 return;
             }
+
+            // Tandai gambar yang dipilih di galeri
+            gallery.querySelectorAll('img').forEach(img => {
+                const imgData = JSON.parse(img.dataset.fileData);
+                if (imgData.path === fileData.path) {
+                    img.classList.add('selected');
+                } else {
+                    img.classList.remove('selected');
+                }
+            });
 
             mediaUrl.value = fileData.download_url;
             status.innerText = 'Fetching caption...';
@@ -462,16 +540,13 @@
                     return;
                 }
 
-                // Isi form dengan data jadwal
                 userAccount.value = schedule.accountNum || '';
-                // Setelah memilih userAccount, kita perlu memuat ulang daftar username
                 await new Promise(resolve => {
                     const changeEvent = new Event('change');
                     userAccount.dispatchEvent(changeEvent);
-                    setTimeout(resolve, 500); // Tunggu hingga daftar username dimuat
+                    setTimeout(resolve, 500);
                 });
 
-                // Set accountId dan pastikan username sesuai
                 accountId.value = schedule.accountId;
                 selectedUsername = schedule.username;
                 mediaUrl.value = schedule.mediaUrl;
@@ -479,7 +554,6 @@
                 timeInput.value = schedule.time;
                 selectedToken = schedule.userToken;
 
-                // Set form ke mode edit
                 form.dataset.editIndex = index;
                 form.querySelector('.upload-btn').textContent = 'Simpan Perubahan';
                 status.innerText = 'Mengedit jadwal...';
@@ -554,7 +628,7 @@
 
             const formData = {
                 accountId: accountId.value,
-                username: selectedUsername, // Simpan username
+                username: selectedUsername,
                 mediaUrl: mediaUrl.value,
                 caption: caption.value,
                 time: timeInput.value,
@@ -591,12 +665,12 @@
                     status.innerText = result.message || 'Jadwal berhasil ditambahkan!';
                 }
 
-                // Reset form
                 form.reset();
                 accountId.innerHTML = '<option value="">-- Pilih Username --</option>';
                 githubFolder.value = 'ig';
                 githubSubfolder.innerHTML = '<option value="">-- Pilih Subfolder --</option>';
                 githubFile.innerHTML = '<option value="">-- Pilih File --</option>';
+                gallery.innerHTML = '';
                 mediaUrl.value = '';
                 caption.value = '';
                 selectedUsername = null;
