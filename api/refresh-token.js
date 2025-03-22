@@ -15,7 +15,7 @@ export default async function handler(req, res) {
     }
 
     const response = await axios.get(
-      `https://graph.facebook.com/v20.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${process.env.FACEBOOK_APP_ID}&client_secret=${process.env.FACEBOOK_APP_SECRET}&fb_exchange_token=${facebookToken}`,
+      `https://graph.facebook.com/v20.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${process.env.CLIENT_ID}&client_secret=${process.env.CLIENT_SECRET}&fb_exchange_token=${facebookToken}`,
       { timeout: 5000 }
     );
 
