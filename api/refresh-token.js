@@ -1,23 +1,22 @@
 const axios = require('axios');
 
 module.exports = async (req, res) => {
-  const updatedTokens = {};
+  const { accountNum } = req.query;
 
-  // Ambil semua token dari environment variables
-  for (let i = 1; i <= 11; i++) {
-    const token = process.env[`TOKEN_${i}`];
-    if (token) {
-      updatedTokens[`TOKEN_${i}`] = token;
-    }
+  if (!accountNum) {
+    return res.status(400).json({ error: 'Missing accountNum parameter' });
   }
 
-  console.log('Tokens to return:', updatedTokens);
-
   try {
-    // Kembalikan token yang sudah diperbarui
-    res.status(200).json({ updatedTokens });
+    const token = process.env[`TOKEN_${accountNum}`];
+    if (!token) {
+      return res.status(404).json({ error: `No token found for Akun ${accountNum}` });
+    }
+
+    console.log(`Token for Akun ${accountNum}:`, token);
+    res.status(200).json({ token });
   } catch (error) {
-    console.error('Error refreshing tokens:', error);
-    res.status(500).json({ error: 'Failed to refresh tokens' });
+    console.error('Error fetching token:', error);
+    res.status(500).json({ error: 'Failed to fetch token' });
   }
 };
