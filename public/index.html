@@ -16,7 +16,6 @@
             <label for="userAccount">Pilih Akun:</label>
             <select id="userAccount" name="userAccount" required>
                 <option value="">-- Pilih Akun --</option>
-                <!-- Daftar akun statis -->
                 <option value="1">Akun 1</option>
                 <option value="2">Akun 2</option>
                 <option value="3">Akun 3</option>
@@ -93,6 +92,7 @@
         const scheduleTableBody = document.getElementById('scheduleTableBody');
         const themeToggle = document.getElementById('themeToggle');
         let selectedToken = null; // Simpan token yang dipilih
+        let previousSchedules = []; // Simpan daftar jadwal sebelumnya untuk deteksi perubahan
 
         // Load dark mode preference from localStorage
         if (localStorage.getItem('theme') === 'dark') {
@@ -107,6 +107,24 @@
             themeToggle.textContent = isDarkMode ? '☀️ Light Mode' : '🌙 Dark Mode';
             localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
         });
+
+        // Minta izin untuk notifikasi
+        function requestNotificationPermission() {
+            if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+                Notification.requestPermission().then(permission => {
+                    if (permission === 'granted') {
+                        console.log('Notification permission granted.');
+                    }
+                });
+            }
+        }
+
+        // Tampilkan notifikasi
+        function showNotification(title, body) {
+            if (Notification.permission === 'granted') {
+                new Notification(title, { body });
+            }
+        }
 
         // Load Instagram usernames when an account is selected
         userAccount.addEventListener('change', async () => {
@@ -145,7 +163,7 @@
                         if (acc.type === 'ig') {
                             const option = document.createElement('option');
                             option.value = acc.id;
-                            option.textContent = acc.name || acc.username; // Tampilkan username IG
+                            option.textContent = acc.username; // Hanya tampilkan username
                             accountId.appendChild(option);
                         }
                     });
@@ -243,7 +261,24 @@
             }
         }
 
-        // Load schedules on page load
+        // Fungsi untuk mengedit jadwal
+        async function editSchedule(index) {
+            const schedules = (await (await fetch('/api/get_schedules')).json()).schedules;
+            const schedule = schedules[index];
+
+            // Isi form dengan data jadwal yang akan diedit
+            accountId.value = schedule.accountId;
+            mediaUrl.value = schedule.mediaUrl;
+            document.getElementById('caption').value = schedule.caption;
+            document.getElementById('time').value = schedule.time;
+            selectedToken = schedule.userToken;
+
+            // Ubah form untuk mode edit
+            form.dataset.editIndex = index;
+            form.querySelector('.upload-btn').textContent = 'Simpan Perubahan';
+        }
+
+        // Load schedules on page load and poll for changes
         async function loadSchedules() {
             try {
                 const res = await fetch('/api/get_schedules');
@@ -252,9 +287,22 @@
                 }
                 const data = await res.json();
                 console.log('Schedules fetched:', data);
+                const schedules = data.schedules || [];
+
+                // Cek apakah ada jadwal yang baru saja selesai
+                if (previousSchedules.length > 0) {
+                    schedules.forEach((schedule, index) => {
+                        const prevSchedule = previousSchedules.find(s => s.accountId === schedule.accountId && s.time === schedule.time);
+                        if (prevSchedule && !prevSchedule.completed && schedule.completed) {
+                            showNotification('Posting Berhasil', `Jadwal untuk ${schedule.accountId} pada ${new Date(schedule.time).toLocaleString()} telah berhasil diposting!`);
+                        }
+                    });
+                }
+                previousSchedules = [...schedules];
+
                 scheduleTableBody.innerHTML = '';
-                if (data.schedules && data.schedules.length > 0) {
-                    data.schedules.forEach((schedule, index) => {
+                if (schedules.length > 0) {
+                    schedules.forEach((schedule, index) => {
                         const row = document.createElement('tr');
                         row.innerHTML = `
                             <td>${schedule.accountId}</td>
@@ -262,12 +310,22 @@
                             <td>${schedule.caption}</td>
                             <td>${new Date(schedule.time).toLocaleString()}</td>
                             <td>${schedule.completed ? 'Selesai' : 'Menunggu'}</td>
-                            <td><button class="delete-btn" data-index="${index}">Hapus</button></td>
+                            <td>
+                                <button class="edit-btn" data-index="${index}" ${schedule.completed ? 'disabled' : ''}>Edit</button>
+                                <button class="delete-btn" data-index="${index}">Hapus</button>
+                            </td>
                         `;
                         scheduleTableBody.appendChild(row);
                     });
 
-                    // Tambahkan event listener untuk tombol hapus
+                    // Tambahkan event listener untuk tombol edit dan hapus
+                    document.querySelectorAll('.edit-btn').forEach(button => {
+                        button.addEventListener('click', (e) => {
+                            const index = e.target.dataset.index;
+                            editSchedule(index);
+                        });
+                    });
+
                     document.querySelectorAll('.delete-btn').forEach(button => {
                         button.addEventListener('click', (e) => {
                             const index = e.target.dataset.index;
@@ -288,9 +346,15 @@
         // Load schedules when page loads
         loadSchedules();
 
+        // Polling untuk memeriksa perubahan jadwal setiap 10 detik
+        setInterval(loadSchedules, 10000);
+
+        // Minta izin notifikasi saat halaman dimuat
+        requestNotificationPermission();
+
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            status.innerText = 'Menjadwalkan...';
+            status.innerText = form.dataset.editIndex ? 'Menyimpan perubahan...' : 'Menjadwalkan...';
             spinner.classList.remove('hidden');
 
             const formData = {
@@ -298,21 +362,46 @@
                 mediaUrl: mediaUrl.value,
                 caption: document.getElementById('caption').value,
                 time: document.getElementById('time').value,
-                userToken: selectedToken, // Gunakan token yang dipilih
+                userToken: selectedToken,
+                completed: false,
             };
 
             try {
-                const response = await fetch('/api/schedule', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(formData),
-                });
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                if (form.dataset.editIndex) {
+                    // Mode edit: update jadwal
+                    const index = form.dataset.editIndex;
+                    const res = await fetch('/api/update_schedule', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ index, updatedSchedule: formData }),
+                    });
+                    if (!res.ok) {
+                        throw new Error(`HTTP error! status: ${res.status}`);
+                    }
+                    const result = await res.json();
+                    status.innerText = result.message || 'Jadwal berhasil diperbarui!';
+                    // Reset form setelah edit
+                    delete form.dataset.editIndex;
+                    form.querySelector('.upload-btn').textContent = 'Jadwalkan';
+                    form.reset();
+                    accountId.innerHTML = '<option value="">-- Pilih Username --</option>';
+                    githubFolder.value = 'ig';
+                    githubFile.innerHTML = '<option value="">-- Pilih File --</option>';
+                    mediaUrl.value = '';
+                } else {
+                    // Mode tambah: jadwalkan baru
+                    const response = await fetch('/api/schedule', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(formData),
+                    });
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const result = await response.json();
+                    status.innerText = result.message || 'Gagal menjadwalkan!';
                 }
-                const result = await response.json();
-                status.innerText = result.message || 'Gagal menjadwalkan!';
-                // Refresh daftar jadwal setelah menjadwalkan
+                // Refresh daftar jadwal setelah menjadwalkan atau mengedit
                 loadSchedules();
             } catch (error) {
                 status.innerText = `Error: ${error.message}`;
