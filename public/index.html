@@ -18,8 +18,16 @@
             <select id="userToken" name="userToken" required>
                 <option value="">-- Pilih Token --</option>
             </select>
-            <label for="mediaUrl">URL Media (HTTPS):</label>
-            <input type="text" id="mediaUrl" name="mediaUrl" placeholder="Masukkan URL media" required>
+            <label for="githubFolder">Pilih Folder di GitHub:</label>
+            <select id="githubFolder" name="githubFolder">
+                <option value="ig">-- Pilih Folder --</option>
+            </select>
+            <label for="githubFile">Pilih File:</label>
+            <select id="githubFile" name="githubFile" required>
+                <option value="">-- Pilih File --</option>
+            </select>
+            <label for="mediaUrl">URL Media (Otomatis dari GitHub):</label>
+            <input type="text" id="mediaUrl" name="mediaUrl" placeholder="URL akan diisi otomatis" readonly required>
             <label for="caption">Caption:</label>
             <textarea id="caption" name="caption" placeholder="Masukkan caption" required></textarea>
             <label for="time">Waktu Posting:</label>
@@ -38,6 +46,9 @@
         const spinner = document.getElementById('spinner');
         const accountId = document.getElementById('accountId');
         const userToken = document.getElementById('userToken');
+        const githubFolder = document.getElementById('githubFolder');
+        const githubFile = document.getElementById('githubFile');
+        const mediaUrl = document.getElementById('mediaUrl');
 
         // Load tokens dari environment variables via API
         fetch('/api/refresh-token')
@@ -104,6 +115,70 @@
             }
         });
 
+        // Load GitHub folders
+        async function loadGithubFolders() {
+            try {
+                const res = await fetch('/api/get_github_files?path=ig');
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                const data = await res.json();
+                console.log('GitHub folders fetched:', data);
+                githubFolder.innerHTML = '<option value="ig">-- Pilih Folder --</option>';
+                data.files.forEach(item => {
+                    if (item.type === 'dir') {
+                        const option = document.createElement('option');
+                        option.value = item.path;
+                        option.textContent = item.name;
+                        githubFolder.appendChild(option);
+                    }
+                });
+            } catch (error) {
+                status.innerText = `Error loading GitHub folders: ${error.message}`;
+                console.error('Error fetching GitHub folders:', error);
+            }
+        }
+
+        // Load GitHub files when folder is selected
+        githubFolder.addEventListener('change', async () => {
+            const folderPath = githubFolder.value;
+            if (!folderPath) {
+                githubFile.innerHTML = '<option value="">-- Pilih File --</option>';
+                mediaUrl.value = '';
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/get_github_files?path=${folderPath}`);
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                const data = await res.json();
+                console.log('GitHub files fetched:', data);
+                githubFile.innerHTML = '<option value="">-- Pilih File --</option>';
+                data.files.forEach(item => {
+                    if (item.type === 'file' && (item.name.endsWith('.jpg') || item.name.endsWith('.png') || item.name.endsWith('.mp4'))) {
+                        const option = document.createElement('option');
+                        option.value = item.download_url;
+                        option.textContent = item.name;
+                        githubFile.appendChild(option);
+                    }
+                });
+            } catch (error) {
+                status.innerText = `Error loading GitHub files: ${error.message}`;
+                console.error('Error fetching GitHub files:', error);
+            }
+        });
+
+        // Set media URL when file is selected
+        githubFile.addEventListener('change', () => {
+            const fileUrl = githubFile.value;
+            mediaUrl.value = fileUrl || '';
+        });
+
+        // Load folders on page load
+        loadGithubFolders();
+
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             status.innerText = 'Menjadwalkan...';
@@ -111,7 +186,7 @@
 
             const formData = {
                 accountId: accountId.value,
-                mediaUrl: document.getElementById('mediaUrl').value,
+                mediaUrl: mediaUrl.value,
                 caption: document.getElementById('caption').value,
                 time: document.getElementById('time').value,
                 userToken: userToken.value,
