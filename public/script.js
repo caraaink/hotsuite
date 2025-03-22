@@ -528,41 +528,6 @@ async function deleteSchedule(index) {
     }
 }
 
-async function editSchedule(index) {
-    try {
-        const res = await fetch('/api/get_schedules');
-        if (!res.ok) {
-            throw new Error(`HTTP error fetching schedules! status: ${res.status}`);
-        }
-        const data = await res.json();
-        const schedules = data.schedules || [];
-        const schedule = schedules[index];
-
-        if (!schedule) {
-            status.innerText = 'Jadwal tidak ditemukan.';
-            return;
-        }
-
-        userAccount.value = schedule.accountNum || '';
-        await new Promise(resolve => {
-            const changeEvent = new Event('change');
-            userAccount.dispatchEvent(changeEvent);
-            setTimeout(resolve, 500);
-        });
-
-        accountId.value = schedule.accountId;
-        selectedUsername = schedule.username;
-        mediaUrl.value = schedule.mediaUrl;
-        selectedToken = schedule.userToken;
-
-        form.dataset.editIndex = index;
-        status.innerText = 'Mengedit jadwal...';
-    } catch (error) {
-        status.innerText = `Error loading schedule for edit: ${error.message}`;
-        console.error('Error loading schedule for edit:', error);
-    }
-}
-
 async function loadSchedules() {
     try {
         scheduleTableBody.innerHTML = '<tr><td colspan="6">Memuat jadwal...</td></tr>';
@@ -590,18 +555,10 @@ async function loadSchedules() {
                     <td>${new Date(schedule.time).toLocaleString()}</td>
                     <td>${schedule.completed ? 'Selesai' : 'Menunggu'}</td>
                     <td>
-                        <button class="edit-btn" data-index="${index}" ${schedule.completed ? 'disabled' : ''}>Edit</button>
                         <button class="delete-btn" data-index="${index}">Hapus</button>
                     </td>
                 `;
                 scheduleTableBody.appendChild(row);
-            });
-
-            document.querySelectorAll('.edit-btn').forEach(button => {
-                button.addEventListener('click', (e) => {
-                    const index = parseInt(e.target.getAttribute('data-index'), 10);
-                    editSchedule(index);
-                });
             });
 
             document.querySelectorAll('.delete-btn').forEach(button => {
