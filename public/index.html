@@ -97,8 +97,10 @@
         const mediaUrl = document.getElementById('mediaUrl');
         const caption = document.getElementById('caption');
         const scheduleTableBody = document.getElementById('scheduleTableBody');
+        const timeInput = document.getElementById('time');
         const themeToggle = document.getElementById('themeToggle');
         let selectedToken = null; // Simpan token yang dipilih
+        let selectedUsername = null; // Simpan username yang dipilih
         let allSubfolders = []; // Simpan daftar subfolder
         let allMediaFiles = []; // Simpan semua file media di subfolder yang dipilih
 
@@ -124,6 +126,7 @@
             if (!accountNum) {
                 accountId.innerHTML = '<option value="">-- Pilih Username --</option>';
                 selectedToken = null;
+                selectedUsername = null;
                 return;
             }
 
@@ -156,6 +159,7 @@
                                 const option = document.createElement('option');
                                 option.value = acc.id;
                                 option.textContent = acc.username;
+                                option.dataset.username = acc.username; // Simpan username di dataset
                                 accountId.appendChild(option);
                             }
                         });
@@ -174,6 +178,13 @@
             }
         });
 
+        // Simpan username saat memilih akun IG
+        accountId.addEventListener('change', () => {
+            const selectedOption = accountId.options[accountId.selectedIndex];
+            selectedUsername = selectedOption ? selectedOption.dataset.username : null;
+            console.log('Selected username:', selectedUsername);
+        });
+
         // Fungsi untuk natural sort
         function naturalSort(a, b) {
             const aKey = a.name || a.path || a;
@@ -183,7 +194,8 @@
 
         // Load GitHub folders directly from GitHub API
         async function loadGithubFolders() {
-            status.innerText = 'Loading folders...';
+            status.innerText = 'Memuat daftar folder...';
+            spinner.classList.remove('hidden');
             try {
                 const res = await fetch('/api/get_github_files?path=ig');
                 if (!res.ok) {
@@ -212,11 +224,15 @@
             } catch (error) {
                 status.innerText = `Error loading GitHub folders: ${error.message}`;
                 console.error('Error fetching GitHub folders:', error);
+            } finally {
+                spinner.classList.add('hidden');
             }
         }
 
         // Load subfolders when a folder is selected
         async function fetchSubfolders(path) {
+            status.innerText = 'Memuat daftar subfolder...';
+            spinner.classList.remove('hidden');
             try {
                 const res = await fetch(`/api/get_github_files?path=${path}`);
                 if (!res.ok) {
@@ -239,12 +255,17 @@
                 return allSubfolders;
             } catch (error) {
                 console.error(`Error fetching subfolders for path ${path}:`, error);
+                status.innerText = `Error loading subfolders: ${error.message}`;
                 return [];
+            } finally {
+                spinner.classList.add('hidden');
             }
         }
 
         // Load files in the selected subfolder
         async function fetchFilesInSubfolder(path) {
+            status.innerText = 'Memuat daftar file...';
+            spinner.classList.remove('hidden');
             try {
                 const res = await fetch(`/api/get_github_files?path=${path}`);
                 if (!res.ok) {
@@ -268,7 +289,10 @@
                 return allMediaFiles;
             } catch (error) {
                 console.error(`Error fetching files for path ${path}:`, error);
+                status.innerText = `Error loading files: ${error.message}`;
                 return [];
+            } finally {
+                spinner.classList.add('hidden');
             }
         }
 
@@ -283,7 +307,6 @@
                 return;
             }
 
-            status.innerText = 'Loading subfolders...';
             try {
                 const subfolders = await fetchSubfolders(folderPath);
                 console.log('All subfolders found:', subfolders);
@@ -339,7 +362,6 @@
                 return;
             }
 
-            status.innerText = 'Loading files...';
             try {
                 const files = await fetchFilesInSubfolder(subfolderPath);
                 console.log('All media files found:', files);
@@ -417,7 +439,7 @@
                 }
                 const result = await res.json();
                 status.innerText = result.message || 'Jadwal berhasil dihapus!';
-                await loadSchedules(); // Pastikan loadSchedules dipanggil ulang
+                await loadSchedules();
             } catch (error) {
                 status.innerText = `Error deleting schedule: ${error.message}`;
                 console.error('Error deleting schedule:', error);
@@ -441,11 +463,20 @@
                 }
 
                 // Isi form dengan data jadwal
-                userAccount.value = schedule.accountNum || ''; // Jika accountNum disimpan di jadwal
+                userAccount.value = schedule.accountNum || '';
+                // Setelah memilih userAccount, kita perlu memuat ulang daftar username
+                await new Promise(resolve => {
+                    const changeEvent = new Event('change');
+                    userAccount.dispatchEvent(changeEvent);
+                    setTimeout(resolve, 500); // Tunggu hingga daftar username dimuat
+                });
+
+                // Set accountId dan pastikan username sesuai
                 accountId.value = schedule.accountId;
+                selectedUsername = schedule.username;
                 mediaUrl.value = schedule.mediaUrl;
                 caption.value = schedule.caption;
-                document.getElementById('time').value = schedule.time;
+                timeInput.value = schedule.time;
                 selectedToken = schedule.userToken;
 
                 // Set form ke mode edit
@@ -461,6 +492,7 @@
         // Load schedules on page load
         async function loadSchedules() {
             try {
+                scheduleTableBody.innerHTML = '<tr><td colspan="6">Memuat jadwal...</td></tr>';
                 const res = await fetch('/api/get_schedules');
                 if (!res.ok) {
                     throw new Error(`HTTP error fetching schedules! status: ${res.status}`);
@@ -468,14 +500,14 @@
                 const data = await res.json();
                 console.log('Schedules fetched:', data);
 
-                scheduleTableBody.innerHTML = ''; // Kosongkan tabel sebelum diisi ulang
+                scheduleTableBody.innerHTML = '';
                 const schedules = data.schedules || [];
 
                 if (schedules.length > 0) {
                     schedules.forEach((schedule, index) => {
                         const row = document.createElement('tr');
                         row.innerHTML = `
-                            <td>${schedule.accountId}</td>
+                            <td>${schedule.username || schedule.accountId}</td>
                             <td><a href="${schedule.mediaUrl}" target="_blank">Lihat Media</a></td>
                             <td>${schedule.caption}</td>
                             <td>${new Date(schedule.time).toLocaleString()}</td>
@@ -488,7 +520,6 @@
                         scheduleTableBody.appendChild(row);
                     });
 
-                    // Tambahkan event listener untuk tombol Edit dan Delete
                     document.querySelectorAll('.edit-btn').forEach(button => {
                         button.addEventListener('click', (e) => {
                             const index = parseInt(e.target.getAttribute('data-index'), 10);
@@ -514,7 +545,6 @@
             }
         }
 
-        // Panggil loadSchedules saat halaman dimuat
         loadSchedules();
 
         form.addEventListener('submit', async (e) => {
@@ -524,11 +554,12 @@
 
             const formData = {
                 accountId: accountId.value,
+                username: selectedUsername, // Simpan username
                 mediaUrl: mediaUrl.value,
-                caption: document.getElementById('caption').value,
-                time: document.getElementById('time').value,
+                caption: caption.value,
+                time: timeInput.value,
                 userToken: selectedToken,
-                accountNum: userAccount.value, // Simpan accountNum untuk keperluan edit
+                accountNum: userAccount.value,
                 completed: false,
             };
 
@@ -547,13 +578,6 @@
                     status.innerText = result.message || 'Jadwal berhasil diperbarui!';
                     delete form.dataset.editIndex;
                     form.querySelector('.upload-btn').textContent = 'Jadwalkan';
-                    form.reset();
-                    accountId.innerHTML = '<option value="">-- Pilih Username --</option>';
-                    githubFolder.value = 'ig';
-                    githubSubfolder.innerHTML = '<option value="">-- Pilih Subfolder --</option>';
-                    githubFile.innerHTML = '<option value="">-- Pilih File --</option>';
-                    mediaUrl.value = '';
-                    caption.value = '';
                 } else {
                     const response = await fetch('/api/schedule', {
                         method: 'POST',
@@ -566,7 +590,18 @@
                     const result = await response.json();
                     status.innerText = result.message || 'Jadwal berhasil ditambahkan!';
                 }
-                await loadSchedules(); // Pastikan loadSchedules dipanggil ulang
+
+                // Reset form
+                form.reset();
+                accountId.innerHTML = '<option value="">-- Pilih Username --</option>';
+                githubFolder.value = 'ig';
+                githubSubfolder.innerHTML = '<option value="">-- Pilih Subfolder --</option>';
+                githubFile.innerHTML = '<option value="">-- Pilih File --</option>';
+                mediaUrl.value = '';
+                caption.value = '';
+                selectedUsername = null;
+
+                await loadSchedules();
             } catch (error) {
                 status.innerText = `Error: ${error.message}`;
                 console.error('Error scheduling post:', error);
