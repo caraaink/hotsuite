@@ -1,0 +1,24 @@
+{
+  "functions": {
+    "api/schedule.js": {
+      "memory": 128,
+      "maxDuration": 10
+    },
+    "api/refresh-token.js": {
+      "memory": 128,
+      "maxDuration": 10
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/schedule",
+      "schedule": "* * * * *" // Jalankan setiap menit
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/public/$1"
+    }
+  ]
+}
