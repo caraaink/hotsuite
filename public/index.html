@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instagram Scheduler</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="container">
+        <h2>Jadwalkan Posting Instagram</h2>
+        <form id="scheduleForm" class="upload-form">
+            <label for="accountId">Pilih Akun IG:</label>
+            <select id="accountId" name="accountId" required>
+                <option value="">-- Pilih Akun --</option>
+            </select>
+            <label for="mediaUrl">URL Media (HTTPS):</label>
+            <input type="text" id="mediaUrl" name="mediaUrl" placeholder="Masukkan URL media" required>
+            <label for="caption">Caption:</label>
+            <textarea id="caption" name="caption" placeholder="Masukkan caption" required></textarea>
+            <label for="time">Waktu Posting:</label>
+            <input type="datetime-local" id="time" name="time" required>
+            <label for="userToken">User Token:</label>
+            <select id="userToken" name="userToken" required>
+                <option value="">-- Pilih Token --</option>
+            </select>
+            <button type="submit" class="upload-btn">Jadwalkan</button>
+        </form>
+        <div class="status-container">
+            <div id="spinner" class="spinner hidden"></div>
+            <p id="status"></p>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('scheduleForm');
+        const status = document.getElementById('status');
+        const spinner = document.getElementById('spinner');
+        const accountId = document.getElementById('accountId');
+        const userToken = document.getElementById('userToken');
+
+        // Load tokens and accounts
+        fetch('/api/refresh-token')
+            .then(() => fetch('/data/secrets.json'))
+            .then(res => res.json())
+            .then(config => {
+                for (let i = 1; i <= 11; i++) {
+                    if (config[`TOKEN_${i}`]) {
+                        const option = document.createElement('option');
+                        option.value = config[`TOKEN_${i}`];
+                        option.textContent = `Akun ${i}`;
+                        userToken.appendChild(option);
+                    }
+                }
+            });
+
+        userToken.addEventListener('change', async () => {
+            const token = userToken.value;
+            if (!token) return;
+            const res = await fetch(`/api/get_accounts?account_key=Akun ${Array.from(userToken.options).findIndex(opt => opt.value === token) + 1}`);
+            const data = await res.json();
+            accountId.innerHTML = '<option value="">-- Pilih Akun --</option>';
+            data.accounts[`Akun ${Array.from(userToken.options).findIndex(opt => opt.value === token) + 1}`].accounts.forEach(acc => {
+                if (acc.type === 'ig') {
+                    const option = document.createElement('option');
+                    option.value = acc.id;
+                    option.textContent = acc.name;
+                    accountId.appendChild(option);
+                }
+            });
+        });
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            status.innerText = 'Menjadwalkan...';
+            spinner.classList.remove('hidden');
+
+            const formData = {
+                accountId: accountId.value,
+                mediaUrl: document.getElementById('mediaUrl').value,
+                caption: document.getElementById('caption').value,
+                time: document.getElementById('time').value,
+                userToken: userToken.value,
+            };
+
+            try {
+                const response = await fetch('/api/schedule', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData),
+                });
+                const result = await response.json();
+                status.innerText = result.message || 'Gagal menjadwalkan!';
+            } catch (error) {
+                status.innerText = `Error: ${error.message}`;
+            } finally {
+                spinner.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
