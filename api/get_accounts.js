@@ -16,17 +16,15 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Mengambil akun Instagram yang terkait dengan user Facebook
     const response = await axios.get('https://graph.facebook.com/v20.0/me/accounts', {
       headers: {
         Authorization: `Bearer ${facebookToken}`,
       },
-      timeout: 5000, // Timeout 5 detik
+      timeout: 5000,
     });
 
     const data = response.data;
 
-    // Filter untuk hanya mengambil akun yang memiliki Instagram Business Account
     const instagramAccounts = await Promise.all(
       data.data.map(async (account) => {
         const igResponse = await axios.get(
