@@ -1,6 +1,6 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { Redis } from '@upstash/redis';
-import fetch from 'node-fetch';
+import axios from 'axios';
 
 export default async function handler(req, res) {
   try {
@@ -9,7 +9,6 @@ export default async function handler(req, res) {
       token: process.env.UPSTASH_REDIS_REST_TOKEN,
     });
 
-    // Ambil jadwal yang ada dari Upstash
     let schedules = await redis.get('schedules');
     schedules = schedules || [];
 
@@ -22,20 +21,22 @@ export default async function handler(req, res) {
 
       const scheduleTime = new Date(schedule.time);
       if (now >= scheduleTime) {
-        // Publikasikan postingan
-        const publishResponse = await fetch('https://hotsuite.vercel.app/api/publish', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+        const publishResponse = await axios.post(
+          'https://hotsuite.vercel.app/api/publish',
+          {
             accountId: schedule.accountId,
             mediaUrl: schedule.mediaUrl,
             caption: schedule.caption,
             userToken: schedule.userToken,
             accountNum: schedule.accountNum,
-          }),
-        });
+          },
+          {
+            headers: { 'Content-Type': 'application/json' },
+            timeout: 5000,
+          }
+        );
 
-        if (publishResponse.ok) {
+        if (publishResponse.status === 200) {
           schedules[i].completed = true;
           updated = true;
         } else {
@@ -44,7 +45,6 @@ export default async function handler(req, res) {
       }
     }
 
-    // Jika ada perubahan, simpan kembali ke Upstash
     if (updated) {
       await redis.set('schedules', schedules);
     }
@@ -52,6 +52,9 @@ export default async function handler(req, res) {
     res.status(200).json({ message: 'Schedules checked and updated' });
   } catch (error) {
     console.error('Error checking schedules:', error);
+    if (error.code === 'ECONNABORTED') {
+      return res.status(504).json({ error: 'Request to publish API timed out' });
+    }
     res.status(500).json({ error: 'Failed to check schedules', details: error.message });
   }
 }
