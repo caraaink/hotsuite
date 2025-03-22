@@ -129,6 +129,35 @@ body.dark-mode h2 {
     color: #e0e0e0; /* Warna teks lebih terang di dark mode */
 }
 
+/* Perbaikan Warna Teks di Dalam Galeri */
+.gallery-item p {
+    margin: 8px 0 0;
+    font-size: 14px;
+    color: #555;
+}
+
+body.dark-mode .gallery-item p {
+    color: #d0d0d0; /* Warna teks lebih terang di dark mode */
+}
+
+.gallery-item .caption-text {
+    font-size: 12px;
+    color: #777;
+}
+
+body.dark-mode .gallery-item .caption-text {
+    color: #b0b0b0; /* Warna caption lebih terang di dark mode */
+}
+
+.gallery-item .schedule-time {
+    font-size: 12px;
+    color: #777;
+}
+
+body.dark-mode .gallery-item .schedule-time {
+    color: #b0b0b0; /* Warna waktu jadwal lebih terang di dark mode */
+}
+
 /* Upload Form */
 .upload-form {
     display: grid;
@@ -187,6 +216,22 @@ body.dark-mode h2 {
 
 .schedule-all-btn:hover {
     background-color: #e67e22;
+}
+
+.save-schedules-btn {
+    padding: 10px 20px;
+    background-color: #2ecc71;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 500;
+    transition: background-color 0.3s ease;
+}
+
+.save-schedules-btn:hover {
+    background-color: #27ae60;
 }
 
 /* Buttons */
@@ -329,30 +374,22 @@ body.dark-mode h2 {
     border: 2px solid #3498db;
 }
 
-.gallery-item p {
-    margin: 8px 0 0;
+.gallery-item .btn {
+    margin: 5px 2px;
+    padding: 6px 10px;
     font-size: 14px;
-    color: #555;
 }
 
-.gallery-item .caption-text {
-    font-size: 12px;
-    color: #777;
-    margin-top: 5px;
-    word-wrap: break-word;
+.gallery-item .btn.edit {
+    background-color: #3498db;
 }
 
-.gallery-item .schedule-time {
-    font-size: 12px;
-    color: #777;
-    margin-top: 5px;
+.gallery-item .btn.publish {
+    background-color: #2ecc71;
 }
 
-/* Perbaikan Warna Teks di Dark Mode untuk Galeri */
-body.dark-mode .gallery-item p,
-body.dark-mode .gallery-item .caption-text,
-body.dark-mode .gallery-item .schedule-time {
-    color: #d0d0d0; /* Warna teks lebih terang di dark mode */
+.gallery-item .btn.schedule {
+    background-color: #f39c12;
 }
 
 /* Editors */
@@ -454,7 +491,8 @@ body.dark-mode .gallery-item .schedule-time {
         align-items: flex-start;
     }
 
-    .schedule-all-btn {
+    .schedule-all-btn,
+    .save-schedules-btn {
         width: 100%;
     }
 }
