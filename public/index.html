@@ -61,6 +61,10 @@
             <div class="schedule-all-container">
                 <label for="startDateTime">Tanggal dan Jam Awal:</label>
                 <input type="datetime-local" id="startDateTime" name="startDateTime">
+                <div class="skip-day-option">
+                    <input type="checkbox" id="skipDay" name="skipDay">
+                    <label for="skipDay">Lompat Satu Hari</label>
+                </div>
                 <button type="button" id="scheduleAll" class="schedule-all-btn">Jadwalkan Semua</button>
                 <button type="button" id="saveSchedules" class="save-schedules-btn">Simpan Jadwal</button>
             </div>
@@ -111,6 +115,7 @@
         const selectAll = document.getElementById('selectAll');
         const deleteSelected = document.getElementById('deleteSelected');
         const startDateTime = document.getElementById('startDateTime');
+        const skipDay = document.getElementById('skipDay');
         const scheduleAll = document.getElementById('scheduleAll');
         const saveSchedules = document.getElementById('saveSchedules');
         let selectedToken = null;
@@ -432,184 +437,89 @@
             }
         });
 
-       function displayGallery(files) {
-    gallery.innerHTML = '';
-    const imageFiles = files.filter(file => file.name.endsWith('.jpg') || file.name.endsWith('.png'));
+        function displayGallery(files) {
+            gallery.innerHTML = '';
+            const imageFiles = files.filter(file => file.name.endsWith('.jpg') || file.name.endsWith('.png'));
 
-    if (imageFiles.length === 0) {
-        gallery.innerHTML = '<p>Tidak ada gambar untuk ditampilkan.</p>';
-        return;
-    }
-
-    imageFiles.forEach((file, index) => {
-        const container = document.createElement('div');
-        container.className = 'gallery-item';
-
-        const img = document.createElement('img');
-        img.src = file.download_url;
-        img.alt = file.name;
-        img.dataset.fileData = JSON.stringify(file);
-        img.addEventListener('click', () => {
-            gallery.querySelectorAll('img').forEach(i => i.classList.remove('selected'));
-            img.classList.add('selected');
-            githubFile.value = JSON.stringify(file);
-            const changeEvent = new Event('change');
-            githubFile.dispatchEvent(changeEvent);
-        });
-
-        const name = document.createElement('p');
-        name.textContent = file.name;
-
-        const captionText = document.createElement('p');
-        captionText.className = 'caption-text';
-        captionText.textContent = captions[file.path] || 'Tidak ada caption';
-
-        const scheduleTime = document.createElement('p');
-        scheduleTime.className = 'schedule-time';
-        scheduleTime.textContent = scheduledTimes[file.path] ? new Date(scheduledTimes[file.path]).toLocaleString() : 'Belum dijadwalkan';
-
-        const editBtn = document.createElement('button');
-        editBtn.className = 'btn edit';
-        editBtn.textContent = 'Edit';
-        editBtn.addEventListener('click', () => {
-            const editor = document.createElement('div');
-            editor.className = 'caption-editor';
-            const textarea = document.createElement('textarea');
-            textarea.value = captions[file.path] || '';
-            const saveBtn = document.createElement('button');
-            saveBtn.textContent = 'Simpan';
-            saveBtn.addEventListener('click', () => {
-                captions[file.path] = textarea.value;
-                captionText.textContent = captions[file.path] || 'Tidak ada caption';
-                editor.remove();
-                status.innerText = `Caption untuk ${file.name} berhasil disimpan.`;
-            });
-            const cancelBtn = document.createElement('button');
-            cancelBtn.textContent = 'Batal';
-            cancelBtn.addEventListener('click', () => editor.remove());
-            editor.appendChild(textarea);
-            editor.appendChild(saveBtn);
-            editor.appendChild(cancelBtn);
-            container.appendChild(editor);
-        });
-
-        const scheduleBtn = document.createElement('button');
-        scheduleBtn.className = 'btn schedule';
-        scheduleBtn.textContent = 'Jadwalkan';
-        scheduleBtn.addEventListener('click', () => {
-            const editor = document.createElement('div');
-            editor.className = 'schedule-editor';
-            const datetimeInput = document.createElement('input');
-            datetimeInput.type = 'datetime-local';
-            datetimeInput.value = scheduledTimes[file.path] || '';
-            const saveBtn = document.createElement('button');
-            saveBtn.textContent = 'Jadwalkan';
-            saveBtn.addEventListener('click', () => {
-                if (!datetimeInput.value) {
-                    status.innerText = 'Pilih waktu terlebih dahulu.';
-                    return;
-                }
-
-                scheduledTimes[file.path] = datetimeInput.value;
-                scheduleTime.textContent = new Date(scheduledTimes[file.path]).toLocaleString();
-                editor.remove();
-                status.innerText = `Waktu jadwal untuk ${file.name} disimpan sementara. Klik "Simpan Jadwal" untuk mengirimkan.`;
-            });
-            const cancelBtn = document.createElement('button');
-            cancelBtn.textContent = 'Batal';
-            cancelBtn.addEventListener('click', () => editor.remove());
-            editor.appendChild(datetimeInput);
-            editor.appendChild(saveBtn);
-            editor.appendChild(cancelBtn);
-            container.appendChild(editor);
-        });
-
-        const publishBtn = document.createElement('button');
-        publishBtn.className = 'btn publish';
-        publishBtn.textContent = 'Publish';
-        publishBtn.addEventListener('click', async () => {
-            if (!selectedToken || !accountId.value) {
-                status.innerText = 'Pilih akun dan username terlebih dahulu.';
+            if (imageFiles.length === 0) {
+                gallery.innerHTML = '<p>Tidak ada gambar untuk ditampilkan.</p>';
                 return;
             }
 
-            status.innerText = 'Mempublikasikan...';
-            spinner.classList.remove('hidden');
-            try {
-                const response = await fetch('/api/publish', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        accountId: accountId.value,
-                        mediaUrl: file.download_url,
-                        caption: captions[file.path] || '',
-                        userToken: selectedToken,
-                    }),
+            imageFiles.forEach((file, index) => {
+                const container = document.createElement('div');
+                container.className = 'gallery-item';
+
+                const img = document.createElement('img');
+                img.src = file.download_url;
+                img.alt = file.name;
+                img.dataset.fileData = JSON.stringify(file);
+                img.addEventListener('click', () => {
+                    gallery.querySelectorAll('img').forEach(i => i.classList.remove('selected'));
+                    img.classList.add('selected');
+                    githubFile.value = JSON.stringify(file);
+                    const changeEvent = new Event('change');
+                    githubFile.dispatchEvent(changeEvent);
                 });
-                if (!response.ok) {
-                    throw new Error(`HTTP error publishing post! status: ${response.status}`);
-                }
-                const result = await response.json();
-                status.innerText = result.message || 'Berhasil dipublikasikan!';
-            } catch (error) {
-                status.innerText = `Error publishing: ${error.message}`;
-                console.error('Error publishing post:', error);
-            } finally {
-                spinner.classList.add('hidden');
-            }
-        });
 
-        container.appendChild(img);
-        container.appendChild(name);
-        container.appendChild(captionText);
-        container.appendChild(scheduleTime);
-        container.appendChild(editBtn);
-        container.appendChild(scheduleBtn);
-        container.appendChild(publishBtn);
-        gallery.appendChild(container);
+                const name = document.createElement('p');
+                name.textContent = file.name;
 
-        // Set default schedule time with 1-day interval
-        if (startDateTime.value && !scheduledTimes[file.path]) {
-            const start = new Date(startDateTime.value);
-            start.setDate(start.getDate() + index); // Tambah 1 hari per indeks
-            scheduledTimes[file.path] = start.toISOString().slice(0, 16);
-            scheduleTime.textContent = new Date(scheduledTimes[file.path]).toLocaleString();
-        }
-    });
+                const captionText = document.createElement('p');
+                captionText.className = 'caption-text';
+                captionText.textContent = captions[file.path] || 'Tidak ada caption';
 
-    // Update schedule times when startDateTime changes
-    startDateTime.addEventListener('change', () => {
-        if (!startDateTime.value) return;
+                const scheduleTime = document.createElement('p');
+                scheduleTime.className = 'schedule-time';
+                scheduleTime.textContent = scheduledTimes[file.path] ? new Date(scheduledTimes[file.path]).toLocaleString() : 'Belum dijadwalkan';
 
-        const start = new Date(startDateTime.value);
-        imageFiles.forEach((file, index) => {
-            const newDate = new Date(start);
-            newDate.setDate(start.getDate() + index); // Tambah 1 hari per indeks
-            scheduledTimes[file.path] = newDate.toISOString().slice(0, 16);
-            const scheduleTimeElement = gallery.children[index].querySelector('.schedule-time');
-            scheduleTimeElement.textContent = new Date(scheduledTimes[file.path]).toLocaleString();
-        });
-    });
+                const editBtn = document.createElement('button');
+                editBtn.className = 'btn edit';
+                editBtn.textContent = 'Edit';
+                editBtn.addEventListener('click', () => {
+                    const editor = document.createElement('div');
+                    editor.className = 'caption-editor';
+                    const textarea = document.createElement('textarea');
+                    textarea.value = captions[file.path] || '';
+                    const saveBtn = document.createElement('button');
+                    saveBtn.textContent = 'Simpan';
+                    saveBtn.addEventListener('click', () => {
+                        captions[file.path] = textarea.value;
+                        captionText.textContent = captions[file.path] || 'Tidak ada caption';
+                        editor.remove();
+                        status.innerText = `Caption untuk ${file.name} berhasil disimpan.`;
+                    });
+                    const cancelBtn = document.createElement('button');
+                    cancelBtn.textContent = 'Batal';
+                    cancelBtn.addEventListener('click', () => editor.remove());
+                    editor.appendChild(textarea);
+                    editor.appendChild(saveBtn);
+                    editor.appendChild(cancelBtn);
+                    container.appendChild(editor);
+                });
 
-    // Schedule All Button
-    scheduleAll.addEventListener('click', () => {
-        if (!startDateTime.value) {
-            status.innerText = 'Pilih tanggal dan jam awal terlebih dahulu.';
-            return;
-        }
+                const scheduleBtn = document.createElement('button');
+                scheduleBtn.className = 'btn schedule';
+                scheduleBtn.textContent = 'Jadwalkan';
+                scheduleBtn.addEventListener('click', () => {
+                    const editor = document.createElement('div');
+                    editor.className = 'schedule-editor';
+                    const datetimeInput = document.createElement('input');
+                    datetimeInput.type = 'datetime-local';
+                    datetimeInput.value = scheduledTimes[file.path] || '';
+                    const saveBtn = document.createElement('button');
+                    saveBtn.textContent = 'Jadwalkan';
+                    saveBtn.addEventListener('click', () => {
+                        if (!datetimeInput.value) {
+                            status.innerText = 'Pilih waktu terlebih dahulu.';
+                            return;
+                        }
 
-        const start = new Date(startDateTime.value);
-        imageFiles.forEach((file, index) => {
-            const newDate = new Date(start);
-            newDate.setDate(start.getDate() + index); // Tambah 1 hari per indeks
-            scheduledTimes[file.path] = newDate.toISOString().slice(0, 16);
-            const scheduleTimeElement = gallery.children[index].querySelector('.schedule-time');
-            scheduleTimeElement.textContent = new Date(scheduledTimes[file.path]).toLocaleString();
-        });
-
-        status.innerText = `Waktu jadwal untuk semua foto disimpan sementara. Klik "Simpan Jadwal" untuk mengirimkan.`;
-    });
-
+                        scheduledTimes[file.path] = datetimeInput.value;
+                        scheduleTime.textContent = new Date(scheduledTimes[file.path]).toLocaleString();
+                        editor.remove();
+                        status.innerText = `Waktu jadwal untuk ${file.name} disimpan sementara. Klik "Simpan Jadwal" untuk mengirimkan.`;
+                    });
                     const cancelBtn = document.createElement('button');
                     cancelBtn.textContent = 'Batal';
                     cancelBtn.addEventListener('click', () => editor.remove());
@@ -663,10 +573,11 @@
                 container.appendChild(publishBtn);
                 gallery.appendChild(container);
 
-                // Set default schedule time with 1-day interval
+                // Set default schedule time with 1-day or 2-day interval based on skipDay
                 if (startDateTime.value && !scheduledTimes[file.path]) {
                     const start = new Date(startDateTime.value);
-                    start.setDate(start.getDate() + index);
+                    const dayIncrement = skipDay.checked ? 2 : 1;
+                    start.setDate(start.getDate() + (index * dayIncrement));
                     scheduledTimes[file.path] = start.toISOString().slice(0, 16);
                     scheduleTime.textContent = new Date(scheduledTimes[file.path]).toLocaleString();
                 }
@@ -674,10 +585,26 @@
 
             // Update schedule times when startDateTime changes
             startDateTime.addEventListener('change', () => {
+                if (!startDateTime.value) return;
                 const start = new Date(startDateTime.value);
+                const dayIncrement = skipDay.checked ? 2 : 1;
                 imageFiles.forEach((file, index) => {
                     const newDate = new Date(start);
-                    newDate.setDate(start.getDate() + index);
+                    newDate.setDate(start.getDate() + (index * dayIncrement));
+                    scheduledTimes[file.path] = newDate.toISOString().slice(0, 16);
+                    const scheduleTimeElement = gallery.children[index].querySelector('.schedule-time');
+                    scheduleTimeElement.textContent = new Date(scheduledTimes[file.path]).toLocaleString();
+                });
+            });
+
+            // Update schedule times when skipDay changes
+            skipDay.addEventListener('change', () => {
+                if (!startDateTime.value) return;
+                const start = new Date(startDateTime.value);
+                const dayIncrement = skipDay.checked ? 2 : 1;
+                imageFiles.forEach((file, index) => {
+                    const newDate = new Date(start);
+                    newDate.setDate(start.getDate() + (index * dayIncrement));
                     scheduledTimes[file.path] = newDate.toISOString().slice(0, 16);
                     const scheduleTimeElement = gallery.children[index].querySelector('.schedule-time');
                     scheduleTimeElement.textContent = new Date(scheduledTimes[file.path]).toLocaleString();
@@ -692,9 +619,10 @@
                 }
 
                 const start = new Date(startDateTime.value);
+                const dayIncrement = skipDay.checked ? 2 : 1;
                 imageFiles.forEach((file, index) => {
                     const newDate = new Date(start);
-                    newDate.setDate(start.getDate() + index);
+                    newDate.setDate(start.getDate() + (index * dayIncrement));
                     scheduledTimes[file.path] = newDate.toISOString().slice(0, 16);
                     const scheduleTimeElement = gallery.children[index].querySelector('.schedule-time');
                     scheduleTimeElement.textContent = new Date(scheduledTimes[file.path]).toLocaleString();
