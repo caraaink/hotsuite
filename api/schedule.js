@@ -51,13 +51,13 @@ async function runScheduledPosts() {
     // Filter jadwal yang belum selesai
     const pendingSchedules = schedules.filter(schedule => !schedule.completed);
     
-    // Jika tidak ada jadwal yang belum selesai, catat log minimal dan keluar
+    // Jika tidak ada jadwal yang belum selesai, hapus semua jadwal yang sudah selesai
     if (pendingSchedules.length === 0) {
-      console.log('No pending schedules to process.');
+      console.log('No pending schedules to process. Removing completed schedules.');
+      await kv.set(SCHEDULE_KEY, []);
       return;
     }
 
-    // Hanya catat log jika ada jadwal yang belum selesai
     console.log('Pending schedules fetched:', pendingSchedules);
 
     const now = new Date();
@@ -68,8 +68,7 @@ async function runScheduledPosts() {
     for (const schedule of schedules) {
       // Hanya proses jadwal yang belum selesai
       if (schedule.completed) {
-        updatedSchedules.push(schedule);
-        continue; // Lewati jadwal yang sudah selesai tanpa log
+        continue; // Lewati jadwal yang sudah selesai, akan dihapus nanti
       }
 
       // Asumsikan waktu yang disimpan adalah WIB (UTC+7), konversi ke UTC
@@ -88,19 +87,21 @@ async function runScheduledPosts() {
         if (result.success) {
           schedule.completed = true;
           console.log(`Post successful for ${schedule.accountId}: ${result.creationId}`);
+          // Kirim notifikasi ke klien (opsional, akan diimplementasikan di frontend)
         } else {
           console.error(`Failed to post for ${schedule.accountId}: ${result.error}`);
-          // Tambahkan flag untuk mencoba lagi di iterasi berikutnya
           schedule.error = result.error;
+          updatedSchedules.push(schedule); // Simpan jadwal yang gagal untuk dicoba lagi
         }
       } else {
         console.log(`Schedule not processed: ${now >= scheduledTimeUTC ? 'Already completed' : 'Time not yet reached'}`);
+        updatedSchedules.push(schedule); // Simpan jadwal yang belum waktunya
       }
-      updatedSchedules.push(schedule);
     }
 
+    // Hanya simpan jadwal yang belum selesai atau gagal
     await kv.set(SCHEDULE_KEY, updatedSchedules);
-    console.log('Updated schedules:', updatedSchedules);
+    console.log('Updated schedules (completed schedules removed):', updatedSchedules);
   } catch (error) {
     console.error('Error running scheduled posts:', error);
   }
