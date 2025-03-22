@@ -92,7 +92,6 @@
         const scheduleTableBody = document.getElementById('scheduleTableBody');
         const themeToggle = document.getElementById('themeToggle');
         let selectedToken = null; // Simpan token yang dipilih
-        let previousSchedules = []; // Simpan daftar jadwal sebelumnya untuk deteksi perubahan
 
         // Load dark mode preference from localStorage
         if (localStorage.getItem('theme') === 'dark') {
@@ -108,24 +107,6 @@
             localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
         });
 
-        // Minta izin untuk notifikasi
-        function requestNotificationPermission() {
-            if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
-                Notification.requestPermission().then(permission => {
-                    if (permission === 'granted') {
-                        console.log('Notification permission granted.');
-                    }
-                });
-            }
-        }
-
-        // Tampilkan notifikasi
-        function showNotification(title, body) {
-            if (Notification.permission === 'granted') {
-                new Notification(title, { body });
-            }
-        }
-
         // Load Instagram usernames when an account is selected
         userAccount.addEventListener('change', async () => {
             const accountNum = userAccount.value;
@@ -139,13 +120,13 @@
 
             try {
                 // Ambil token untuk akun yang dipilih
-                const res = await fetch(`/api/refresh-token?accountNum=${accountNum}`);
-                if (!res.ok) {
-                    throw new Error(`HTTP error! status: ${res.status}`);
+                const tokenRes = await fetch(`/api/refresh-token?accountNum=${accountNum}`);
+                if (!tokenRes.ok) {
+                    throw new Error(`HTTP error fetching token! status: ${tokenRes.status}`);
                 }
-                const data = await res.json();
-                console.log('Token fetched:', data);
-                selectedToken = data.token;
+                const tokenData = await tokenRes.json();
+                console.log('Token fetched:', tokenData);
+                selectedToken = tokenData.token;
                 if (!selectedToken) {
                     throw new Error('No token found for this account');
                 }
@@ -153,22 +134,32 @@
                 // Ambil daftar akun Instagram berdasarkan token
                 const accountsRes = await fetch(`/api/get_accounts?account_key=Akun ${accountNum}`);
                 if (!accountsRes.ok) {
-                    throw new Error(`HTTP error! status: ${accountsRes.status}`);
+                    throw new Error(`HTTP error fetching accounts! status: ${accountsRes.status}`);
                 }
                 const accountsData = await accountsRes.json();
                 console.log('Accounts fetched:', accountsData);
+
                 accountId.innerHTML = '<option value="">-- Pilih Username --</option>';
                 if (accountsData.accounts && accountsData.accounts[`Akun ${accountNum}`]) {
-                    accountsData.accounts[`Akun ${accountNum}`].accounts.forEach(acc => {
-                        if (acc.type === 'ig') {
-                            const option = document.createElement('option');
-                            option.value = acc.id;
-                            option.textContent = acc.username; // Hanya tampilkan username
-                            accountId.appendChild(option);
+                    const igAccounts = accountsData.accounts[`Akun ${accountNum}`].accounts;
+                    console.log('IG accounts:', igAccounts);
+                    if (igAccounts && igAccounts.length > 0) {
+                        igAccounts.forEach(acc => {
+                            if (acc.type === 'ig' && acc.username) {
+                                const option = document.createElement('option');
+                                option.value = acc.id;
+                                option.textContent = acc.username; // Hanya tampilkan username
+                                accountId.appendChild(option);
+                            }
+                        });
+                        if (accountId.options.length === 1) {
+                            status.innerText = 'No Instagram accounts found for this account.';
                         }
-                    });
+                    } else {
+                        status.innerText = 'No Instagram accounts found for this account.';
+                    }
                 } else {
-                    status.innerText = 'No Instagram accounts found for this account.';
+                    status.innerText = 'No accounts data found for this account.';
                 }
             } catch (error) {
                 status.innerText = `Error fetching accounts: ${error.message}`;
@@ -278,7 +269,7 @@
             form.querySelector('.upload-btn').textContent = 'Simpan Perubahan';
         }
 
-        // Load schedules on page load and poll for changes
+        // Load schedules on page load
         async function loadSchedules() {
             try {
                 const res = await fetch('/api/get_schedules');
@@ -287,22 +278,9 @@
                 }
                 const data = await res.json();
                 console.log('Schedules fetched:', data);
-                const schedules = data.schedules || [];
-
-                // Cek apakah ada jadwal yang baru saja selesai
-                if (previousSchedules.length > 0) {
-                    schedules.forEach((schedule, index) => {
-                        const prevSchedule = previousSchedules.find(s => s.accountId === schedule.accountId && s.time === schedule.time);
-                        if (prevSchedule && !prevSchedule.completed && schedule.completed) {
-                            showNotification('Posting Berhasil', `Jadwal untuk ${schedule.accountId} pada ${new Date(schedule.time).toLocaleString()} telah berhasil diposting!`);
-                        }
-                    });
-                }
-                previousSchedules = [...schedules];
-
                 scheduleTableBody.innerHTML = '';
-                if (schedules.length > 0) {
-                    schedules.forEach((schedule, index) => {
+                if (data.schedules && data.schedules.length > 0) {
+                    data.schedules.forEach((schedule, index) => {
                         const row = document.createElement('tr');
                         row.innerHTML = `
                             <td>${schedule.accountId}</td>
@@ -345,12 +323,6 @@
 
         // Load schedules when page loads
         loadSchedules();
-
-        // Polling untuk memeriksa perubahan jadwal setiap 10 detik
-        setInterval(loadSchedules, 10000);
-
-        // Minta izin notifikasi saat halaman dimuat
-        requestNotificationPermission();
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
