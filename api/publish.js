@@ -18,7 +18,6 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: 'Invalid or mismatched token for this account' });
     }
 
-    // Ambil Instagram Business Account ID dari Page ID (accountId)
     const igAccountResponse = await axios.get(
       `https://graph.facebook.com/v20.0/${accountId}?fields=instagram_business_account&access_token=${facebookToken}`,
       { timeout: 5000 }
@@ -31,7 +30,6 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'No Instagram Business Account linked to this Page' });
     }
 
-    // Publikasikan postingan ke Instagram Business Account
     const response = await axios.post(
       `https://graph.facebook.com/v20.0/${igBusinessAccountId}/media`,
       {
@@ -49,7 +47,6 @@ export default async function handler(req, res) {
 
     const data = response.data;
 
-    // Publikasikan media yang baru dibuat
     const publishResponse = await axios.post(
       `https://graph.facebook.com/v20.0/${igBusinessAccountId}/media_publish`,
       {
