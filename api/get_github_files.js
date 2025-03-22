@@ -1,31 +1,40 @@
 const axios = require('axios');
 
 module.exports = async (req, res) => {
-  const { path = 'ig' } = req.query; // Default ke folder 'ig'
-  const githubToken = process.env.GITHUB_TOKEN;
-
-  if (!githubToken) {
-    return res.status(500).json({ message: 'GITHUB_TOKEN not found in environment variables' });
+  const { path } = req.query;
+  if (!path) {
+    return res.status(400).json({ error: 'Path is required' });
   }
 
   try {
-    const response = await axios.get(`https://api.github.com/repos/caraaink/hotsuite/contents/${path}`, {
-      headers: {
-        Authorization: `token ${githubToken}`,
-        Accept: 'application/vnd.github.v3+json',
-      },
-    });
+    let allFiles = [];
+    let page = 1;
+    let hasMore = true;
 
-    const files = response.data.map(item => ({
-      name: item.name,
-      path: item.path,
-      type: item.type, // 'file' atau 'dir'
-      download_url: item.download_url, // URL untuk file
-    }));
+    while (hasMore) {
+      const response = await axios.get(`https://api.github.com/repos/caraaink/hotsuite/contents/${path}`, {
+        headers: {
+          Authorization: `token ${process.env.GITHUB_TOKEN}`,
+          Accept: 'application/vnd.github.v3+json',
+        },
+        params: {
+          per_page: 100, // Maksimum item per halaman
+          page: page,
+        },
+      });
 
-    res.status(200).json({ files });
+      const files = response.data;
+      allFiles = allFiles.concat(files);
+
+      // Cek apakah ada halaman berikutnya
+      const linkHeader = response.headers.link;
+      hasMore = linkHeader && linkHeader.includes('rel="next"');
+      page++;
+    }
+
+    res.status(200).json({ files: allFiles });
   } catch (error) {
     console.error('Error fetching GitHub files:', error.response?.data || error.message);
-    res.status(500).json({ message: `Failed to fetch GitHub files: ${error.message}` });
+    res.status(500).json({ error: 'Failed to fetch GitHub files' });
   }
 };
