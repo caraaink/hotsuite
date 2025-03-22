@@ -61,6 +61,7 @@
                         <th>Caption</th>
                         <th>Waktu Posting</th>
                         <th>Status</th>
+                        <th>Aksi</th>
                     </tr>
                 </thead>
                 <tbody id="scheduleTableBody"></tbody>
@@ -228,6 +229,27 @@
         // Load folders on page load
         loadGithubFolders();
 
+        // Fungsi untuk menghapus jadwal
+        async function deleteSchedule(index) {
+            try {
+                const res = await fetch('/api/delete_schedule', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ index }),
+                });
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                const result = await res.json();
+                status.innerText = result.message || 'Jadwal berhasil dihapus!';
+                // Refresh daftar jadwal setelah menghapus
+                loadSchedules();
+            } catch (error) {
+                status.innerText = `Error deleting schedule: ${error.message}`;
+                console.error('Error deleting schedule:', error);
+            }
+        }
+
         // Load schedules on page load
         async function loadSchedules() {
             try {
@@ -239,7 +261,7 @@
                 console.log('Schedules fetched:', data);
                 scheduleTableBody.innerHTML = '';
                 if (data.schedules && data.schedules.length > 0) {
-                    data.schedules.forEach(schedule => {
+                    data.schedules.forEach((schedule, index) => {
                         const row = document.createElement('tr');
                         row.innerHTML = `
                             <td>${schedule.accountId}</td>
@@ -247,11 +269,22 @@
                             <td>${schedule.caption}</td>
                             <td>${new Date(schedule.time).toLocaleString()}</td>
                             <td>${schedule.completed ? 'Selesai' : 'Menunggu'}</td>
+                            <td><button class="delete-btn" data-index="${index}">Hapus</button></td>
                         `;
                         scheduleTableBody.appendChild(row);
                     });
+
+                    // Tambahkan event listener untuk tombol hapus
+                    document.querySelectorAll('.delete-btn').forEach(button => {
+                        button.addEventListener('click', (e) => {
+                            const index = e.target.dataset.index;
+                            if (confirm('Apakah Anda yakin ingin menghapus jadwal ini?')) {
+                                deleteSchedule(index);
+                            }
+                        });
+                    });
                 } else {
-                    scheduleTableBody.innerHTML = '<tr><td colspan="5">Belum ada jadwal.</td></tr>';
+                    scheduleTableBody.innerHTML = '<tr><td colspan="6">Belum ada jadwal.</td></tr>';
                 }
             } catch (error) {
                 status.innerText = `Error loading schedules: ${error.message}`;
