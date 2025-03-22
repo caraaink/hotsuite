@@ -13,16 +13,15 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    const repoOwner = 'caraaink'; 
-    const repoName = 'hotsuite'; 
-    const filePath = 'data/schedules.json'; 
+    const repoOwner = 'caraaink';
+    const repoName = 'hotsuite';
+    const filePath = 'data/schedules.json';
     const githubToken = process.env.GITHUB_TOKEN;
 
     if (!githubToken) {
       return res.status(500).json({ error: 'GitHub token not configured' });
     }
 
-    // Ambil file schedules.json yang ada
     const getFileResponse = await fetch(
       `https://api.github.com/repos/${repoOwner}/${repoName}/contents/${filePath}`,
       {
@@ -42,7 +41,6 @@ export default async function handler(req, res) {
     const schedulesData = JSON.parse(content);
     const schedules = schedulesData.schedules || [];
 
-    // Tambahkan jadwal baru
     schedules.push({
       accountId,
       username,
@@ -54,10 +52,8 @@ export default async function handler(req, res) {
       completed: completed || false,
     });
 
-    // Encode konten baru ke base64
     const newContent = Buffer.from(JSON.stringify({ schedules }, null, 2)).toString('base64');
 
-    // Update file di GitHub
     const updateResponse = await fetch(
       `https://api.github.com/repos/${repoOwner}/${repoName}/contents/${filePath}`,
       {
@@ -69,7 +65,7 @@ export default async function handler(req, res) {
         body: JSON.stringify({
           message: 'Add new schedule',
           content: newContent,
-          sha: fileData.sha, // SHA diperlukan untuk update file
+          sha: fileData.sha,
         }),
       }
     );
