@@ -226,6 +226,11 @@
             }
         }
 
+        // Fungsi untuk natural sort
+        function naturalSort(a, b) {
+            return a.path.localeCompare(b.path, undefined, { numeric: true, sensitivity: 'base' });
+        }
+
         // Load GitHub files when folder is selected, recursively
         githubFolder.addEventListener('change', async () => {
             const folderPath = githubFolder.value;
@@ -242,6 +247,9 @@
                 // Ambil semua file media secara rekursif
                 await fetchAllMediaFiles(folderPath);
                 console.log('All media files found:', allMediaFiles);
+
+                // Urutkan file secara natural
+                allMediaFiles.sort(naturalSort);
 
                 githubFile.innerHTML = '<option value="">-- Pilih File --</option>';
                 allMediaFiles.forEach(file => {
@@ -262,6 +270,27 @@
             }
         });
 
+        // Fungsi untuk mencari meta.json di folder atau folder induk secara rekursif
+        async function fetchMetaJson(folderPath) {
+            let currentPath = folderPath;
+            while (currentPath.startsWith('ig')) {
+                try {
+                    const metaRes = await fetch(`/api/get_file_content?path=${currentPath}/meta.json`);
+                    if (metaRes.ok) {
+                        const metaData = await metaRes.json();
+                        console.log(`meta.json found at ${currentPath}:`, metaData);
+                        return metaData;
+                    }
+                } catch (error) {
+                    console.log(`meta.json not found at ${currentPath}`);
+                }
+                // Pindah ke folder induk
+                currentPath = currentPath.substring(0, currentPath.lastIndexOf('/'));
+                if (!currentPath) break;
+            }
+            return null;
+        }
+
         // Set media URL and fetch caption when file is selected
         githubFile.addEventListener('change', async () => {
             const fileData = githubFile.value ? JSON.parse(githubFile.value) : null;
@@ -275,27 +304,25 @@
             status.innerText = 'Fetching caption...';
 
             try {
-                // Ambil path folder dari file (misalnya ig/2023-10/subfolder1/image.jpg -> ig/2023-10/subfolder1)
+                // Ambil path folder dari file (misalnya ig/2023-10/1/image.jpg -> ig/2023-10/1)
                 const folderPath = fileData.path.substring(0, fileData.path.lastIndexOf('/'));
-                const metaUrl = `https://raw.githubusercontent.com/caraaink/hotsuite/main/${folderPath}/meta.json`;
 
-                // Ambil file meta.json dari folder yang sama dengan file media
-                const metaRes = await fetch(`/api/get_file_content?path=${folderPath}/meta.json`);
-                if (!metaRes.ok) {
-                    throw new Error(`HTTP error fetching meta.json! status: ${metaRes.status}`);
-                }
-                const metaData = await metaRes.json();
-                console.log('meta.json content:', metaData);
-
-                // Cari caption berdasarkan nama file
-                const fileName = fileData.name;
-                const metaEntry = metaData[fileName];
-                if (metaEntry && metaEntry.caption) {
-                    caption.value = metaEntry.caption;
-                    status.innerText = '';
+                // Cari meta.json di folder atau folder induk
+                const metaData = await fetchMetaJson(folderPath);
+                if (metaData) {
+                    // Cari caption berdasarkan nama file
+                    const fileName = fileData.name;
+                    const metaEntry = metaData[fileName];
+                    if (metaEntry && metaEntry.caption) {
+                        caption.value = metaEntry.caption;
+                        status.innerText = '';
+                    } else {
+                        caption.value = '';
+                        status.innerText = `No caption found for ${fileName} in meta.json.`;
+                    }
                 } else {
                     caption.value = '';
-                    status.innerText = `No caption found for ${fileName} in meta.json.`;
+                    status.innerText = 'meta.json not found in this folder or its parent folders.';
                 }
             } catch (error) {
                 caption.value = '';
