@@ -14,16 +14,16 @@
             <select id="accountId" name="accountId" required>
                 <option value="">-- Pilih Akun --</option>
             </select>
+            <label for="userToken">User Token:</label>
+            <select id="userToken" name="userToken" required>
+                <option value="">-- Pilih Token --</option>
+            </select>
             <label for="mediaUrl">URL Media (HTTPS):</label>
             <input type="text" id="mediaUrl" name="mediaUrl" placeholder="Masukkan URL media" required>
             <label for="caption">Caption:</label>
             <textarea id="caption" name="caption" placeholder="Masukkan caption" required></textarea>
             <label for="time">Waktu Posting:</label>
             <input type="datetime-local" id="time" name="time" required>
-            <label for="userToken">User Token:</label>
-            <select id="userToken" name="userToken" required>
-                <option value="">-- Pilih Token --</option>
-            </select>
             <button type="submit" class="upload-btn">Jadwalkan</button>
         </form>
         <div class="status-container">
@@ -41,9 +41,18 @@
 
         // Load tokens dari environment variables via API
         fetch('/api/refresh-token')
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                return res.json();
+            })
             .then(data => {
+                console.log('Tokens fetched:', data);
                 const tokens = data.updatedTokens;
+                if (!tokens || Object.keys(tokens).length === 0) {
+                    throw new Error('No tokens returned from server');
+                }
                 for (let i = 1; i <= 11; i++) {
                     if (tokens[`TOKEN_${i}`]) {
                         const option = document.createElement('option');
@@ -51,6 +60,9 @@
                         option.textContent = `Akun ${i}`;
                         userToken.appendChild(option);
                     }
+                }
+                if (userToken.options.length === 1) {
+                    status.innerText = 'No tokens available. Please check environment variables.';
                 }
             })
             .catch(err => {
@@ -72,6 +84,7 @@
                     throw new Error(`HTTP error! status: ${res.status}`);
                 }
                 const data = await res.json();
+                console.log('Accounts fetched:', data);
                 accountId.innerHTML = '<option value="">-- Pilih Akun --</option>';
                 if (data.accounts && data.accounts[`Akun ${accountNum}`]) {
                     data.accounts[`Akun ${accountNum}`].accounts.forEach(acc => {
