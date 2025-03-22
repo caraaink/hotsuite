@@ -167,7 +167,7 @@
             }
         });
 
-        // Load GitHub folders
+        // Load GitHub folders directly from GitHub API
         async function loadGithubFolders() {
             try {
                 const res = await fetch('/api/get_github_files?path=ig');
@@ -179,19 +179,23 @@
                 githubFolder.innerHTML = '<option value="ig">-- Pilih Folder --</option>';
                 data.files.forEach(item => {
                     if (item.type === 'dir') {
+                        console.log('Adding folder to dropdown:', item.name);
                         const option = document.createElement('option');
                         option.value = item.path;
                         option.textContent = item.name;
                         githubFolder.appendChild(option);
                     }
                 });
+                if (githubFolder.options.length === 1) {
+                    status.innerText = 'No subfolders found in ig directory.';
+                }
             } catch (error) {
                 status.innerText = `Error loading GitHub folders: ${error.message}`;
                 console.error('Error fetching GitHub folders:', error);
             }
         }
 
-        // Load GitHub files when folder is selected
+        // Load GitHub files when folder is selected, directly from GitHub API
         githubFolder.addEventListener('change', async () => {
             const folderPath = githubFolder.value;
             if (!folderPath) {
@@ -211,11 +215,14 @@
                 data.files.forEach(item => {
                     if (item.type === 'file' && (item.name.endsWith('.jpg') || item.name.endsWith('.png') || item.name.endsWith('.mp4'))) {
                         const option = document.createElement('option');
-                        option.value = item.download_url;
+                        option.value = item.download_url; // Gunakan download_url dari GitHub API
                         option.textContent = item.name;
                         githubFile.appendChild(option);
                     }
                 });
+                if (githubFile.options.length === 1) {
+                    status.innerText = 'No supported media files found in this folder.';
+                }
             } catch (error) {
                 status.innerText = `Error loading GitHub files: ${error.message}`;
                 console.error('Error fetching GitHub files:', error);
