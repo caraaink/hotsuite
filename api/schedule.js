@@ -41,6 +41,14 @@ async function postToInstagram(igAccountId, mediaUrl, caption, userToken) {
 async function runScheduledPosts() {
   try {
     let schedules = (await kv.get(SCHEDULE_KEY)) || [];
+    
+    // Jika tidak ada jadwal, catat log minimal dan keluar
+    if (!schedules || schedules.length === 0) {
+      console.log('No schedules to process.');
+      return;
+    }
+
+    // Hanya catat log jika ada jadwal
     console.log('Schedules fetched:', schedules);
 
     const now = new Date();
@@ -67,6 +75,8 @@ async function runScheduledPosts() {
           console.log(`Post successful for ${schedule.accountId}: ${result.creationId}`);
         } else {
           console.error(`Failed to post for ${schedule.accountId}: ${result.error}`);
+          // Tambahkan flag untuk mencoba lagi di iterasi berikutnya
+          schedule.error = result.error;
         }
       } else {
         console.log(`Schedule not processed: ${now >= scheduledTimeUTC ? 'Already completed' : 'Time not yet reached'}`);
