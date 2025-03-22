@@ -3,13 +3,10 @@ const { kv } = require('@vercel/kv');
 
 const SCHEDULE_KEY = 'schedules';
 
-// Tambahkan logging untuk debugging
-console.log('KV_REST_API_URL:', process.env.KV_REST_API_URL);
-console.log('KV_REST_API_TOKEN:', process.env.KV_REST_API_TOKEN);
-
 // Fungsi untuk memposting ke Instagram dengan jadwal
 async function postToInstagram(igAccountId, mediaUrl, caption, userToken, scheduledTime) {
   try {
+    console.log('Posting to Instagram with params:', { igAccountId, mediaUrl, caption, scheduledTime });
     const isVideo = mediaUrl.toLowerCase().endsWith('.mp4');
     const mediaEndpoint = `https://graph.facebook.com/v19.0/${igAccountId}/media`;
     const params = {
@@ -22,6 +19,7 @@ async function postToInstagram(igAccountId, mediaUrl, caption, userToken, schedu
     };
 
     const mediaResponse = await axios.post(mediaEndpoint, params);
+    console.log('Instagram API response:', mediaResponse.data);
     return { success: true, creationId: mediaResponse.data.id };
   } catch (error) {
     console.error('Error posting to Instagram:', error.response?.data || error.message);
@@ -33,12 +31,14 @@ async function postToInstagram(igAccountId, mediaUrl, caption, userToken, schedu
 async function runScheduledPosts() {
   try {
     let schedules = (await kv.get(SCHEDULE_KEY)) || [];
+    console.log('Schedules fetched:', schedules);
 
     const now = new Date();
     const updatedSchedules = [];
 
     for (const schedule of schedules) {
       const scheduledTime = new Date(schedule.time);
+      console.log(`Checking schedule: ${schedule.accountId}, Time: ${scheduledTime}, Now: ${now}`);
       if (now >= scheduledTime && !schedule.completed) {
         const result = await postToInstagram(
           schedule.accountId,
@@ -58,6 +58,7 @@ async function runScheduledPosts() {
     }
 
     await kv.set(SCHEDULE_KEY, updatedSchedules);
+    console.log('Updated schedules:', updatedSchedules);
   } catch (error) {
     console.error('Error running scheduled posts:', error);
   }
@@ -65,11 +66,7 @@ async function runScheduledPosts() {
 
 // Vercel Serverless Function
 module.exports = async (req, res) => {
-  const authHeader = req.headers.authorization;
-  if (req.method === 'GET' && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-
+  // Hapus pengecekan autentikasi untuk metode GET
   if (req.method === 'POST') {
     const { accountId, mediaUrl, caption, time, userToken } = req.body;
     if (!accountId || !mediaUrl || !caption || !time || !userToken) {
