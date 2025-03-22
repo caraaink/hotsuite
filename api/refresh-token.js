@@ -9,21 +9,37 @@ export default async function handler(req, res) {
   }
 
   try {
+    const instagramToken = process.env.INSTAGRAM_TOKEN;
+    if (!instagramToken) {
+      return res.status(500).json({ error: 'Instagram token not configured' });
+    }
+
+    // Set timeout untuk fetch (5 detik)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
     const response = await fetch('https://graph.instagram.com/refresh_access_token', {
       method: 'GET',
       headers: {
-        Authorization: `Bearer ${process.env.INSTAGRAM_TOKEN}`,
+        Authorization: `Bearer ${instagramToken}`,
       },
+      signal: controller.signal,
     });
 
+    clearTimeout(timeoutId);
+
     if (!response.ok) {
-      throw new Error(`Failed to refresh token: ${response.statusText}`);
+      const errorText = await response.text();
+      throw new Error(`Failed to refresh token: ${response.statusText} - ${errorText}`);
     }
 
     const data = await response.json();
     res.status(200).json({ token: data.access_token });
   } catch (error) {
     console.error('Error refreshing token:', error);
+    if (error.name === 'AbortError') {
+      return res.status(504).json({ error: 'Request to Instagram API timed out' });
+    }
     res.status(500).json({ error: 'Failed to refresh token', details: error.message });
   }
 }
