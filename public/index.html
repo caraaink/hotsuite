@@ -89,9 +89,11 @@
         const githubFolder = document.getElementById('githubFolder');
         const githubFile = document.getElementById('githubFile');
         const mediaUrl = document.getElementById('mediaUrl');
+        const caption = document.getElementById('caption');
         const scheduleTableBody = document.getElementById('scheduleTableBody');
         const themeToggle = document.getElementById('themeToggle');
         let selectedToken = null; // Simpan token yang dipilih
+        let allMediaFiles = []; // Simpan semua file media yang ditemukan secara rekursif
 
         // Load dark mode preference from localStorage
         if (localStorage.getItem('theme') === 'dark') {
@@ -119,7 +121,6 @@
             }
 
             try {
-                // Ambil token untuk akun yang dipilih
                 const tokenRes = await fetch(`/api/refresh-token?accountNum=${accountNum}`);
                 if (!tokenRes.ok) {
                     throw new Error(`HTTP error fetching token! status: ${tokenRes.status}`);
@@ -131,7 +132,6 @@
                     throw new Error('No token found for this account');
                 }
 
-                // Ambil daftar akun Instagram berdasarkan token
                 const accountsRes = await fetch(`/api/get_accounts?account_key=Akun ${accountNum}`);
                 if (!accountsRes.ok) {
                     throw new Error(`HTTP error fetching accounts! status: ${accountsRes.status}`);
@@ -148,7 +148,7 @@
                             if (acc.type === 'ig' && acc.username) {
                                 const option = document.createElement('option');
                                 option.value = acc.id;
-                                option.textContent = acc.username; // Hanya tampilkan username
+                                option.textContent = acc.username;
                                 accountId.appendChild(option);
                             }
                         });
@@ -169,6 +169,7 @@
 
         // Load GitHub folders directly from GitHub API
         async function loadGithubFolders() {
+            status.innerText = 'Loading folders...';
             try {
                 const res = await fetch('/api/get_github_files?path=ig');
                 if (!res.ok) {
@@ -188,6 +189,8 @@
                 });
                 if (githubFolder.options.length === 1) {
                     status.innerText = 'No subfolders found in ig directory.';
+                } else {
+                    status.innerText = '';
                 }
             } catch (error) {
                 status.innerText = `Error loading GitHub folders: ${error.message}`;
@@ -195,33 +198,63 @@
             }
         }
 
-        // Load GitHub files when folder is selected, directly from GitHub API
+        // Fungsi rekursif untuk mengambil semua file media di dalam folder dan subfolder
+        async function fetchAllMediaFiles(path) {
+            try {
+                const res = await fetch(`/api/get_github_files?path=${path}`);
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                const data = await res.json();
+                console.log(`Files fetched for path ${path}:`, data);
+
+                for (const item of data.files) {
+                    if (item.type === 'dir') {
+                        // Jika item adalah folder, lakukan rekursi
+                        await fetchAllMediaFiles(item.path);
+                    } else if (item.type === 'file' && (item.name.endsWith('.jpg') || item.name.endsWith('.png') || item.name.endsWith('.mp4'))) {
+                        // Jika item adalah file media, tambahkan ke daftar
+                        allMediaFiles.push({
+                            name: item.name,
+                            path: item.path,
+                            download_url: item.download_url,
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error(`Error fetching files for path ${path}:`, error);
+            }
+        }
+
+        // Load GitHub files when folder is selected, recursively
         githubFolder.addEventListener('change', async () => {
             const folderPath = githubFolder.value;
             if (!folderPath) {
                 githubFile.innerHTML = '<option value="">-- Pilih File --</option>';
                 mediaUrl.value = '';
+                caption.value = '';
                 return;
             }
 
+            status.innerText = 'Loading files...';
+            allMediaFiles = []; // Reset daftar file media
             try {
-                const res = await fetch(`/api/get_github_files?path=${folderPath}`);
-                if (!res.ok) {
-                    throw new Error(`HTTP error! status: ${res.status}`);
-                }
-                const data = await res.json();
-                console.log('GitHub files fetched:', data);
+                // Ambil semua file media secara rekursif
+                await fetchAllMediaFiles(folderPath);
+                console.log('All media files found:', allMediaFiles);
+
                 githubFile.innerHTML = '<option value="">-- Pilih File --</option>';
-                data.files.forEach(item => {
-                    if (item.type === 'file' && (item.name.endsWith('.jpg') || item.name.endsWith('.png') || item.name.endsWith('.mp4'))) {
-                        const option = document.createElement('option');
-                        option.value = item.download_url; // Gunakan download_url dari GitHub API
-                        option.textContent = item.name;
-                        githubFile.appendChild(option);
-                    }
+                allMediaFiles.forEach(file => {
+                    const option = document.createElement('option');
+                    option.value = JSON.stringify(file); // Simpan seluruh objek file
+                    option.textContent = file.path.replace(`${folderPath}/`, ''); // Tampilkan path relatif
+                    githubFile.appendChild(option);
                 });
+
                 if (githubFile.options.length === 1) {
-                    status.innerText = 'No supported media files found in this folder.';
+                    status.innerText = 'No supported media files found in this folder or its subfolders.';
+                } else {
+                    status.innerText = '';
                 }
             } catch (error) {
                 status.innerText = `Error loading GitHub files: ${error.message}`;
@@ -229,10 +262,46 @@
             }
         });
 
-        // Set media URL when file is selected
-        githubFile.addEventListener('change', () => {
-            const fileUrl = githubFile.value;
-            mediaUrl.value = fileUrl || '';
+        // Set media URL and fetch caption when file is selected
+        githubFile.addEventListener('change', async () => {
+            const fileData = githubFile.value ? JSON.parse(githubFile.value) : null;
+            if (!fileData) {
+                mediaUrl.value = '';
+                caption.value = '';
+                return;
+            }
+
+            mediaUrl.value = fileData.download_url;
+            status.innerText = 'Fetching caption...';
+
+            try {
+                // Ambil path folder dari file (misalnya ig/2023-10/subfolder1/image.jpg -> ig/2023-10/subfolder1)
+                const folderPath = fileData.path.substring(0, fileData.path.lastIndexOf('/'));
+                const metaUrl = `https://raw.githubusercontent.com/caraaink/hotsuite/main/${folderPath}/meta.json`;
+
+                // Ambil file meta.json dari folder yang sama dengan file media
+                const metaRes = await fetch(`/api/get_file_content?path=${folderPath}/meta.json`);
+                if (!metaRes.ok) {
+                    throw new Error(`HTTP error fetching meta.json! status: ${metaRes.status}`);
+                }
+                const metaData = await metaRes.json();
+                console.log('meta.json content:', metaData);
+
+                // Cari caption berdasarkan nama file
+                const fileName = fileData.name;
+                const metaEntry = metaData[fileName];
+                if (metaEntry && metaEntry.caption) {
+                    caption.value = metaEntry.caption;
+                    status.innerText = '';
+                } else {
+                    caption.value = '';
+                    status.innerText = `No caption found for ${fileName} in meta.json.`;
+                }
+            } catch (error) {
+                caption.value = '';
+                status.innerText = `Error fetching caption: ${error.message}`;
+                console.error('Error fetching meta.json:', error);
+            }
         });
 
         // Load folders on page load
@@ -251,7 +320,6 @@
                 }
                 const result = await res.json();
                 status.innerText = result.message || 'Jadwal berhasil dihapus!';
-                // Refresh daftar jadwal setelah menghapus
                 loadSchedules();
             } catch (error) {
                 status.innerText = `Error deleting schedule: ${error.message}`;
@@ -264,14 +332,12 @@
             const schedules = (await (await fetch('/api/get_schedules')).json()).schedules;
             const schedule = schedules[index];
 
-            // Isi form dengan data jadwal yang akan diedit
             accountId.value = schedule.accountId;
             mediaUrl.value = schedule.mediaUrl;
             document.getElementById('caption').value = schedule.caption;
             document.getElementById('time').value = schedule.time;
             selectedToken = schedule.userToken;
 
-            // Ubah form untuk mode edit
             form.dataset.editIndex = index;
             form.querySelector('.upload-btn').textContent = 'Simpan Perubahan';
         }
@@ -303,7 +369,6 @@
                         scheduleTableBody.appendChild(row);
                     });
 
-                    // Tambahkan event listener untuk tombol edit dan hapus
                     document.querySelectorAll('.edit-btn').forEach(button => {
                         button.addEventListener('click', (e) => {
                             const index = e.target.dataset.index;
@@ -328,7 +393,6 @@
             }
         }
 
-        // Load schedules when page loads
         loadSchedules();
 
         form.addEventListener('submit', async (e) => {
@@ -347,7 +411,6 @@
 
             try {
                 if (form.dataset.editIndex) {
-                    // Mode edit: update jadwal
                     const index = form.dataset.editIndex;
                     const res = await fetch('/api/update_schedule', {
                         method: 'POST',
@@ -359,7 +422,6 @@
                     }
                     const result = await res.json();
                     status.innerText = result.message || 'Jadwal berhasil diperbarui!';
-                    // Reset form setelah edit
                     delete form.dataset.editIndex;
                     form.querySelector('.upload-btn').textContent = 'Jadwalkan';
                     form.reset();
@@ -367,8 +429,8 @@
                     githubFolder.value = 'ig';
                     githubFile.innerHTML = '<option value="">-- Pilih File --</option>';
                     mediaUrl.value = '';
+                    caption.value = '';
                 } else {
-                    // Mode tambah: jadwalkan baru
                     const response = await fetch('/api/schedule', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -380,7 +442,6 @@
                     const result = await response.json();
                     status.innerText = result.message || 'Gagal menjadwalkan!';
                 }
-                // Refresh daftar jadwal setelah menjadwalkan atau mengedit
                 loadSchedules();
             } catch (error) {
                 status.innerText = `Error: ${error.message}`;
