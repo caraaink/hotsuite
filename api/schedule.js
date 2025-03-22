@@ -34,12 +34,17 @@ async function runScheduledPosts() {
     console.log('Schedules fetched:', schedules);
 
     const now = new Date();
+    console.log('Current time (UTC):', now.toISOString());
+
     const updatedSchedules = [];
 
     for (const schedule of schedules) {
-      const scheduledTime = new Date(schedule.time);
-      console.log(`Checking schedule: ${schedule.accountId}, Time: ${scheduledTime}, Now: ${now}`);
+      // Pastikan format waktu benar
+      const scheduledTime = new Date(schedule.time + ':00Z'); // Tambahkan detik dan zona waktu UTC
+      console.log(`Checking schedule: ${schedule.accountId}, Scheduled Time: ${scheduledTime.toISOString()}, Now: ${now.toISOString()}`);
+      
       if (now >= scheduledTime && !schedule.completed) {
+        console.log(`Processing schedule for account ${schedule.accountId}`);
         const result = await postToInstagram(
           schedule.accountId,
           schedule.mediaUrl,
@@ -53,6 +58,8 @@ async function runScheduledPosts() {
         } else {
           console.error(`Failed to post for ${schedule.accountId}: ${result.error}`);
         }
+      } else {
+        console.log(`Schedule not processed: ${now >= scheduledTime ? 'Already completed' : 'Time not yet reached'}`);
       }
       updatedSchedules.push(schedule);
     }
@@ -66,7 +73,6 @@ async function runScheduledPosts() {
 
 // Vercel Serverless Function
 module.exports = async (req, res) => {
-  // Hapus pengecekan autentikasi untuk metode GET
   if (req.method === 'POST') {
     const { accountId, mediaUrl, caption, time, userToken } = req.body;
     if (!accountId || !mediaUrl || !caption || !time || !userToken) {
