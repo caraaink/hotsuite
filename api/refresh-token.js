@@ -1,19 +1,14 @@
 const axios = require('axios');
-const fs = require('fs').promises;
-const path = require('path');
-
-const SECRETS_BACKUP_PATH = path.join(__dirname, '../data/secrets.json');
 
 module.exports = async (req, res) => {
   try {
-    const config = JSON.parse(await fs.readFile(path.join(__dirname, '../config.json'), 'utf-8'));
     const tokens = {};
     for (let i = 1; i <= 11; i++) {
-      if (config[`TOKEN_${i}`]) tokens[`TOKEN_${i}`] = config[`TOKEN_${i}`];
+      if (process.env[`TOKEN_${i}`]) tokens[`TOKEN_${i}`] = process.env[`TOKEN_${i}`];
     }
 
-    const clientId = config.CLIENT_ID;
-    const clientSecret = config.CLIENT_SECRET;
+    const clientId = process.env.CLIENT_ID;
+    const clientSecret = process.env.CLIENT_SECRET;
     const updatedTokens = {};
 
     for (const [key, token] of Object.entries(tokens)) {
@@ -33,10 +28,13 @@ module.exports = async (req, res) => {
 
     updatedTokens.CLIENT_ID = clientId;
     updatedTokens.CLIENT_SECRET = clientSecret;
-    updatedTokens.GITHUB_TOKEN = config.GITHUB_TOKEN;
+    updatedTokens.GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 
-    await fs.writeFile(SECRETS_BACKUP_PATH, JSON.stringify(updatedTokens, null, 4));
-    res.send(`<html><body><h1>Refresh Token Berhasil</h1><p>Token diperbarui di ${SECRETS_BACKUP_PATH}</p></body></html>`);
+    // Karena Vercel serverless tidak bisa simpan file permanen, kembalikan sebagai JSON
+    res.status(200).json({
+      message: 'Tokens refreshed successfully',
+      updatedTokens,
+    });
   } catch (error) {
     console.error('Error refreshing token:', error);
     res.status(500).send(`<html><body><h1>Gagal Refresh Token</h1><p>Error: ${error.message}</p></body></html>`);
