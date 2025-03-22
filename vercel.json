@@ -7,12 +7,16 @@
     "api/refresh-token.js": {
       "memory": 128,
       "maxDuration": 10
+    },
+    "api/get_accounts.js": {
+      "memory": 128,
+      "maxDuration": 10
     }
   },
   "crons": [
     {
       "path": "/api/schedule",
-      "schedule": "* * * * *" // Jalankan setiap menit
+      "schedule": "* * * * *"
     }
   ],
   "rewrites": [
