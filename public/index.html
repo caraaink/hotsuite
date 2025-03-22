@@ -38,6 +38,23 @@
             <div id="spinner" class="spinner hidden"></div>
             <p id="status"></p>
         </div>
+
+        <!-- Bagian untuk menampilkan daftar jadwal -->
+        <h2>Daftar Jadwal Posting</h2>
+        <div id="scheduleList" class="schedule-list">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Akun IG</th>
+                        <th>Media URL</th>
+                        <th>Caption</th>
+                        <th>Waktu Posting</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="scheduleTableBody"></tbody>
+            </table>
+        </div>
     </div>
 
     <script>
@@ -49,6 +66,7 @@
         const githubFolder = document.getElementById('githubFolder');
         const githubFile = document.getElementById('githubFile');
         const mediaUrl = document.getElementById('mediaUrl');
+        const scheduleTableBody = document.getElementById('scheduleTableBody');
 
         // Load tokens dari environment variables via API
         fetch('/api/refresh-token')
@@ -179,6 +197,40 @@
         // Load folders on page load
         loadGithubFolders();
 
+        // Load schedules on page load
+        async function loadSchedules() {
+            try {
+                const res = await fetch('/api/get_schedules');
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                const data = await res.json();
+                console.log('Schedules fetched:', data);
+                scheduleTableBody.innerHTML = '';
+                if (data.schedules && data.schedules.length > 0) {
+                    data.schedules.forEach(schedule => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${schedule.accountId}</td>
+                            <td><a href="${schedule.mediaUrl}" target="_blank">Lihat Media</a></td>
+                            <td>${schedule.caption}</td>
+                            <td>${new Date(schedule.time).toLocaleString()}</td>
+                            <td>${schedule.completed ? 'Selesai' : 'Menunggu'}</td>
+                        `;
+                        scheduleTableBody.appendChild(row);
+                    });
+                } else {
+                    scheduleTableBody.innerHTML = '<tr><td colspan="5">Belum ada jadwal.</td></tr>';
+                }
+            } catch (error) {
+                status.innerText = `Error loading schedules: ${error.message}`;
+                console.error('Error fetching schedules:', error);
+            }
+        }
+
+        // Load schedules when page loads
+        loadSchedules();
+
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             status.innerText = 'Menjadwalkan...';
@@ -203,6 +255,8 @@
                 }
                 const result = await response.json();
                 status.innerText = result.message || 'Gagal menjadwalkan!';
+                // Refresh daftar jadwal setelah menjadwalkan
+                loadSchedules();
             } catch (error) {
                 status.innerText = `Error: ${error.message}`;
                 console.error('Error scheduling post:', error);
