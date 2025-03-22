@@ -17,7 +17,6 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'GitHub token not configured' });
     }
 
-    // Set timeout untuk fetch (5 detik)
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000);
 
