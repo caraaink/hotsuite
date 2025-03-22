@@ -1,35 +1,17 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
+import { Redis } from '@upstash/redis';
 import fetch from 'node-fetch';
 
 export default async function handler(req, res) {
   try {
-    const repoOwner = 'caraaink';
-    const repoName = 'hotsuite';
-    const filePath = 'data/schedules.json';
-    const githubToken = process.env.GITHUB_TOKEN;
+    const redis = new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN,
+    });
 
-    if (!githubToken) {
-      return res.status(500).json({ error: 'GitHub token not configured' });
-    }
-
-    const getFileResponse = await fetch(
-      `https://api.github.com/repos/${repoOwner}/${repoName}/contents/${filePath}`,
-      {
-        headers: {
-          Authorization: `token ${githubToken}`,
-          Accept: 'application/vnd.github.v3+json',
-        },
-      }
-    );
-
-    if (!getFileResponse.ok) {
-      throw new Error(`Failed to fetch schedules from GitHub: ${getFileResponse.statusText}`);
-    }
-
-    const fileData = await getFileResponse.json();
-    const content = Buffer.from(fileData.content, 'base64').toString('utf-8');
-    const schedulesData = JSON.parse(content);
-    let schedules = schedulesData.schedules || [];
+    // Ambil jadwal yang ada dari Upstash
+    let schedules = await redis.get('schedules');
+    schedules = schedules || [];
 
     const now = new Date();
     let updated = false;
@@ -40,6 +22,7 @@ export default async function handler(req, res) {
 
       const scheduleTime = new Date(schedule.time);
       if (now >= scheduleTime) {
+        // Publikasikan postingan
         const publishResponse = await fetch('https://hotsuite.vercel.app/api/publish', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -48,6 +31,7 @@ export default async function handler(req, res) {
             mediaUrl: schedule.mediaUrl,
             caption: schedule.caption,
             userToken: schedule.userToken,
+            accountNum: schedule.accountNum,
           }),
         });
 
@@ -60,28 +44,9 @@ export default async function handler(req, res) {
       }
     }
 
+    // Jika ada perubahan, simpan kembali ke Upstash
     if (updated) {
-      const newContent = Buffer.from(JSON.stringify({ schedules }, null, 2)).toString('base64');
-
-      const updateResponse = await fetch(
-        `https://api.github.com/repos/${repoOwner}/${repoName}/contents/${filePath}`,
-        {
-          method: 'PUT',
-          headers: {
-            Authorization: `token ${githubToken}`,
-            Accept: 'application/vnd.github.v3+json',
-          },
-          body: JSON.stringify({
-            message: 'Update schedules after publishing',
-            content: newContent,
-            sha: fileData.sha,
-          }),
-        }
-      );
-
-      if (!updateResponse.ok) {
-        throw new Error(`Failed to update schedules on GitHub: ${updateResponse.statusText}`);
-      }
+      await redis.set('schedules', schedules);
     }
 
     res.status(200).json({ message: 'Schedules checked and updated' });
