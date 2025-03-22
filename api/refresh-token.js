@@ -9,22 +9,21 @@ export default async function handler(req, res) {
   }
 
   try {
-    const instagramToken = process.env.INSTAGRAM_TOKEN;
+    const instagramToken = process.env[`TOKEN_${accountNum}`];
     if (!instagramToken) {
-      return res.status(500).json({ error: 'Instagram token not configured' });
+      return res.status(500).json({ error: `Instagram token for account ${accountNum} not configured` });
     }
 
-    // Set timeout untuk fetch (5 detik)
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-    const response = await fetch('https://graph.instagram.com/refresh_access_token', {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${instagramToken}`,
-      },
-      signal: controller.signal,
-    });
+    const response = await fetch(
+      `https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=${instagramToken}`,
+      {
+        method: 'GET',
+        signal: controller.signal,
+      }
+    );
 
     clearTimeout(timeoutId);
 
