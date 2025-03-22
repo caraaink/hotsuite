@@ -13,9 +13,21 @@
 
         <h2>Jadwalkan Posting Instagram</h2>
         <form id="scheduleForm" class="upload-form">
-            <label for="userToken">Pilih Akun:</label>
-            <select id="userToken" name="userToken" required>
+            <label for="userAccount">Pilih Akun:</label>
+            <select id="userAccount" name="userAccount" required>
                 <option value="">-- Pilih Akun --</option>
+                <!-- Daftar akun statis -->
+                <option value="1">Akun 1</option>
+                <option value="2">Akun 2</option>
+                <option value="3">Akun 3</option>
+                <option value="4">Akun 4</option>
+                <option value="5">Akun 5</option>
+                <option value="6">Akun 6</option>
+                <option value="7">Akun 7</option>
+                <option value="8">Akun 8</option>
+                <option value="9">Akun 9</option>
+                <option value="10">Akun 10</option>
+                <option value="11">Akun 11</option>
             </select>
 
             <label for="accountId">Pilih Username IG:</label>
@@ -74,12 +86,13 @@
         const status = document.getElementById('status');
         const spinner = document.getElementById('spinner');
         const accountId = document.getElementById('accountId');
-        const userToken = document.getElementById('userToken');
+        const userAccount = document.getElementById('userAccount');
         const githubFolder = document.getElementById('githubFolder');
         const githubFile = document.getElementById('githubFile');
         const mediaUrl = document.getElementById('mediaUrl');
         const scheduleTableBody = document.getElementById('scheduleTableBody');
         const themeToggle = document.getElementById('themeToggle');
+        let selectedToken = null; // Simpan token yang dipilih
 
         // Load dark mode preference from localStorage
         if (localStorage.getItem('theme') === 'dark') {
@@ -95,60 +108,40 @@
             localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
         });
 
-        // Load tokens dari environment variables via API
-        fetch('/api/refresh-token')
-            .then(res => {
-                if (!res.ok) {
-                    throw new Error(`HTTP error! status: ${res.status}`);
-                }
-                return res.json();
-            })
-            .then(data => {
-                console.log('Tokens fetched:', data);
-                const tokens = data.updatedTokens;
-                if (!tokens || Object.keys(tokens).length === 0) {
-                    throw new Error('No tokens returned from server');
-                }
-                for (let i = 1; i <= 11; i++) {
-                    if (tokens[`TOKEN_${i}`]) {
-                        const option = document.createElement('option');
-                        option.value = tokens[`TOKEN_${i}`];
-                        option.textContent = `Akun ${i}`;
-                        option.dataset.accountNum = i; // Simpan nomor akun di dataset
-                        userToken.appendChild(option);
-                    }
-                }
-                if (userToken.options.length === 1) {
-                    status.innerText = 'No tokens available. Please check environment variables.';
-                }
-            })
-            .catch(err => {
-                status.innerText = `Error loading tokens: ${err.message}`;
-                console.error('Error fetching tokens:', err);
-            });
-
         // Load Instagram usernames when an account is selected
-        userToken.addEventListener('change', async () => {
-            const token = userToken.value;
-            const selectedOption = userToken.options[userToken.selectedIndex];
-            const accountNum = selectedOption.dataset.accountNum; // Ambil nomor akun dari dataset
-            console.log('Selected token:', token, 'Account number:', accountNum);
+        userAccount.addEventListener('change', async () => {
+            const accountNum = userAccount.value;
+            console.log('Selected account number:', accountNum);
 
-            if (!token || !accountNum) {
+            if (!accountNum) {
                 accountId.innerHTML = '<option value="">-- Pilih Username --</option>';
+                selectedToken = null;
                 return;
             }
 
             try {
-                const res = await fetch(`/api/get_accounts?account_key=Akun ${accountNum}`);
+                // Ambil token untuk akun yang dipilih
+                const res = await fetch(`/api/refresh-token?accountNum=${accountNum}`);
                 if (!res.ok) {
                     throw new Error(`HTTP error! status: ${res.status}`);
                 }
                 const data = await res.json();
-                console.log('Accounts fetched:', data);
+                console.log('Token fetched:', data);
+                selectedToken = data.token;
+                if (!selectedToken) {
+                    throw new Error('No token found for this account');
+                }
+
+                // Ambil daftar akun Instagram berdasarkan token
+                const accountsRes = await fetch(`/api/get_accounts?account_key=Akun ${accountNum}`);
+                if (!accountsRes.ok) {
+                    throw new Error(`HTTP error! status: ${accountsRes.status}`);
+                }
+                const accountsData = await accountsRes.json();
+                console.log('Accounts fetched:', accountsData);
                 accountId.innerHTML = '<option value="">-- Pilih Username --</option>';
-                if (data.accounts && data.accounts[`Akun ${accountNum}`]) {
-                    data.accounts[`Akun ${accountNum}`].accounts.forEach(acc => {
+                if (accountsData.accounts && accountsData.accounts[`Akun ${accountNum}`]) {
+                    accountsData.accounts[`Akun ${accountNum}`].accounts.forEach(acc => {
                         if (acc.type === 'ig') {
                             const option = document.createElement('option');
                             option.value = acc.id;
@@ -157,7 +150,7 @@
                         }
                     });
                 } else {
-                    status.innerText = 'No Instagram accounts found for this token.';
+                    status.innerText = 'No Instagram accounts found for this account.';
                 }
             } catch (error) {
                 status.innerText = `Error fetching accounts: ${error.message}`;
@@ -305,7 +298,7 @@
                 mediaUrl: mediaUrl.value,
                 caption: document.getElementById('caption').value,
                 time: document.getElementById('time').value,
-                userToken: userToken.value,
+                userToken: selectedToken, // Gunakan token yang dipilih
             };
 
             try {
