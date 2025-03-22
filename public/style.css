@@ -342,22 +342,17 @@ body.dark-mode h2 {
     word-wrap: break-word;
 }
 
-.gallery-item .btn {
-    margin: 5px 2px;
-    padding: 6px 10px;
-    font-size: 14px;
+.gallery-item .schedule-time {
+    font-size: 12px;
+    color: #777;
+    margin-top: 5px;
 }
 
-.gallery-item .btn.edit {
-    background-color: #3498db;
-}
-
-.gallery-item .btn.publish {
-    background-color: #2ecc71;
-}
-
-.gallery-item .btn.schedule {
-    background-color: #f39c12;
+/* Perbaikan Warna Teks di Dark Mode untuk Galeri */
+body.dark-mode .gallery-item p,
+body.dark-mode .gallery-item .caption-text,
+body.dark-mode .gallery-item .schedule-time {
+    color: #d0d0d0; /* Warna teks lebih terang di dark mode */
 }
 
 /* Editors */
