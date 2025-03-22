@@ -23,6 +23,7 @@
             <label for="userToken">User Token:</label>
             <select id="userToken" name="userToken" required>
                 <option value="">-- Pilih Token --</option>
+                <!-- Token akan diisi via JS -->
             </select>
             <button type="submit" class="upload-btn">Jadwalkan</button>
         </form>
@@ -39,28 +40,33 @@
         const accountId = document.getElementById('accountId');
         const userToken = document.getElementById('userToken');
 
-        // Load tokens and accounts
+        // Load tokens dari environment variables via API
         fetch('/api/refresh-token')
-            .then(() => fetch('/data/secrets.json'))
             .then(res => res.json())
-            .then(config => {
+            .then(data => {
+                const tokens = data.updatedTokens;
                 for (let i = 1; i <= 11; i++) {
-                    if (config[`TOKEN_${i}`]) {
+                    if (tokens[`TOKEN_${i}`]) {
                         const option = document.createElement('option');
-                        option.value = config[`TOKEN_${i}`];
+                        option.value = tokens[`TOKEN_${i}`];
                         option.textContent = `Akun ${i}`;
                         userToken.appendChild(option);
                     }
                 }
-            });
+            })
+            .catch(err => status.innerText = `Error loading tokens: ${err.message}`);
 
         userToken.addEventListener('change', async () => {
             const token = userToken.value;
             if (!token) return;
-            const res = await fetch(`/api/get_accounts?account_key=Akun ${Array.from(userToken.options).findIndex(opt => opt.value === token) + 1}`);
+
+            const accountNum = Array.from(userToken.options).findIndex(opt => opt.value === token) + 1;
+            const res = await fetch(`/api/get_accounts?account_key=Akun ${accountNum}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             const data = await res.json();
             accountId.innerHTML = '<option value="">-- Pilih Akun --</option>';
-            data.accounts[`Akun ${Array.from(userToken.options).findIndex(opt => opt.value === token) + 1}`].accounts.forEach(acc => {
+            data.accounts[`Akun ${accountNum}`].accounts.forEach(acc => {
                 if (acc.type === 'ig') {
                     const option = document.createElement('option');
                     option.value = acc.id;
