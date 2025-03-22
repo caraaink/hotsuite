@@ -87,6 +87,7 @@
                         const option = document.createElement('option');
                         option.value = tokens[`TOKEN_${i}`];
                         option.textContent = `Akun ${i}`;
+                        option.dataset.accountNum = i; // Simpan nomor akun di dataset
                         userToken.appendChild(option);
                     }
                 }
@@ -101,13 +102,16 @@
 
         userToken.addEventListener('change', async () => {
             const token = userToken.value;
-            if (!token) {
+            const selectedOption = userToken.options[userToken.selectedIndex];
+            const accountNum = selectedOption.dataset.accountNum; // Ambil nomor akun dari dataset
+            console.log('Selected token:', token, 'Account number:', accountNum);
+
+            if (!token || !accountNum) {
                 accountId.innerHTML = '<option value="">-- Pilih Akun --</option>';
                 return;
             }
 
             try {
-                const accountNum = Array.from(userToken.options).findIndex(opt => opt.value === token) + 1;
                 const res = await fetch(`/api/get_accounts?account_key=Akun ${accountNum}`);
                 if (!res.ok) {
                     throw new Error(`HTTP error! status: ${res.status}`);
