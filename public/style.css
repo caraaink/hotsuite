@@ -122,6 +122,13 @@ body.dark-mode .gallery-item {
     background: #444;
 }
 
+/* Perbaikan Warna Teks di Dark Mode */
+body.dark-mode .header h2,
+body.dark-mode .upload-form label,
+body.dark-mode h2 {
+    color: #e0e0e0; /* Warna teks lebih terang di dark mode */
+}
+
 /* Upload Form */
 .upload-form {
     display: grid;
@@ -177,7 +184,6 @@ body.dark-mode .gallery-item {
     background-color: #2980b9;
 }
 
-.edit-btn,
 .delete-btn {
     padding: 6px 12px;
     margin-right: 5px;
@@ -186,21 +192,8 @@ body.dark-mode .gallery-item {
     cursor: pointer;
     font-size: 14px;
     font-weight: 500;
-}
-
-.edit-btn {
-    background-color: #2ecc71;
-    color: #fff;
-}
-
-.delete-btn {
     background-color: #e74c3c;
     color: #fff;
-}
-
-.edit-btn:disabled {
-    background-color: #ccc;
-    cursor: not-allowed;
 }
 
 /* Status Container */
@@ -257,6 +250,24 @@ body.dark-mode .gallery-item {
 
 .schedule-list td a:hover {
     text-decoration: underline;
+}
+
+/* Tombol Hapus Terpilih */
+.delete-selected-btn {
+    margin-top: 15px;
+    padding: 10px 20px;
+    background-color: #e74c3c;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 500;
+    transition: background-color 0.3s ease;
+}
+
+.delete-selected-btn:hover {
+    background-color: #c0392b;
 }
 
 /* Gallery */
