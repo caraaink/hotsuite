@@ -1,5 +1,5 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import fetch from 'node-fetch';
+import axios from 'axios';
 
 export default async function handler(req, res) {
   const { accountNum } = req.query;
@@ -9,35 +9,22 @@ export default async function handler(req, res) {
   }
 
   try {
-    const instagramToken = process.env[`TOKEN_${accountNum}`];
-    if (!instagramToken) {
-      return res.status(500).json({ error: `Instagram token for account ${accountNum} not configured` });
+    const facebookToken = process.env[`TOKEN_${accountNum}`];
+    if (!facebookToken) {
+      return res.status(500).json({ error: `Facebook token for account ${accountNum} not configured` });
     }
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-    const response = await fetch(
-      `https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=${instagramToken}`,
-      {
-        method: 'GET',
-        signal: controller.signal,
-      }
+    const response = await axios.get(
+      `https://graph.facebook.com/v20.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${process.env.FACEBOOK_APP_ID}&client_secret=${process.env.FACEBOOK_APP_SECRET}&fb_exchange_token=${facebookToken}`,
+      { timeout: 5000 }
     );
 
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to refresh token: ${response.statusText} - ${errorText}`);
-    }
-
-    const data = await response.json();
+    const data = response.data;
     res.status(200).json({ token: data.access_token });
   } catch (error) {
     console.error('Error refreshing token:', error);
-    if (error.name === 'AbortError') {
-      return res.status(504).json({ error: 'Request to Instagram API timed out' });
+    if (error.code === 'ECONNABORTED') {
+      return res.status(504).json({ error: 'Request to Facebook API timed out' });
     }
     res.status(500).json({ error: 'Failed to refresh token', details: error.message });
   }
