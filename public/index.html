@@ -446,6 +446,15 @@
                 return;
             }
 
+            // Fungsi untuk format tanggal dan jam dengan benar
+            function formatDateTime(date, hours, minutes) {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const formatted = `${year}-${month}-${day}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+                return formatted;
+            }
+
             imageFiles.forEach((file, index) => {
                 const container = document.createElement('div');
                 container.className = 'gallery-item';
@@ -576,9 +585,12 @@
                 // Set default schedule time with 1-day or 2-day interval based on skipDay
                 if (startDateTime.value && !scheduledTimes[file.path]) {
                     const start = new Date(startDateTime.value);
+                    const hours = start.getHours();
+                    const minutes = start.getMinutes();
                     const dayIncrement = skipDay.checked ? 2 : 1;
-                    start.setDate(start.getDate() + (index * dayIncrement));
-                    scheduledTimes[file.path] = start.toISOString().slice(0, 16);
+                    const newDate = new Date(start);
+                    newDate.setDate(start.getDate() + (index * dayIncrement));
+                    scheduledTimes[file.path] = formatDateTime(newDate, hours, minutes);
                     scheduleTime.textContent = new Date(scheduledTimes[file.path]).toLocaleString();
                 }
             });
@@ -587,11 +599,13 @@
             startDateTime.addEventListener('change', () => {
                 if (!startDateTime.value) return;
                 const start = new Date(startDateTime.value);
+                const hours = start.getHours();
+                const minutes = start.getMinutes();
                 const dayIncrement = skipDay.checked ? 2 : 1;
                 imageFiles.forEach((file, index) => {
                     const newDate = new Date(start);
                     newDate.setDate(start.getDate() + (index * dayIncrement));
-                    scheduledTimes[file.path] = newDate.toISOString().slice(0, 16);
+                    scheduledTimes[file.path] = formatDateTime(newDate, hours, minutes);
                     const scheduleTimeElement = gallery.children[index].querySelector('.schedule-time');
                     scheduleTimeElement.textContent = new Date(scheduledTimes[file.path]).toLocaleString();
                 });
@@ -601,11 +615,13 @@
             skipDay.addEventListener('change', () => {
                 if (!startDateTime.value) return;
                 const start = new Date(startDateTime.value);
+                const hours = start.getHours();
+                const minutes = start.getMinutes();
                 const dayIncrement = skipDay.checked ? 2 : 1;
                 imageFiles.forEach((file, index) => {
                     const newDate = new Date(start);
                     newDate.setDate(start.getDate() + (index * dayIncrement));
-                    scheduledTimes[file.path] = newDate.toISOString().slice(0, 16);
+                    scheduledTimes[file.path] = formatDateTime(newDate, hours, minutes);
                     const scheduleTimeElement = gallery.children[index].querySelector('.schedule-time');
                     scheduleTimeElement.textContent = new Date(scheduledTimes[file.path]).toLocaleString();
                 });
@@ -619,11 +635,13 @@
                 }
 
                 const start = new Date(startDateTime.value);
+                const hours = start.getHours();
+                const minutes = start.getMinutes();
                 const dayIncrement = skipDay.checked ? 2 : 1;
                 imageFiles.forEach((file, index) => {
                     const newDate = new Date(start);
                     newDate.setDate(start.getDate() + (index * dayIncrement));
-                    scheduledTimes[file.path] = newDate.toISOString().slice(0, 16);
+                    scheduledTimes[file.path] = formatDateTime(newDate, hours, minutes);
                     const scheduleTimeElement = gallery.children[index].querySelector('.schedule-time');
                     scheduleTimeElement.textContent = new Date(scheduledTimes[file.path]).toLocaleString();
                 });
