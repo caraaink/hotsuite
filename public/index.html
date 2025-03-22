@@ -5,115 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Instagram Scheduler</title>
     <link rel="stylesheet" href="/style.css">
-    <style>
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        .theme-toggle-btn {
-            background: none;
-            border: none;
-            font-size: 20px;
-            cursor: pointer;
-        }
-        .theme-menu {
-            position: absolute;
-            top: 40px;
-            right: 10px;
-            background: #333;
-            color: white;
-            padding: 10px;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-            z-index: 1000;
-        }
-        .theme-menu button {
-            background: none;
-            border: none;
-            color: white;
-            padding: 5px 10px;
-            cursor: pointer;
-            width: 100%;
-            text-align: left;
-        }
-        .theme-menu button:hover {
-            background: #555;
-        }
-        .gallery {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 10px;
-            max-height: 400px;
-            overflow-y: auto;
-        }
-        .gallery-item {
-            text-align: center;
-            position: relative;
-        }
-        .gallery-item img {
-            width: 100px;
-            height: 100px;
-            object-fit: cover;
-            cursor: pointer;
-            border: 2px solid transparent;
-            transition: border 0.3s;
-        }
-        .gallery-item img:hover {
-            border: 2px solid #007bff;
-        }
-        .gallery-item img.selected {
-            border: 2px solid #007bff;
-        }
-        .gallery-item p {
-            margin: 5px 0 0 0;
-            font-size: 12px;
-        }
-        .gallery-item .btn {
-            margin: 5px 2px;
-            padding: 5px 10px;
-            font-size: 12px;
-            cursor: pointer;
-        }
-        .gallery-item .btn.edit {
-            background-color: #007bff;
-            color: white;
-        }
-        .gallery-item .btn.publish {
-            background-color: #28a745;
-            color: white;
-        }
-        .gallery-item .btn.schedule {
-            background-color: #ff9800;
-            color: white;
-        }
-        .caption-editor, .schedule-editor {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.8);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 10;
-        }
-        .caption-editor textarea {
-            width: 80%;
-            height: 60%;
-            margin-bottom: 10px;
-        }
-        .schedule-editor input {
-            margin-bottom: 10px;
-        }
-        .hidden {
-            display: none;
-        }
-    </style>
 </head>
 <body>
     <div class="container">
@@ -167,15 +58,6 @@
             <div id="gallery" class="gallery"></div>
 
             <input type="text" id="mediaUrl" name="mediaUrl" class="hidden" readonly required>
-
-            <label for="caption">Caption:</label>
-            <textarea id="caption" name="caption" placeholder="Masukkan caption" required></textarea>
-
-            <label for="time">Waktu Posting (Hanya untuk File Pertama):</label>
-            <input type="datetime-local" id="time" name="time" required>
-
-            <button type="button" id="saveCaptionBtn" class="btn">Simpan Caption</button>
-            <button type="submit" class="upload-btn">Jadwalkan Semua</button>
         </form>
 
         <div class="status-container">
@@ -212,9 +94,6 @@
         const githubFile = document.getElementById('githubFile');
         const gallery = document.getElementById('gallery');
         const mediaUrl = document.getElementById('mediaUrl');
-        const caption = document.getElementById('caption');
-        const timeInput = document.getElementById('time');
-        const saveCaptionBtn = document.getElementById('saveCaptionBtn');
         const scheduleTableBody = document.getElementById('scheduleTableBody');
         const themeToggle = document.getElementById('themeToggle');
         const themeMenu = document.getElementById('themeMenu');
@@ -447,7 +326,6 @@
                 githubFile.innerHTML = '<option value="">-- Pilih File --</option>';
                 gallery.innerHTML = '';
                 mediaUrl.value = '';
-                caption.value = '';
                 captions = {};
                 return;
             }
@@ -486,7 +364,6 @@
                     githubFile.innerHTML = '<option value="">-- Pilih File --</option>';
                     gallery.innerHTML = '';
                     mediaUrl.value = '';
-                    caption.value = '';
                     captions = {};
 
                     if (githubSubfolder.options.length === 1) {
@@ -507,7 +384,6 @@
                 githubFile.innerHTML = '<option value="">-- Pilih File --</option>';
                 gallery.innerHTML = '';
                 mediaUrl.value = '';
-                caption.value = '';
                 captions = {};
                 return;
             }
@@ -565,9 +441,13 @@
                 const name = document.createElement('p');
                 name.textContent = file.name;
 
+                const captionText = document.createElement('p');
+                captionText.className = 'caption-text';
+                captionText.textContent = captions[file.path] || 'Tidak ada caption';
+
                 const editBtn = document.createElement('button');
                 editBtn.className = 'btn edit';
-                editBtn.textContent = 'Edit Caption';
+                editBtn.textContent = 'Edit';
                 editBtn.addEventListener('click', () => {
                     const editor = document.createElement('div');
                     editor.className = 'caption-editor';
@@ -577,6 +457,7 @@
                     saveBtn.textContent = 'Simpan';
                     saveBtn.addEventListener('click', () => {
                         captions[file.path] = textarea.value;
+                        captionText.textContent = captions[file.path] || 'Tidak ada caption';
                         editor.remove();
                         status.innerText = `Caption untuk ${file.name} berhasil disimpan.`;
                     });
@@ -684,6 +565,7 @@
 
                 container.appendChild(img);
                 container.appendChild(name);
+                container.appendChild(captionText);
                 container.appendChild(editBtn);
                 container.appendChild(scheduleBtn);
                 container.appendChild(publishBtn);
@@ -695,7 +577,6 @@
             const fileData = githubFile.value ? JSON.parse(githubFile.value) : null;
             if (!fileData) {
                 mediaUrl.value = '';
-                caption.value = '';
                 gallery.querySelectorAll('img').forEach(img => img.classList.remove('selected'));
                 return;
             }
@@ -710,18 +591,6 @@
             });
 
             mediaUrl.value = fileData.download_url;
-            caption.value = captions[fileData.path] || '';
-        });
-
-        saveCaptionBtn.addEventListener('click', () => {
-            const fileData = githubFile.value ? JSON.parse(githubFile.value) : null;
-            if (!fileData) {
-                status.innerText = 'Pilih file terlebih dahulu.';
-                return;
-            }
-
-            captions[fileData.path] = caption.value;
-            status.innerText = `Caption untuk ${fileData.name} berhasil disimpan.`;
         });
 
         loadGithubFolders();
@@ -770,12 +639,9 @@
                 accountId.value = schedule.accountId;
                 selectedUsername = schedule.username;
                 mediaUrl.value = schedule.mediaUrl;
-                caption.value = schedule.caption;
-                timeInput.value = schedule.time;
                 selectedToken = schedule.userToken;
 
                 form.dataset.editIndex = index;
-                form.querySelector('.upload-btn').textContent = 'Simpan Perubahan';
                 status.innerText = 'Mengedit jadwal...';
             } catch (error) {
                 status.innerText = `Error loading schedule for edit: ${error.message}`;
@@ -843,96 +709,6 @@
         }
 
         loadSchedules();
-
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if (!allMediaFiles.length) {
-                status.innerText = 'Pilih subfolder dan file terlebih dahulu.';
-                return;
-            }
-
-            status.innerText = form.dataset.editIndex ? 'Menyimpan perubahan...' : 'Menjadwalkan semua file...';
-            spinner.classList.remove('hidden');
-
-            try {
-                if (form.dataset.editIndex) {
-                    const index = parseInt(form.dataset.editIndex, 10);
-                    const formData = {
-                        accountId: accountId.value,
-                        username: selectedUsername,
-                        mediaUrl: mediaUrl.value,
-                        caption: caption.value,
-                        time: timeInput.value,
-                        userToken: selectedToken,
-                        accountNum: userAccount.value,
-                        completed: false,
-                    };
-                    const res = await fetch('/api/update_schedule', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ index, updatedSchedule: formData }),
-                    });
-                    if (!res.ok) {
-                        throw new Error(`HTTP error updating schedule! status: ${res.status}`);
-                    }
-                    const result = await res.json();
-                    status.innerText = result.message || 'Jadwal berhasil diperbarui!';
-                    delete form.dataset.editIndex;
-                    form.querySelector('.upload-btn').textContent = 'Jadwalkan Semua';
-                } else {
-                    const baseTime = new Date(timeInput.value);
-                    const baseHours = baseTime.getHours();
-                    const baseMinutes = baseTime.getMinutes();
-
-                    for (let i = 0; i < allMediaFiles.length; i++) {
-                        const file = allMediaFiles[i];
-                        const scheduleDate = new Date(baseTime);
-                        scheduleDate.setDate(baseTime.getDate() + (i * 2));
-                        scheduleDate.setHours(baseHours);
-                        scheduleDate.setMinutes(baseMinutes);
-
-                        const formData = {
-                            accountId: accountId.value,
-                            username: selectedUsername,
-                            mediaUrl: file.download_url,
-                            caption: captions[file.path] || '',
-                            time: scheduleDate.toISOString().slice(0, 16),
-                            userToken: selectedToken,
-                            accountNum: userAccount.value,
-                            completed: false,
-                        };
-
-                        const response = await fetch('/api/schedule', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(formData),
-                        });
-                        if (!response.ok) {
-                            throw new Error(`HTTP error scheduling post ${file.name}! status: ${response.status}`);
-                        }
-                    }
-                    status.innerText = 'Semua file berhasil dijadwalkan!';
-                }
-
-                form.reset();
-                accountId.innerHTML = '<option value="">-- Pilih Username --</option>';
-                githubFolder.value = 'ig';
-                githubSubfolder.innerHTML = '<option value="">-- Pilih Subfolder --</option>';
-                githubFile.innerHTML = '<option value="">-- Pilih File --</option>';
-                gallery.innerHTML = '';
-                mediaUrl.value = '';
-                caption.value = '';
-                captions = {};
-                selectedUsername = null;
-
-                await loadSchedules();
-            } catch (error) {
-                status.innerText = `Error: ${error.message}`;
-                console.error('Error scheduling posts:', error);
-            } finally {
-                spinner.classList.add('hidden');
-            }
-        });
     </script>
 </body>
 </html>
