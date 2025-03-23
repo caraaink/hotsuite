@@ -542,3 +542,20 @@ body.dark-mode .skip-day-option label {
         padding: 6px 8px;
     }
 }
+/* Sembunyikan elemen kosong */
+.gallery:empty,
+.schedule-list:empty,
+.gallery-item:empty {
+    display: none;
+}
+
+/* Pastikan tabel jadwal kosong juga disembunyikan */
+.schedule-list table:empty,
+.schedule-list table tbody:empty {
+    display: none;
+}
+
+/* Sembunyikan pesan "Belum ada jadwal" jika tidak ada jadwal */
+.schedule-list table tbody tr td[colspan="7"] {
+    display: none;
+}
