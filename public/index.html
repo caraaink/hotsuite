@@ -83,7 +83,7 @@
                 <thead>
                     <tr>
                         <th><input type="checkbox" id="selectAll"></th>
-                        <th>Akun IG</th>
+                        <th>Username IG</th>
                         <th>Media URL</th>
                         <th>Caption</th>
                         <th>Waktu Posting</th>
@@ -766,7 +766,7 @@
                             completed: false,
                         };
 
-                        const response = await fetch('/api/schedule', {
+                        const response = await fetch('/api/check_schedules', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(formData),
@@ -842,16 +842,19 @@
                 scheduleTableBody.innerHTML = '';
                 const schedules = data.schedules || [];
 
-                const filteredSchedules = selectedAccountNum
-                    ? schedules.filter(schedule => schedule.accountNum === selectedAccountNum)
-                    : schedules;
+                // Filter jadwal berdasarkan selectedAccountNum dan selectedUsername
+                const filteredSchedules = selectedAccountNum && selectedUsername
+                    ? schedules.filter(schedule => 
+                        schedule.accountNum === selectedAccountNum && 
+                        schedule.username === selectedUsername)
+                    : [];
 
                 if (filteredSchedules.length > 0) {
                     filteredSchedules.forEach((schedule, index) => {
                         const row = document.createElement('tr');
                         row.innerHTML = `
                             <td><input type="checkbox" class="schedule-checkbox" data-index="${index}"></td>
-                            <td>${schedule.username || schedule.accountId}</td>
+                            <td>${schedule.username || 'Unknown'}</td>
                             <td><a href="${schedule.mediaUrl}" target="_blank">Lihat Media</a></td>
                             <td>${schedule.caption}</td>
                             <td>${new Date(schedule.time).toLocaleString()}</td>
