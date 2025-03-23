@@ -94,27 +94,6 @@ async function runScheduledPosts() {
           if (result.success) {
             schedule.completed = true; // Set status completed langsung ke true
             console.log(`Post successful for ${schedule.accountId}: ${result.creationId}`);
-
-            // Hapus file dari GitHub jika dari folder ig/image
-            if (schedule.mediaUrl.includes('ig/image')) {
-              const path = schedule.mediaUrl.split('/').slice(-2).join('/'); // Misalnya: ig/image/42382.jpg
-              try {
-                const deleteResponse = await fetch('/api/delete_from_github', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ path }),
-                });
-
-                if (!deleteResponse.ok) {
-                  throw new Error(`HTTP error deleting file from GitHub! status: ${deleteResponse.status}`);
-                }
-
-                const deleteResult = await deleteResponse.json();
-                console.log(`Delete result: ${deleteResult.message}`);
-              } catch (deleteError) {
-                console.error(`Failed to delete files for ${path}: ${deleteError.message}`);
-              }
-            }
           } else {
             console.error(`Failed to post for ${schedule.accountId}: ${result.error}`);
             schedule.error = result.error;
