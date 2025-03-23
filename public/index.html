@@ -766,7 +766,7 @@
                             completed: false,
                         };
 
-                        const response = await fetch('/api/schedule', { // Gunakan endpoint yang benar
+                        const response = await fetch('/api/schedule', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(formData),
