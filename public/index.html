@@ -83,7 +83,7 @@
                 <thead>
                     <tr>
                         <th><input type="checkbox" id="selectAll"></th>
-                        <th>Username IG</th>
+                        <th>Akun IG</th>
                         <th>Media URL</th>
                         <th>Caption</th>
                         <th>Waktu Posting</th>
@@ -739,7 +739,7 @@
 
             // Save Schedules Button
             saveSchedules.addEventListener('click', async () => {
-                if (!selectedToken || !accountId.value || !selectedUsername || !selectedAccountNum) {
+                if (!selectedToken || !accountId.value) {
                     status.innerText = 'Pilih akun dan username terlebih dahulu.';
                     return;
                 }
@@ -762,25 +762,18 @@
                             caption: captions[file.path] || '',
                             time: scheduledTimes[file.path],
                             userToken: selectedToken,
-                            accountNum: selectedAccountNum,
+                            accountNum: userAccount.value,
                             completed: false,
                         };
-
-                        console.log('Data yang dikirim ke /api/schedule:', formData); // Debugging
 
                         const response = await fetch('/api/schedule', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(formData),
                         });
-
                         if (!response.ok) {
-                            const errorData = await response.json();
-                            throw new Error(`HTTP error scheduling post! status: ${response.status}, details: ${JSON.stringify(errorData)}`);
+                            throw new Error(`HTTP error scheduling post! status: ${response.status}`);
                         }
-
-                        const result = await response.json();
-                        console.log('Response dari /api/schedule:', result);
                     }
                     status.innerText = `${scheduledFiles.length} foto berhasil dijadwalkan!`;
                     scheduledTimes = {}; // Reset scheduled times after saving
@@ -849,19 +842,16 @@
                 scheduleTableBody.innerHTML = '';
                 const schedules = data.schedules || [];
 
-                // Filter jadwal berdasarkan selectedAccountNum dan selectedUsername
-                const filteredSchedules = selectedAccountNum && selectedUsername
-                    ? schedules.filter(schedule => 
-                        schedule.accountNum === selectedAccountNum && 
-                        schedule.username === selectedUsername)
-                    : [];
+                const filteredSchedules = selectedAccountNum
+                    ? schedules.filter(schedule => schedule.accountNum === selectedAccountNum)
+                    : schedules;
 
                 if (filteredSchedules.length > 0) {
                     filteredSchedules.forEach((schedule, index) => {
                         const row = document.createElement('tr');
                         row.innerHTML = `
                             <td><input type="checkbox" class="schedule-checkbox" data-index="${index}"></td>
-                            <td>${schedule.username || 'Unknown'}</td>
+                            <td>${schedule.username || schedule.accountId}</td>
                             <td><a href="${schedule.mediaUrl}" target="_blank">Lihat Media</a></td>
                             <td>${schedule.caption}</td>
                             <td>${new Date(schedule.time).toLocaleString()}</td>
