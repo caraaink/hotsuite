@@ -16,9 +16,11 @@ async function postToInstagram(igAccountId, mediaUrl, caption, userToken) {
       ...(isVideo && { media_type: 'REELS' }),
     };
 
+    // Langkah 1: Buat media container
     const mediaResponse = await axios.post(mediaEndpoint, params);
     console.log('Media container created:', mediaResponse.data);
 
+    // Langkah 2: Publikasikan media
     const creationId = mediaResponse.data.id;
     const publishEndpoint = `https://graph.facebook.com/v19.0/${igAccountId}/media_publish`;
     const publishParams = {
@@ -35,16 +37,21 @@ async function postToInstagram(igAccountId, mediaUrl, caption, userToken) {
   }
 }
 
-// Fungsi untuk menjalankan jadwal dengan delay
+// Fungsi untuk menjalankan jadwal
 async function runScheduledPosts() {
   try {
     let schedules = (await kv.get(SCHEDULE_KEY)) || [];
+    
+    // Jika tidak ada jadwal, catat log minimal dan keluar
     if (!schedules || schedules.length === 0) {
       console.log('No schedules to process.');
       return;
     }
 
+    // Filter jadwal yang belum selesai
     const pendingSchedules = schedules.filter(schedule => !schedule.completed);
+    
+    // Jika tidak ada jadwal yang belum selesai, hapus semua jadwal yang sudah selesai
     if (pendingSchedules.length === 0) {
       console.log('No pending schedules to process. Removing completed schedules.');
       await kv.set(SCHEDULE_KEY, []);
@@ -56,60 +63,47 @@ async function runScheduledPosts() {
     const now = new Date();
     console.log('Current time (UTC):', now.toISOString());
 
-    // Kelompokkan jadwal berdasarkan waktu
-    const schedulesByTime = {};
-    pendingSchedules.forEach(schedule => {
-      const scheduledTimeWIB = new Date(schedule.time + ':00');
-      const scheduledTimeUTC = new Date(scheduledTimeWIB.getTime() - 7 * 60 * 60 * 1000);
-      const timeKey = scheduledTimeUTC.toISOString();
-      if (!schedulesByTime[timeKey]) schedulesByTime[timeKey] = [];
-      schedulesByTime[timeKey].push(schedule);
-    });
+    const updatedSchedules = [];
 
-    const updatedSchedules = [...schedules.filter(s => s.completed)]; // Simpan yang sudah selesai
+    for (const schedule of schedules) {
+      // Hanya proses jadwal yang belum selesai
+      if (schedule.completed) {
+        continue; // Lewati jadwal yang sudah selesai, akan dihapus nanti
+      }
 
-    for (const timeKey in schedulesByTime) {
-      const schedulesAtTime = schedulesByTime[timeKey];
-      const scheduledTimeUTC = new Date(timeKey);
+      // Asumsikan waktu yang disimpan adalah WIB (UTC+7), konversi ke UTC
+      const scheduledTimeWIB = new Date(schedule.time + ':00'); // Tambahkan detik
+      const scheduledTimeUTC = new Date(scheduledTimeWIB.getTime() - 7 * 60 * 60 * 1000); // Kurangi 7 jam untuk konversi ke UTC
+      console.log(`Checking schedule: ${schedule.accountId}, Scheduled Time (WIB): ${scheduledTimeWIB.toISOString()}, Scheduled Time (UTC): ${scheduledTimeUTC.toISOString()}, Now: ${now.toISOString()}`);
 
-      if (now >= scheduledTimeUTC) {
-        for (let i = 0; i < schedulesAtTime.length; i++) {
-          const schedule = schedulesAtTime[i];
-          console.log(`Processing schedule ${i + 1}/${schedulesAtTime.length} for account ${schedule.accountId}`);
-
-          // Tambahkan delay 1 menit antar posting di waktu yang sama
-          if (i > 0) {
-            const delayMs = i * 60 * 1000; // Delay 1 menit per posting setelah yang pertama
-            console.log(`Delaying post ${i + 1} by ${delayMs / 1000} seconds`);
-            await new Promise(resolve => setTimeout(resolve, delayMs));
-          }
-
-          const result = await postToInstagram(
-            schedule.accountId,
-            schedule.mediaUrl,
-            schedule.caption,
-            schedule.userToken
-          );
-
-          if (result.success) {
-            schedule.completed = true; // Set status completed langsung ke true
-            console.log(`Post successful for ${schedule.accountId}: ${result.creationId}`);
-          } else {
-            console.error(`Failed to post for ${schedule.accountId}: ${result.error}`);
-            schedule.error = result.error;
-            updatedSchedules.push(schedule); // Simpan yang gagal
-          }
-
-          // Simpan perubahan segera setelah setiap posting
-          await kv.set(SCHEDULE_KEY, [...updatedSchedules, ...schedulesAtTime.filter((_, idx) => idx >= i)]);
+      if (now >= scheduledTimeUTC && !schedule.completed) {
+        console.log(`Processing schedule for account ${schedule.accountId}`);
+        const result = await postToInstagram(
+          schedule.accountId,
+          schedule.mediaUrl,
+          schedule.caption,
+          schedule.userToken
+        );
+        if (result.success) {
+          schedule.completed = true; // Set status completed langsung ke true
+          console.log(`Post successful for ${schedule.accountId}: ${result.creationId}`);
+          // Simpan perubahan segera setelah posting berhasil
+          updatedSchedules.push(schedule);
+          await kv.set(SCHEDULE_KEY, [...updatedSchedules, ...schedules.filter(s => s !== schedule)]);
+        } else {
+          console.error(`Failed to post for ${schedule.accountId}: ${result.error}`);
+          schedule.error = result.error;
+          updatedSchedules.push(schedule); // Simpan jadwal yang gagal untuk dicoba lagi
         }
       } else {
-        updatedSchedules.push(...schedulesAtTime); // Simpan yang belum waktunya
+        console.log(`Schedule not processed: ${now >= scheduledTimeUTC ? 'Already completed' : 'Time not yet reached'}`);
+        updatedSchedules.push(schedule); // Simpan jadwal yang belum waktunya
       }
     }
 
+    // Hanya simpan jadwal yang belum selesai atau gagal
     await kv.set(SCHEDULE_KEY, updatedSchedules);
-    console.log('Updated schedules:', updatedSchedules);
+    console.log('Updated schedules (completed schedules removed):', updatedSchedules);
   } catch (error) {
     console.error('Error running scheduled posts:', error);
   }
