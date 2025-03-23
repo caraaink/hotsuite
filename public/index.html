@@ -739,7 +739,7 @@
 
             // Save Schedules Button
             saveSchedules.addEventListener('click', async () => {
-                if (!selectedToken || !accountId.value) {
+                if (!selectedToken || !accountId.value || !selectedUsername || !selectedAccountNum) {
                     status.innerText = 'Pilih akun dan username terlebih dahulu.';
                     return;
                 }
@@ -762,18 +762,25 @@
                             caption: captions[file.path] || '',
                             time: scheduledTimes[file.path],
                             userToken: selectedToken,
-                            accountNum: userAccount.value,
+                            accountNum: selectedAccountNum,
                             completed: false,
                         };
+
+                        console.log('Data yang dikirim ke /api/schedule:', formData); // Debugging
 
                         const response = await fetch('/api/schedule', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(formData),
                         });
+
                         if (!response.ok) {
-                            throw new Error(`HTTP error scheduling post! status: ${response.status}`);
+                            const errorData = await response.json();
+                            throw new Error(`HTTP error scheduling post! status: ${response.status}, details: ${JSON.stringify(errorData)}`);
                         }
+
+                        const result = await response.json();
+                        console.log('Response dari /api/schedule:', result);
                     }
                     status.innerText = `${scheduledFiles.length} foto berhasil dijadwalkan!`;
                     scheduledTimes = {}; // Reset scheduled times after saving
