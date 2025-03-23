@@ -112,6 +112,8 @@ body.dark-mode .schedule-list td {
 
 body.dark-mode .schedule-list th {
     background: #444;
+    color: #ffffff; /* Warna teks header tabel lebih terang di dark mode */
+    font-weight: 700; /* Membuat teks header lebih tebal */
 }
 
 body.dark-mode .gallery {
@@ -336,6 +338,14 @@ body.dark-mode .skip-day-option label {
     text-decoration: underline;
 }
 
+/* Styling untuk preview media di tabel */
+.schedule-media-preview {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
 /* Tombol Hapus Terpilih */
 .delete-selected-btn {
     margin-top: 15px;
@@ -510,6 +520,11 @@ body.dark-mode .skip-day-option label {
     .save-schedules-btn {
         width: 100%;
     }
+
+    .schedule-media-preview {
+        width: 40px;
+        height: 40px;
+    }
 }
 
 @media (max-width: 480px) {
@@ -541,7 +556,13 @@ body.dark-mode .skip-day-option label {
         font-size: 12px;
         padding: 6px 8px;
     }
+
+    .schedule-media-preview {
+        width: 30px;
+        height: 30px;
+    }
 }
+
 /* Sembunyikan elemen kosong */
 .gallery:empty,
 .schedule-list:empty,
