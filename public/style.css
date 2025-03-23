@@ -360,8 +360,21 @@ body.dark-mode .skip-day-option label {
 }
 
 /* Tombol Hapus Terpilih */
+.delete-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+    margin-top: 10px;
+}
+
+#totalSchedules {
+    font-size: 14px;
+    color: #ccc;
+}
+
 .delete-selected-btn {
-    margin-top: 15px;
+    width: 100%;
     padding: 10px 20px;
     background-color: #e74c3c;
     color: #fff;
@@ -413,9 +426,10 @@ body.dark-mode .skip-day-option label {
 }
 
 .gallery-item .btn {
-    margin: 5px 2px;
+    margin: 5px 0;
     padding: 6px 10px;
     font-size: 14px;
+    width: 100%;
 }
 
 .gallery-item .btn.edit {
@@ -428,6 +442,43 @@ body.dark-mode .skip-day-option label {
 
 .gallery-item .btn.schedule {
     background-color: #f39c12;
+}
+
+/* Atur tombol Edit dan Jadwalkan dalam satu baris */
+.button-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+    margin-left: -10px; /* Geser ke kiri agar sejajar dengan elemen label */
+}
+
+.button-group .btn {
+    flex: 1;
+}
+
+/* Atur container untuk Load More */
+.load-more-container {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0;
+}
+
+.load-more-btn {
+    background-color: #4a90e2;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.load-more-btn:hover {
+    background-color: #357abd;
+}
+
+.load-more-btn.hidden {
+    display: none;
 }
 
 /* Editors */
@@ -597,65 +648,20 @@ body.dark-mode .skip-day-option label {
 .schedule-list table tbody tr td[colspan="7"] {
     display: none;
 }
+
 .editable-caption {
     border: 1px solid transparent;
     padding: 5px;
 }
+
 .editable-caption:hover, .editable-caption:focus {
     border: 1px solid #ccc;
     outline: none;
 }
+
 .editable-time input {
     border: 1px solid #ccc;
     padding: 5px;
     background: #333;
     color: #fff;
-}
-/* Atur tombol Edit, Jadwalkan, dan Publish dalam satu baris */
-.button-group {
-    display: flex;
-    gap: 10px;
-    margin-top: 10px;
-}
-
-.button-group .btn {
-    flex: 1;
-}
-
-/* Atur container untuk Load More */
-.load-more-container {
-    display: flex;
-    justify-content: center;
-    margin: 20px 0;
-}
-
-.load-more-btn {
-    background-color: #4a90e2;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 16px;
-}
-
-.load-more-btn:hover {
-    background-color: #357abd;
-}
-
-.load-more-btn.hidden {
-    display: none;
-}
-
-/* Atur container untuk Hapus Terpilih dan Total Jadwal */
-.delete-container {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-top: 10px;
-}
-
-#totalSchedules {
-    font-size: 14px;
-    color: #ccc;
 }
