@@ -967,7 +967,13 @@
                 console.error('Error deleting schedules:', error);
             }
         }
-
+        // Fungsi untuk mengonversi waktu dari UTC ke WIB
+function convertToWIB(utcTime) {
+    const date = new Date(utcTime);
+    const wibOffset = 7 * 60 * 60 * 1000; // 7 jam dalam milidetik
+    const wibTime = new Date(date.getTime() + wibOffset);
+    return wibTime.toISOString().slice(0, 16); // Format untuk datetime-local: YYYY-MM-DDThh:mm
+}
         function renderSchedules(schedulesToRender, startIndex) {
             schedulesToRender.forEach((schedule, idx) => {
                 const globalIndex = startIndex + idx;
