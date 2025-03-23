@@ -597,3 +597,17 @@ body.dark-mode .skip-day-option label {
 .schedule-list table tbody tr td[colspan="7"] {
     display: none;
 }
+.editable-caption {
+    border: 1px solid transparent;
+    padding: 5px;
+}
+.editable-caption:hover, .editable-caption:focus {
+    border: 1px solid #ccc;
+    outline: none;
+}
+.editable-time input {
+    border: 1px solid #ccc;
+    padding: 5px;
+    background: #333;
+    color: #fff;
+}
