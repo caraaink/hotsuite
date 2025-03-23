@@ -374,8 +374,7 @@ body.dark-mode .skip-day-option label {
 }
 
 .delete-selected-btn {
-    width: 100%;
-    padding: 10px 20px;
+    padding: 10px 20px; /* Padding tetap sama */
     background-color: #e74c3c;
     color: #fff;
     border: none;
@@ -384,6 +383,8 @@ body.dark-mode .skip-day-option label {
     font-size: 16px;
     font-weight: 500;
     transition: background-color 0.3s ease;
+    width: auto; /* Ubah dari width: 100% menjadi width: auto agar tombol menyesuaikan konten */
+    max-width: 200px; /* Batasi lebar maksimum tombol agar tidak terlalu panjang */
 }
 
 .delete-selected-btn:hover {
