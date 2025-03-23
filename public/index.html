@@ -503,35 +503,35 @@
         });
 
         async function saveCaptionToGithub(file, caption) {
-            try {
-                const folderPath = file.path.substring(0, file.path.lastIndexOf('/'));
-                const metaFileName = `${file.name}.meta.json`;
-                const metaPath = `${folderPath}/${metaFileName}`;
-                const metaContent = JSON.stringify({ caption }, null, 2);
-                const base64Content = btoa(metaContent); // Encode ke base64
+    try {
+        const folderPath = file.path.substring(0, file.path.lastIndexOf('/')); // Ambil folder path dari file foto
+        const metaFileName = `${file.name}.meta.json`;
+        const metaPath = `${folderPath}/${metaFileName}`; // Path meta JSON di folder yang sama
+        const metaContent = JSON.stringify({ caption }, null, 2);
+        const base64Content = btoa(unescape(encodeURIComponent(metaContent))); // Encode ke base64 dengan handling karakter khusus
 
-                const response = await fetch('/api/upload_to_github', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        fileName: metaPath.split('/').slice(1).join('/'), // Hilangkan 'ig/' dari awal path
-                        content: base64Content,
-                    }),
-                });
+        const response = await fetch('/api/upload_to_github', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                fileName: metaPath.split('/').slice(1).join('/'), // Hilangkan 'ig/' dari awal path
+                content: base64Content,
+            }),
+        });
 
-                if (!response.ok) {
-                    throw new Error(`HTTP error uploading meta to GitHub! status: ${response.status}`);
-                }
-
-                const result = await response.json();
-                console.log(`Meta file ${metaPath} saved to GitHub:`, result);
-                return true;
-            } catch (error) {
-                console.error(`Error saving meta file for ${file.name}:`, error);
-                status.innerText = `Error saving meta file for ${file.name}: ${error.message}`;
-                return false;
-            }
+        if (!response.ok) {
+            throw new Error(`HTTP error uploading meta to GitHub! status: ${response.status}`);
         }
+
+        const result = await response.json();
+        console.log(`Meta file ${metaPath} saved to GitHub:`, result);
+        return true;
+    } catch (error) {
+        console.error(`Error saving meta file for ${file.name}:`, error);
+        status.innerText = `Error saving meta file for ${file.name}: ${error.message}`;
+        return false;
+    }
+}
 
         function displayGallery(files) {
             gallery.innerHTML = '';
