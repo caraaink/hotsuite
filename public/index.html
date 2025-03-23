@@ -74,11 +74,6 @@
             <input type="text" id="mediaUrl" name="mediaUrl" class="hidden" readonly>
         </form>
 
-        <div class="status-container">
-            <div id="spinner" class="spinner hidden"></div>
-            <p id="status"></p>
-        </div>
-
         <h2>Daftar Jadwal Posting</h2>
         <div id="scheduleList" class="schedule-list">
             <table>
@@ -106,10 +101,17 @@
         </div>
     </div>
 
+    <!-- Tambahkan elemen melayang untuk loading dan notifikasi -->
+    <div id="floatingNotification" class="floating-notification hidden">
+        <div id="floatingSpinner" class="spinner hidden"></div>
+        <p id="floatingStatus"></p>
+    </div>
+
     <script>
         const form = document.getElementById('scheduleForm');
-        const status = document.getElementById('status');
-        const spinner = document.getElementById('spinner');
+        const status = document.getElementById('floatingStatus');
+        const spinner = document.getElementById('floatingSpinner');
+        const floatingNotification = document.getElementById('floatingNotification');
         const accountId = document.getElementById('accountId');
         const userAccount = document.getElementById('userAccount');
         const githubFolder = document.getElementById('githubFolder');
@@ -142,6 +144,21 @@
         let allSchedules = [];
         let displayedSchedules = 0;
         const ITEMS_PER_PAGE = 20;
+
+        // Function to show floating notification with auto-hide
+        function showFloatingNotification(message, isError = false) {
+            status.textContent = message;
+            floatingNotification.classList.remove('hidden');
+            if (isError) {
+                floatingNotification.classList.add('error');
+            } else {
+                floatingNotification.classList.remove('error');
+            }
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                floatingNotification.classList.add('hidden');
+            }, 5000);
+        }
 
         // Load dark mode preference from localStorage
         if (localStorage.getItem('theme') === 'dark') {
@@ -216,18 +233,18 @@
                             }
                         });
                         if (accountId.options.length === 1) {
-                            status.innerText = 'No Instagram accounts found for this account.';
+                            showFloatingNotification('No Instagram accounts found for this account.', true);
                         }
                     } else {
-                        status.innerText = 'No Instagram accounts found for this account.';
+                        showFloatingNotification('No Instagram accounts found for this account.', true);
                     }
                 } else {
-                    status.innerText = 'No accounts data found for this account.';
+                    showFloatingNotification('No accounts data found for this account.', true);
                 }
 
                 await loadSchedules();
             } catch (error) {
-                status.innerText = `Error fetching accounts: ${error.message}`;
+                showFloatingNotification(`Error fetching accounts: ${error.message}`, true);
                 console.error('Error fetching accounts:', error);
             }
         });
@@ -247,7 +264,7 @@
         }
 
         async function loadGithubFolders() {
-            status.innerText = 'Memuat daftar folder...';
+            showFloatingNotification('Memuat daftar folder...');
             spinner.classList.remove('hidden');
             try {
                 const res = await fetch('/api/get_github_files?path=ig');
@@ -270,12 +287,12 @@
                 });
 
                 if (githubFolder.options.length === 1) {
-                    status.innerText = 'No subfolders found in ig directory.';
+                    showFloatingNotification('No subfolders found in ig directory.', true);
                 } else {
-                    status.innerText = '';
+                    showFloatingNotification('');
                 }
             } catch (error) {
-                status.innerText = `Error loading GitHub folders: ${error.message}`;
+                showFloatingNotification(`Error loading GitHub folders: ${error.message}`, true);
                 console.error('Error fetching GitHub folders:', error);
             } finally {
                 spinner.classList.add('hidden');
@@ -283,7 +300,7 @@
         }
 
         async function fetchSubfolders(path) {
-            status.innerText = 'Memuat daftar subfolder...';
+            showFloatingNotification('Memuat daftar subfolder...');
             spinner.classList.remove('hidden');
             try {
                 const res = await fetch(`/api/get_github_files?path=${path}`);
@@ -307,7 +324,7 @@
                 return allSubfolders;
             } catch (error) {
                 console.error(`Error fetching subfolders for path ${path}:`, error);
-                status.innerText = `Error loading subfolders: ${error.message}`;
+                showFloatingNotification(`Error loading subfolders: ${error.message}`, true);
                 return [];
             } finally {
                 spinner.classList.add('hidden');
@@ -315,7 +332,7 @@
         }
 
         async function fetchFilesInSubfolder(path) {
-            status.innerText = 'Memuat daftar file...';
+            showFloatingNotification('Memuat daftar file...');
             spinner.classList.remove('hidden');
             try {
                 const res = await fetch(`/api/get_github_files?path=${path}`);
@@ -369,7 +386,7 @@
                 return allMediaFiles;
             } catch (error) {
                 console.error(`Error fetching files for path ${path}:`, error);
-                status.innerText = `Error loading files: ${error.message}`;
+                showFloatingNotification(`Error loading files: ${error.message}`, true);
                 return [];
             } finally {
                 spinner.classList.add('hidden');
@@ -402,9 +419,9 @@
                     displayGallery(files);
 
                     if (files.length === 0) {
-                        status.innerText = 'No supported media files found in this folder.';
+                        showFloatingNotification('No supported media files found in this folder.', true);
                     } else {
-                        status.innerText = '';
+                        showFloatingNotification('');
                     }
                 } else {
                     // Untuk folder lain, tampilkan dropdown subfolder seperti biasa
@@ -419,9 +436,9 @@
                         displayGallery(files);
 
                         if (files.length === 0) {
-                            status.innerText = 'No supported media files found in this folder.';
+                            showFloatingNotification('No supported media files found in this folder.', true);
                         } else {
-                            status.innerText = '';
+                            showFloatingNotification('');
                         }
                     } else {
                         githubSubfolder.innerHTML = '<option value="">-- Pilih Subfolder --</option>';
@@ -433,14 +450,14 @@
                         });
 
                         if (githubSubfolder.options.length === 1) {
-                            status.innerText = 'No subfolders found in this folder.';
+                            showFloatingNotification('No subfolders found in this folder.', true);
                         } else {
-                            status.innerText = '';
+                            showFloatingNotification('');
                         }
                     }
                 }
             } catch (error) {
-                status.innerText = `Error loading subfolders: ${error.message}`;
+                showFloatingNotification(`Error loading subfolders: ${error.message}`, true);
                 console.error('Error fetching subfolders:', error);
             }
         });
@@ -466,12 +483,12 @@
                 displayGallery(files);
 
                 if (files.length === 0) {
-                    status.innerText = 'No supported media files found in this subfolder.';
+                    showFloatingNotification('No supported media files found in this subfolder.', true);
                 } else {
-                    status.innerText = '';
+                    showFloatingNotification('');
                 }
             } catch (error) {
-                status.innerText = `Error loading files: ${error.message}`;
+                showFloatingNotification(`Error loading files: ${error.message}`, true);
                 console.error('Error fetching files:', error);
             }
         });
@@ -479,17 +496,17 @@
         // Upload file to GitHub
         uploadToGithub.addEventListener('click', async () => {
             if (!uploadFile.files || uploadFile.files.length === 0) {
-                status.innerText = 'Pilih file terlebih dahulu.';
+                showFloatingNotification('Pilih file terlebih dahulu.', true);
                 return;
             }
 
             const file = uploadFile.files[0];
             if (!file.type.match('image/jpeg') && !file.type.match('image/png') && !file.type.match('video/mp4')) {
-                status.innerText = 'File harus berupa JPG, PNG, atau MP4.';
+                showFloatingNotification('File harus berupa JPG, PNG, atau MP4.', true);
                 return;
             }
 
-            status.innerText = 'Mengunggah file ke GitHub...';
+            showFloatingNotification('Mengunggah file ke GitHub...');
             spinner.classList.remove('hidden');
 
             try {
@@ -515,7 +532,7 @@
                     }
 
                     const result = await response.json();
-                    status.innerText = result.message;
+                    showFloatingNotification(result.message);
 
                     const newFile = {
                         name: newFileName,
@@ -530,7 +547,7 @@
                     throw new Error('Error reading file');
                 };
             } catch (error) {
-                status.innerText = `Error uploading to GitHub: ${error.message}`;
+                showFloatingNotification(`Error uploading to GitHub: ${error.message}`, true);
                 console.error('Error uploading to GitHub:', error);
             } finally {
                 spinner.classList.add('hidden');
@@ -563,7 +580,7 @@
                 return true;
             } catch (error) {
                 console.error(`Error saving meta file for ${file.name}:`, error);
-                status.innerText = `Error saving meta file for ${file.name}: ${error.message}`;
+                showFloatingNotification(`Error saving meta file for ${file.name}: ${error.message}`, true);
                 return false;
             }
         }
@@ -636,7 +653,7 @@
                         if (success) {
                             captionText.textContent = captions[file.path] || 'Tidak ada caption';
                             editor.remove();
-                            status.innerText = `Caption untuk ${file.name} berhasil disimpan.`;
+                            showFloatingNotification(`Caption untuk ${file.name} berhasil disimpan.`);
                         }
                         saveSpinner.classList.add('hidden');
                         saveBtn.disabled = false;
@@ -664,14 +681,14 @@
                     saveBtn.textContent = 'Jadwalkan';
                     saveBtn.addEventListener('click', () => {
                         if (!datetimeInput.value) {
-                            status.innerText = 'Pilih waktu terlebih dahulu.';
+                            showFloatingNotification('Pilih waktu terlebih dahulu.', true);
                             return;
                         }
 
                         scheduledTimes[file.path] = datetimeInput.value;
                         scheduleTime.textContent = new Date(scheduledTimes[file.path]).toLocaleString();
                         editor.remove();
-                        status.innerText = `Waktu jadwal untuk ${file.name} disimpan sementara. Klik "Simpan Jadwal" untuk mengirimkan.`;
+                        showFloatingNotification(`Waktu jadwal untuk ${file.name} disimpan sementara. Klik "Simpan Jadwal" untuk mengirimkan.`);
                     });
                     const cancelBtn = document.createElement('button');
                     cancelBtn.textContent = 'Batal';
@@ -687,11 +704,11 @@
                 publishBtn.textContent = 'Publish';
                 publishBtn.addEventListener('click', async () => {
                     if (!selectedToken || !accountId.value) {
-                        status.innerText = 'Pilih akun dan username terlebih dahulu.';
+                        showFloatingNotification('Pilih akun dan username terlebih dahulu.', true);
                         return;
                     }
 
-                    status.innerText = 'Mempublikasikan...';
+                    showFloatingNotification('Mempublikasikan...');
                     spinner.classList.remove('hidden');
                     let isUploadedFile = file.path.startsWith('ig/image/');
 
@@ -712,7 +729,7 @@
                         }
 
                         const result = await response.json();
-                        status.innerText = result.message || 'Berhasil dipublikasikan!';
+                        showFloatingNotification(result.message || 'Berhasil dipublikasikan!');
 
                         if (isUploadedFile) {
                             try {
@@ -729,16 +746,16 @@
                                 }
 
                                 const deleteResult = await deleteResponse.json();
-                                status.innerText += ` ${deleteResult.message}`;
+                                showFloatingNotification(`${deleteResult.message}`);
                                 allMediaFiles = allMediaFiles.filter(f => f.path !== file.path);
                                 displayGallery(allMediaFiles);
                             } catch (deleteError) {
-                                status.innerText += ` Gagal menghapus file dari GitHub: ${deleteError.message}`;
+                                showFloatingNotification(`Gagal menghapus file dari GitHub: ${deleteError.message}`, true);
                                 console.error('Error deleting file from GitHub:', deleteError);
                             }
                         }
                     } catch (error) {
-                        status.innerText = `Error publishing: ${error.message}`;
+                        showFloatingNotification(`Error publishing: ${error.message}`, true);
                         console.error('Error publishing post:', error);
                     } finally {
                         spinner.classList.add('hidden');
@@ -782,7 +799,7 @@
                             scheduleTimeElement.textContent = 'Belum dijadwalkan';
                         }
                     });
-                    status.innerText = 'Jadwal untuk semua foto telah direset.';
+                    showFloatingNotification('Jadwal untuk semua foto telah direset.');
                 }
             });
 
@@ -818,7 +835,7 @@
 
             scheduleAll.addEventListener('click', () => {
                 if (!startDateTime.value) {
-                    status.innerText = 'Pilih tanggal dan jam awal terlebih dahulu.';
+                    showFloatingNotification('Pilih tanggal dan jam awal terlebih dahulu.', true);
                     return;
                 }
 
@@ -834,23 +851,23 @@
                     scheduleTimeElement.textContent = new Date(scheduledTimes[file.path]).toLocaleString();
                 });
 
-                status.innerText = `Waktu jadwal untuk semua foto disimpan sementara. Klik "Simpan Jadwal" untuk mengirimkan.`;
+                showFloatingNotification(`Waktu jadwal untuk semua foto disimpan sementara. Klik "Simpan Jadwal" untuk mengirimkan.`);
                 window.history.pushState({}, document.title, window.location.pathname);
             });
 
             saveSchedules.addEventListener('click', async () => {
                 if (!selectedToken || !accountId.value) {
-                    status.innerText = 'Pilih akun dan username terlebih dahulu.';
+                    showFloatingNotification('Pilih akun dan username terlebih dahulu.', true);
                     return;
                 }
 
                 const scheduledFiles = imageFiles.filter(file => scheduledTimes[file.path]);
                 if (scheduledFiles.length === 0) {
-                    status.innerText = 'Tidak ada foto yang dijadwalkan.';
+                    showFloatingNotification('Tidak ada foto yang dijadwalkan.', true);
                     return;
                 }
 
-                status.innerText = 'Menyimpan jadwal...';
+                showFloatingNotification('Menyimpan jadwal...');
                 spinner.classList.remove('hidden');
 
                 try {
@@ -878,11 +895,11 @@
                             throw new Error(`HTTP error scheduling post! status: ${response.status}, details: ${JSON.stringify(errorData)}`);
                         }
                     }
-                    status.innerText = `${scheduledFiles.length} foto berhasil dijadwalkan!`;
+                    showFloatingNotification(`${scheduledFiles.length} foto berhasil dijadwalkan!`);
                     scheduledTimes = {};
                     await loadSchedules();
                 } catch (error) {
-                    status.innerText = `Error scheduling: ${error.message}`;
+                    showFloatingNotification(`Error scheduling: ${error.message}`, true);
                     console.error('Error scheduling posts:', error);
                 } finally {
                     spinner.classList.add('hidden');
@@ -903,10 +920,10 @@
                     throw new Error(`HTTP error! status: ${res.status}`);
                 }
                 const result = await res.json();
-                status.innerText = result.message || 'Jadwal berhasil dihapus!';
+                showFloatingNotification(result.message || 'Jadwal berhasil dihapus!');
                 await loadSchedules();
             } catch (error) {
-                status.innerText = `Error deleting schedule: ${error.message}`;
+                showFloatingNotification(`Error deleting schedule: ${error.message}`, true);
                 console.error('Error deleting schedule:', error);
             }
         }
@@ -922,10 +939,10 @@
                     throw new Error(`HTTP error updating schedule! status: ${res.status}`);
                 }
                 const result = await res.json();
-                status.innerText = result.message || 'Jadwal berhasil diperbarui!';
+                showFloatingNotification(result.message || 'Jadwal berhasil diperbarui!');
                 await loadSchedules();
             } catch (error) {
-                status.innerText = `Error updating schedule: ${error.message}`;
+                showFloatingNotification(`Error updating schedule: ${error.message}`, true);
                 console.error('Error updating schedule:', error);
             }
         }
@@ -933,7 +950,7 @@
         async function deleteSelectedSchedules() {
             const checkboxes = document.querySelectorAll('.schedule-checkbox:checked');
             if (checkboxes.length === 0) {
-                status.innerText = 'Pilih setidaknya satu jadwal untuk dihapus.';
+                showFloatingNotification('Pilih setidaknya satu jadwal untuk dihapus.', true);
                 return;
             }
 
@@ -944,9 +961,9 @@
                 for (const index of indices) {
                     await deleteSchedule(index);
                 }
-                status.innerText = `${indices.length} jadwal berhasil dihapus!`;
+                showFloatingNotification(`${indices.length} jadwal berhasil dihapus!`);
             } catch (error) {
-                status.innerText = `Error deleting schedules: ${error.message}`;
+                showFloatingNotification(`Error deleting schedules: ${error.message}`, true);
                 console.error('Error deleting schedules:', error);
             }
         }
@@ -1060,7 +1077,7 @@
                     loadMoreBtn.classList.add('hidden');
                 }
             } catch (error) {
-                status.innerText = `Error loading schedules: ${error.message}`;
+                showFloatingNotification(`Error loading schedules: ${error.message}`, true);
                 console.error('Error fetching schedules:', error);
                 scheduleTableBody.innerHTML = '<tr><td colspan="8">Gagal memuat jadwal.</td></tr>';
                 totalSchedules.textContent = 'Total: 0 jadwal';
@@ -1087,5 +1104,6 @@
         loadSchedules();
     </script>
     <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'924bd8b1db1eb023',t:'MTc0MjcxMTA3My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
+    <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'924d0307cac86766',t:'MTc0MjcyMzI5My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
 </body>
 </html>
