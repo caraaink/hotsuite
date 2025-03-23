@@ -751,6 +751,24 @@
                 }
             });
 
+            // Reset jadwal jika tanggal/jam awal dihapus
+            startDateTime.addEventListener('input', () => {
+                if (!startDateTime.value) {
+                    // Reset semua jadwal di galeri
+                    Object.keys(scheduledTimes).forEach(filePath => {
+                        delete scheduledTimes[filePath];
+                    });
+                    // Perbarui tampilan jadwal di galeri
+                    Array.from(gallery.children).forEach(container => {
+                        const scheduleTimeElement = container.querySelector('.schedule-time');
+                        if (scheduleTimeElement) {
+                            scheduleTimeElement.textContent = 'Belum dijadwalkan';
+                        }
+                    });
+                    status.innerText = 'Jadwal untuk semua foto telah direset.';
+                }
+            });
+
             startDateTime.addEventListener('change', () => {
                 if (!startDateTime.value) return;
                 const start = new Date(startDateTime.value);
@@ -876,6 +894,25 @@
             }
         }
 
+        async function updateSchedule(index, updatedData) {
+            try {
+                const res = await fetch('/api/update_schedule', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ index, ...updatedData }),
+                });
+                if (!res.ok) {
+                    throw new Error(`HTTP error updating schedule! status: ${res.status}`);
+                }
+                const result = await res.json();
+                status.innerText = result.message || 'Jadwal berhasil diperbarui!';
+                await loadSchedules();
+            } catch (error) {
+                status.innerText = `Error updating schedule: ${error.message}`;
+                console.error('Error updating schedule:', error);
+            }
+        }
+
         async function deleteSelectedSchedules() {
             const checkboxes = document.querySelectorAll('.schedule-checkbox:checked');
             if (checkboxes.length === 0) {
@@ -925,14 +962,33 @@
                             <td><input type="checkbox" class="schedule-checkbox" data-index="${index}"></td>
                             <td>${schedule.username || 'Unknown'}</td>
                             <td><img src="${schedule.mediaUrl}" alt="Media" class="schedule-media-preview"></td>
-                            <td>${schedule.caption}</td>
-                            <td>${new Date(schedule.time).toLocaleString()}</td>
+                            <td class="editable-caption" contenteditable="true" data-index="${index}">${schedule.caption}</td>
+                            <td class="editable-time" data-index="${index}">
+                                <input type="datetime-local" class="time-input" value="${new Date(schedule.time).toISOString().slice(0, 16)}">
+                            </td>
                             <td>${schedule.completed ? 'Selesai' : 'Menunggu'}</td>
                             <td>
                                 <button class="delete-btn" data-index="${index}">Hapus</button>
                             </td>
                         `;
                         scheduleTableBody.appendChild(row);
+                    });
+
+                    // Tambah event listener untuk inline editing
+                    document.querySelectorAll('.editable-caption').forEach(cell => {
+                        cell.addEventListener('blur', async (e) => {
+                            const index = parseInt(e.target.dataset.index, 10);
+                            const newCaption = e.target.textContent.trim();
+                            await updateSchedule(index, { caption: newCaption });
+                        });
+                    });
+
+                    document.querySelectorAll('.editable-time .time-input').forEach(input => {
+                        input.addEventListener('change', async (e) => {
+                            const index = parseInt(e.target.parentElement.dataset.index, 10);
+                            const newTime = e.target.value;
+                            await updateSchedule(index, { time: newTime });
+                        });
                     });
 
                     document.querySelectorAll('.delete-btn').forEach(button => {
