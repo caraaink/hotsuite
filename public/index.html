@@ -145,6 +145,32 @@
         let displayedSchedules = 0;
         const ITEMS_PER_PAGE = 20;
 
+        // Fungsi untuk mengonversi waktu dari UTC ke WIB
+        function convertToWIB(utcTime) {
+            const date = new Date(utcTime);
+            const wibOffset = 7 * 60 * 60 * 1000; // 7 jam dalam milidetik
+            const wibTime = new Date(date.getTime() + wibOffset);
+            return wibTime;
+        }
+
+        // Fungsi untuk memformat waktu dalam WIB ke format datetime-local (YYYY-MM-DDThh:mm)
+        function formatToDatetimeLocal(wibTime) {
+            return wibTime.toISOString().slice(0, 16);
+        }
+
+        // Fungsi untuk memformat waktu dalam WIB ke format lokal (dd/mm/yyyy hh:mm)
+        function formatToLocaleString(wibTime) {
+            return wibTime.toLocaleString('id-ID', {
+                timeZone: 'Asia/Jakarta',
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            }).replace(',', '');
+        }
+
         // Function to show floating notification with auto-hide
         function showFloatingNotification(message, isError = false) {
             status.textContent = message;
@@ -625,7 +651,7 @@
 
                 const scheduleTime = document.createElement('p');
                 scheduleTime.className = 'schedule-time';
-                scheduleTime.textContent = scheduledTimes[file.path] ? new Date(scheduledTimes[file.path]).toLocaleString() : 'Belum dijadwalkan';
+                scheduleTime.textContent = scheduledTimes[file.path] ? formatToLocaleString(convertToWIB(scheduledTimes[file.path])) : 'Belum dijadwalkan';
 
                 const buttonGroup = document.createElement('div');
                 buttonGroup.className = 'button-group';
@@ -686,7 +712,7 @@
                         }
 
                         scheduledTimes[file.path] = datetimeInput.value;
-                        scheduleTime.textContent = new Date(scheduledTimes[file.path]).toLocaleString();
+                        scheduleTime.textContent = formatToLocaleString(convertToWIB(scheduledTimes[file.path]));
                         editor.remove();
                         showFloatingNotification(`Waktu jadwal untuk ${file.name} disimpan sementara. Klik "Simpan Jadwal" untuk mengirimkan.`);
                     });
@@ -781,7 +807,7 @@
                     const newDate = new Date(start);
                     newDate.setDate(start.getDate() + (index * dayIncrement));
                     scheduledTimes[file.path] = formatDateTime(newDate, hours, minutes);
-                    scheduleTime.textContent = new Date(scheduledTimes[file.path]).toLocaleString();
+                    scheduleTime.textContent = formatToLocaleString(convertToWIB(scheduledTimes[file.path]));
                 }
             });
 
@@ -814,7 +840,7 @@
                     newDate.setDate(start.getDate() + (index * dayIncrement));
                     scheduledTimes[file.path] = formatDateTime(newDate, hours, minutes);
                     const scheduleTimeElement = gallery.children[index].querySelector('.schedule-time');
-                    scheduleTimeElement.textContent = new Date(scheduledTimes[file.path]).toLocaleString();
+                    scheduleTimeElement.textContent = formatToLocaleString(convertToWIB(scheduledTimes[file.path]));
                 });
             });
 
@@ -829,7 +855,7 @@
                     newDate.setDate(start.getDate() + (index * dayIncrement));
                     scheduledTimes[file.path] = formatDateTime(newDate, hours, minutes);
                     const scheduleTimeElement = gallery.children[index].querySelector('.schedule-time');
-                    scheduleTimeElement.textContent = new Date(scheduledTimes[file.path]).toLocaleString();
+                    scheduleTimeElement.textContent = formatToLocaleString(convertToWIB(scheduledTimes[file.path]));
                 });
             });
 
@@ -848,7 +874,7 @@
                     newDate.setDate(start.getDate() + (index * dayIncrement));
                     scheduledTimes[file.path] = formatDateTime(newDate, hours, minutes);
                     const scheduleTimeElement = gallery.children[index].querySelector('.schedule-time');
-                    scheduleTimeElement.textContent = new Date(scheduledTimes[file.path]).toLocaleString();
+                    scheduleTimeElement.textContent = formatToLocaleString(convertToWIB(scheduledTimes[file.path]));
                 });
 
                 showFloatingNotification(`Waktu jadwal untuk semua foto disimpan sementara. Klik "Simpan Jadwal" untuk mengirimkan.`);
@@ -967,16 +993,12 @@
                 console.error('Error deleting schedules:', error);
             }
         }
-        // Fungsi untuk mengonversi waktu dari UTC ke WIB
-function convertToWIB(utcTime) {
-    const date = new Date(utcTime);
-    const wibOffset = 7 * 60 * 60 * 1000; // 7 jam dalam milidetik
-    const wibTime = new Date(date.getTime() + wibOffset);
-    return wibTime.toISOString().slice(0, 16); // Format untuk datetime-local: YYYY-MM-DDThh:mm
-}
+
         function renderSchedules(schedulesToRender, startIndex) {
             schedulesToRender.forEach((schedule, idx) => {
                 const globalIndex = startIndex + idx;
+                const wibTime = convertToWIB(schedule.time);
+                const formattedWibTime = formatToDatetimeLocal(wibTime);
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${globalIndex + 1}</td>
@@ -985,7 +1007,7 @@ function convertToWIB(utcTime) {
                     <td><img src="${schedule.mediaUrl}" alt="Media" class="schedule-media-preview"></td>
                     <td class="editable-caption" contenteditable="true" data-index="${globalIndex}">${schedule.caption}</td>
                     <td class="editable-time" data-index="${globalIndex}">
-                        <input type="datetime-local" class="time-input" value="${new Date(schedule.time).toISOString().slice(0, 16)}">
+                        <input type="datetime-local" class="time-input" value="${formattedWibTime}">
                     </td>
                     <td>${schedule.completed ? 'Selesai' : 'Menunggu'}</td>
                     <td>
@@ -1111,5 +1133,5 @@ function convertToWIB(utcTime) {
     </script>
     <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'924bd8b1db1eb023',t:'MTc0MjcxMTA3My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
     <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'924d0307cac86766',t:'MTc0MjcyMzI5My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'924eb3939ad7bff2',t:'MTc0Mjc0MTAxMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
