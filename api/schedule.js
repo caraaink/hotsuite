@@ -110,13 +110,13 @@ async function runScheduledPosts() {
 // Vercel Serverless Function
 module.exports = async (req, res) => {
   if (req.method === 'POST') {
-    const { accountId, mediaUrl, caption, time, userToken } = req.body;
-    if (!accountId || !mediaUrl || !caption || !time || !userToken) {
+    const { accountId, username, mediaUrl, caption, time, userToken, accountNum, completed } = req.body;
+    if (!accountId || !mediaUrl || !caption || !time || !userToken || !accountNum || !username) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
     let schedules = (await kv.get(SCHEDULE_KEY)) || [];
-    schedules.push({ accountId, mediaUrl, caption, time, userToken, completed: false });
+    schedules.push({ accountId, username, mediaUrl, caption, time, userToken, accountNum, completed });
     await kv.set(SCHEDULE_KEY, schedules);
     return res.status(200).json({ message: 'Post scheduled successfully' });
   }
