@@ -14,16 +14,15 @@ module.exports = async (req, res) => {
 
         const owner = 'caraaink';
         const repo = 'hotsuite';
-        const message = `Delete file ${path}`;
 
-        // Dapatkan SHA file yang akan dihapus
+        // Hapus file utama (misalnya 42382.jpg)
+        const message = `Delete file ${path}`;
         const { data } = await octokit.repos.getContent({
             owner,
             repo,
             path,
         });
 
-        // Hapus file dari GitHub
         await octokit.repos.deleteFile({
             owner,
             repo,
@@ -32,7 +31,34 @@ module.exports = async (req, res) => {
             sha: data.sha,
         });
 
-        res.status(200).json({ message: `File ${path} berhasil dihapus dari GitHub!` });
+        // Hapus file meta terkait (misalnya 42382.jpg.meta.json)
+        const metaPath = `${path}.meta.json`;
+        try {
+            const { data: metaData } = await octokit.repos.getContent({
+                owner,
+                repo,
+                path: metaPath,
+            });
+
+            const metaMessage = `Delete meta file ${metaPath}`;
+            await octokit.repos.deleteFile({
+                owner,
+                repo,
+                path: metaPath,
+                message: metaMessage,
+                sha: metaData.sha,
+            });
+            console.log(`Meta file ${metaPath} successfully deleted from GitHub!`);
+        } catch (metaError) {
+            if (metaError.status === 404) {
+                console.log(`No meta file found for ${path}, skipping meta deletion.`);
+            } else {
+                console.error(`Error deleting meta file ${metaPath}:`, metaError.message);
+                return res.status(500).json({ error: `Failed to delete meta file from GitHub`, details: metaError.message });
+            }
+        }
+
+        res.status(200).json({ message: `File ${path} and its meta file (if any) successfully deleted from GitHub!` });
     } catch (error) {
         console.error('Error deleting from GitHub:', error.message);
         res.status(500).json({ error: 'Failed to delete from GitHub', details: error.message });
