@@ -46,10 +46,12 @@
                 <option value="ig">-- Pilih Folder --</option>
             </select>
 
-            <label for="githubSubfolder">Pilih Subfolder:</label>
-            <select id="githubSubfolder" name="githubSubfolder">
-                <option value="">-- Pilih Subfolder --</option>
-            </select>
+            <div id="subfolderContainer">
+                <label for="githubSubfolder">Pilih Subfolder:</label>
+                <select id="githubSubfolder" name="githubSubfolder">
+                    <option value="">-- Pilih Subfolder --</option>
+                </select>
+            </div>
 
             <!-- Input untuk mengunggah file dari perangkat (opsional) -->
             <label for="uploadFile">Unggah File (Opsional):</label>
@@ -105,6 +107,7 @@
         const userAccount = document.getElementById('userAccount');
         const githubFolder = document.getElementById('githubFolder');
         const githubSubfolder = document.getElementById('githubSubfolder');
+        const subfolderContainer = document.getElementById('subfolderContainer');
         const uploadFile = document.getElementById('uploadFile');
         const uploadToGithub = document.getElementById('uploadToGithub');
         const gallery = document.getElementById('gallery');
@@ -364,6 +367,7 @@
         githubFolder.addEventListener('change', async () => {
             const folderPath = githubFolder.value;
             if (!folderPath) {
+                subfolderContainer.classList.remove('hidden');
                 githubSubfolder.innerHTML = '<option value="">-- Pilih Subfolder --</option>';
                 gallery.innerHTML = '';
                 mediaUrl.value = '';
@@ -373,12 +377,12 @@
             }
 
             try {
-                const subfolders = await fetchSubfolders(folderPath);
-                console.log('All subfolders found:', subfolders);
-
-                if (subfolders.length === 0) {
+                // Cek apakah folder yang dipilih adalah 'image'
+                if (folderPath === 'ig/image') {
+                    // Sembunyikan dropdown subfolder
+                    subfolderContainer.classList.add('hidden');
+                    // Langsung muat file di folder ig/image
                     const files = await fetchFilesInSubfolder(folderPath);
-                    githubSubfolder.innerHTML = '<option value="">-- Tidak Ada Subfolder --</option>';
                     displayGallery(files);
 
                     if (files.length === 0) {
@@ -387,23 +391,40 @@
                         status.innerText = '';
                     }
                 } else {
-                    githubSubfolder.innerHTML = '<option value="">-- Pilih Subfolder --</option>';
-                    subfolders.forEach(subfolder => {
-                        const option = document.createElement('option');
-                        option.value = subfolder.path;
-                        option.textContent = subfolder.name;
-                        githubSubfolder.appendChild(option);
-                    });
+                    // Untuk folder lain, tampilkan dropdown subfolder seperti biasa
+                    subfolderContainer.classList.remove('hidden');
+                    const subfolders = await fetchSubfolders(folderPath);
+                    console.log('All subfolders found:', subfolders);
 
-                    gallery.innerHTML = '';
-                    mediaUrl.value = '';
-                    captions = {};
-                    scheduledTimes = {};
+                    if (subfolders.length === 0) {
+                        const files = await fetchFilesInSubfolder(folderPath);
+                        githubSubfolder.innerHTML = '<option value="">-- Tidak Ada Subfolder --</option>';
+                        displayGallery(files);
 
-                    if (githubSubfolder.options.length === 1) {
-                        status.innerText = 'No subfolders found in this folder.';
+                        if (files.length === 0) {
+                            status.innerText = 'No supported media files found in this folder.';
+                        } else {
+                            status.innerText = '';
+                        }
                     } else {
-                        status.innerText = '';
+                        githubSubfolder.innerHTML = '<option value="">-- Pilih Subfolder --</option>';
+                        subfolders.forEach(subfolder => {
+                            const option = document.createElement('option');
+                            option.value = subfolder.path;
+                            option.textContent = subfolder.name;
+                            githubSubfolder.appendChild(option);
+                        });
+
+                        gallery.innerHTML = '';
+                        mediaUrl.value = '';
+                        captions = {};
+                        scheduledTimes = {};
+
+                        if (githubSubfolder.options.length === 1) {
+                            status.innerText = 'No subfolders found in this folder.';
+                        } else {
+                            status.innerText = '';
+                        }
                     }
                 }
             } catch (error) {
