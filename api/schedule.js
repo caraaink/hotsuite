@@ -71,9 +71,8 @@ async function runScheduledPosts() {
         continue; // Lewati jadwal yang sudah selesai, akan dihapus nanti
       }
 
-      // Waktu di frontend sudah dalam format ISO (misalnya "2025-03-25T09:25:00")
-      // Kita asumsikan waktu yang disimpan adalah WIB (UTC+7), konversi ke UTC
-      const scheduledTimeWIB = new Date(schedule.time);
+      // Asumsikan waktu yang disimpan adalah WIB (UTC+7), konversi ke UTC
+      const scheduledTimeWIB = new Date(schedule.time + ':00'); // Tambahkan detik
       const scheduledTimeUTC = new Date(scheduledTimeWIB.getTime() - 7 * 60 * 60 * 1000); // Kurangi 7 jam untuk konversi ke UTC
       console.log(`Checking schedule: ${schedule.accountId}, Scheduled Time (WIB): ${scheduledTimeWIB.toISOString()}, Scheduled Time (UTC): ${scheduledTimeUTC.toISOString()}, Now: ${now.toISOString()}`);
 
@@ -111,20 +110,15 @@ async function runScheduledPosts() {
 // Vercel Serverless Function
 module.exports = async (req, res) => {
   if (req.method === 'POST') {
-    const { accountId, username, mediaUrl, caption, time, userToken, accountNum } = req.body;
-    if (!accountId || !username || !mediaUrl || !caption || !time || !userToken || !accountNum) {
+    const { accountId, mediaUrl, caption, time, userToken } = req.body;
+    if (!accountId || !mediaUrl || !caption || !time || !userToken) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    try {
-      let schedules = (await kv.get(SCHEDULE_KEY)) || [];
-      schedules.push({ accountId, username, mediaUrl, caption, time, userToken, accountNum, completed: false });
-      await kv.set(SCHEDULE_KEY, schedules);
-      return res.status(200).json({ message: 'Post scheduled successfully' });
-    } catch (error) {
-      console.error('Error saving schedule:', error);
-      return res.status(500).json({ error: 'Failed to save schedule', details: error.message });
-    }
+    let schedules = (await kv.get(SCHEDULE_KEY)) || [];
+    schedules.push({ accountId, mediaUrl, caption, time, userToken, completed: false });
+    await kv.set(SCHEDULE_KEY, schedules);
+    return res.status(200).json({ message: 'Post scheduled successfully' });
   }
 
   if (req.method === 'GET') {
