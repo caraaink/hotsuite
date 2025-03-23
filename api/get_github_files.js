@@ -1,40 +1,40 @@
-import { VercelRequest, VercelResponse } from '@vercel/node';
-import axios from 'axios';
+const axios = require('axios');
 
-export default async function handler(req, res) {
+module.exports = async (req, res) => {
   const { path } = req.query;
-
   if (!path) {
     return res.status(400).json({ error: 'Path is required' });
   }
 
   try {
-    const githubToken = process.env.GITHUB_TOKEN;
-    const repoOwner = 'caraaink';
-    const repoName = 'hotsuite';
+    let allFiles = [];
+    let page = 1;
+    let hasMore = true;
 
-    if (!githubToken) {
-      return res.status(500).json({ error: 'GitHub token not configured' });
-    }
-
-    const response = await axios.get(
-      `https://api.github.com/repos/${repoOwner}/${repoName}/contents/${path}`,
-      {
+    while (hasMore) {
+      const response = await axios.get(`https://api.github.com/repos/caraaink/hotsuite/contents/${path}`, {
         headers: {
-          Authorization: `token ${githubToken}`,
+          Authorization: `token ${process.env.GITHUB_TOKEN}`,
           Accept: 'application/vnd.github.v3+json',
         },
-        timeout: 5000,
-      }
-    );
+        params: {
+          per_page: 100, // Maksimum item per halaman
+          page: page,
+        },
+      });
 
-    const files = response.data;
-    res.status(200).json({ files });
-  } catch (error) {
-    console.error('Error fetching GitHub files:', error);
-    if (error.code === 'ECONNABORTED') {
-      return res.status(504).json({ error: 'Request to GitHub timed out' });
+      const files = response.data;
+      allFiles = allFiles.concat(files);
+
+      // Cek apakah ada halaman berikutnya
+      const linkHeader = response.headers.link;
+      hasMore = linkHeader && linkHeader.includes('rel="next"');
+      page++;
     }
-    res.status(500).json({ error: 'Failed to fetch GitHub files', details: error.message });
+
+    res.status(200).json({ files: allFiles });
+  } catch (error) {
+    console.error('Error fetching GitHub files:', error.response?.data || error.message);
+    res.status(500).json({ error: 'Failed to fetch GitHub files' });
   }
-}
+};

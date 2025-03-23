@@ -1,56 +1,54 @@
-import { VercelRequest, VercelResponse } from '@vercel/node';
-import axios from 'axios';
+const axios = require('axios');
 
-export default async function handler(req, res) {
+module.exports = async (req, res) => {
   const { account_key } = req.query;
 
   if (!account_key) {
-    return res.status(400).json({ error: 'Account key is required' });
+    return res.status(400).json({ error: 'Missing account_key parameter' });
   }
 
-  const accountNum = account_key.split(' ')[1];
-  const facebookToken = process.env[`TOKEN_${accountNum}`];
+  const accountNum = account_key.split(' ')[1]; // Ambil nomor akun (misalnya "10" dari "Akun 10")
+  const token = process.env[`TOKEN_${accountNum}`];
 
-  if (!facebookToken) {
-    return res.status(500).json({ error: `Facebook token for account ${accountNum} not configured` });
+  if (!token) {
+    return res.status(404).json({ error: `No token found for ${account_key}` });
   }
 
   try {
-    const response = await axios.get('https://graph.facebook.com/v20.0/me/accounts', {
-      headers: {
-        Authorization: `Bearer ${facebookToken}`,
+    // Ambil daftar akun Instagram yang terkait dengan token
+    const response = await axios.get('https://graph.facebook.com/v19.0/me/accounts', {
+      params: {
+        access_token: token,
+        fields: 'id,name,instagram_business_account',
       },
-      timeout: 5000,
     });
 
-    const data = response.data;
+    const pages = response.data.data;
+    const igAccounts = [];
 
-    const instagramAccounts = await Promise.all(
-      data.data.map(async (account) => {
-        const igResponse = await axios.get(
-          `https://graph.facebook.com/v20.0/${account.id}?fields=instagram_business_account&access_token=${facebookToken}`,
-          { timeout: 5000 }
-        );
-        const igData = igResponse.data;
-        if (igData.instagram_business_account) {
-          return {
-            id: account.id,
-            name: account.name,
-            instagram_business_account: igData.instagram_business_account.id,
-          };
-        }
-        return null;
-      })
-    );
-
-    const filteredAccounts = instagramAccounts.filter((account) => account !== null);
-
-    res.status(200).json({ accounts: { [account_key]: filteredAccounts } });
-  } catch (error) {
-    console.error('Error fetching Facebook accounts:', error);
-    if (error.code === 'ECONNABORTED') {
-      return res.status(504).json({ error: 'Request to Facebook API timed out' });
+    for (const page of pages) {
+      if (page.instagram_business_account) {
+        const igResponse = await axios.get(`https://graph.facebook.com/v19.0/${page.instagram_business_account.id}`, {
+          params: {
+            access_token: token,
+            fields: 'username',
+          },
+        });
+        igAccounts.push({
+          type: 'ig',
+          id: page.instagram_business_account.id,
+          username: igResponse.data.username,
+        });
+      }
     }
-    res.status(500).json({ error: 'Failed to fetch accounts', details: error.message });
+
+    const accounts = {
+      [account_key]: { accounts: igAccounts },
+    };
+
+    res.status(200).json({ accounts });
+  } catch (error) {
+    console.error('Error fetching accounts:', error.response?.data || error.message);
+    res.status(500).json({ error: 'Failed to fetch accounts' });
   }
-}
+};

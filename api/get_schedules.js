@@ -1,17 +1,13 @@
-import { VercelRequest, VercelResponse } from '@vercel/node';
-import { Redis } from '@upstash/redis';
+const { kv } = require('@vercel/kv');
 
-export default async function handler(req, res) {
+const SCHEDULE_KEY = 'schedules';
+
+module.exports = async (req, res) => {
   try {
-    const redis = new Redis({
-      url: process.env.KV_URL,
-      token: process.env.KV_REST_API_TOKEN,
-    });
-
-    const schedules = await redis.get('schedules');
-    res.status(200).json({ schedules: schedules || [] });
+    const schedules = (await kv.get(SCHEDULE_KEY)) || [];
+    res.status(200).json({ schedules });
   } catch (error) {
-    console.error('Error fetching schedules from Upstash:', error);
-    res.status(500).json({ error: 'Failed to fetch schedules', details: error.message });
+    console.error('Error fetching schedules:', error);
+    res.status(500).json({ error: 'Failed to fetch schedules' });
   }
-}
+};
