@@ -2,12 +2,11 @@
   "name": "hotsuite",
   "version": "1.0.0",
   "scripts": {
-    "start": "vercel dev",
-    "deploy": "vercel deploy --prod"
+    "dev": "vercel dev",
+    "deploy": "vercel deploy"
   },
   "dependencies": {
-    "@vercel/node": "^2.15.0",
-    "@upstash/redis": "^1.28.0",
-    "axios": "^1.6.0"
+    "axios": "^1.6.8",
+    "@vercel/kv": "^1.0.0"
   }
 }
