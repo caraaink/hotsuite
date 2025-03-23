@@ -84,6 +84,7 @@
             <table>
                 <thead>
                     <tr>
+                        <th>No</th>
                         <th><input type="checkbox" id="selectAll"></th>
                         <th>Akun IG</th>
                         <th>Media</th>
@@ -95,7 +96,13 @@
                 </thead>
                 <tbody id="scheduleTableBody"></tbody>
             </table>
-            <button id="deleteSelected" class="delete-selected-btn">Hapus Terpilih</button>
+            <div class="load-more-container">
+                <button id="loadMore" class="load-more-btn hidden">Load More</button>
+            </div>
+            <div class="delete-container">
+                <span id="totalSchedules"></span>
+                <button id="deleteSelected" class="delete-selected-btn">Hapus Terpilih</button>
+            </div>
         </div>
     </div>
 
@@ -122,6 +129,8 @@
         const skipDay = document.getElementById('skipDay');
         const scheduleAll = document.getElementById('scheduleAll');
         const saveSchedules = document.getElementById('saveSchedules');
+        const loadMoreBtn = document.getElementById('loadMore');
+        const totalSchedules = document.getElementById('totalSchedules');
         let selectedToken = null;
         let selectedUsername = null;
         let selectedAccountNum = null;
@@ -130,6 +139,9 @@
         let allMediaFiles = [];
         let captions = {};
         let scheduledTimes = {};
+        let allSchedules = [];
+        let displayedSchedules = 0;
+        const ITEMS_PER_PAGE = 20;
 
         // Load dark mode preference from localStorage
         if (localStorage.getItem('theme') === 'dark') {
@@ -598,6 +610,9 @@
                 scheduleTime.className = 'schedule-time';
                 scheduleTime.textContent = scheduledTimes[file.path] ? new Date(scheduledTimes[file.path]).toLocaleString() : 'Belum dijadwalkan';
 
+                const buttonGroup = document.createElement('div');
+                buttonGroup.className = 'button-group';
+
                 const editBtn = document.createElement('button');
                 editBtn.className = 'btn edit';
                 editBtn.textContent = 'Edit';
@@ -730,13 +745,15 @@
                     }
                 });
 
+                buttonGroup.appendChild(editBtn);
+                buttonGroup.appendChild(scheduleBtn);
+                buttonGroup.appendChild(publishBtn);
+
                 container.appendChild(img);
                 container.appendChild(name);
                 container.appendChild(captionText);
                 container.appendChild(scheduleTime);
-                container.appendChild(editBtn);
-                container.appendChild(scheduleBtn);
-                container.appendChild(publishBtn);
+                container.appendChild(buttonGroup);
                 gallery.appendChild(container);
 
                 if (startDateTime.value && !scheduledTimes[file.path]) {
@@ -934,9 +951,57 @@
             }
         }
 
+        function renderSchedules(schedulesToRender, startIndex) {
+            schedulesToRender.forEach((schedule, idx) => {
+                const globalIndex = startIndex + idx;
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${globalIndex + 1}</td>
+                    <td><input type="checkbox" class="schedule-checkbox" data-index="${globalIndex}"></td>
+                    <td>${schedule.username || 'Unknown'}</td>
+                    <td><img src="${schedule.mediaUrl}" alt="Media" class="schedule-media-preview"></td>
+                    <td class="editable-caption" contenteditable="true" data-index="${globalIndex}">${schedule.caption}</td>
+                    <td class="editable-time" data-index="${globalIndex}">
+                        <input type="datetime-local" class="time-input" value="${new Date(schedule.time).toISOString().slice(0, 16)}">
+                    </td>
+                    <td>${schedule.completed ? 'Selesai' : 'Menunggu'}</td>
+                    <td>
+                        <button class="delete-btn" data-index="${globalIndex}">Hapus</button>
+                    </td>
+                `;
+                scheduleTableBody.appendChild(row);
+            });
+
+            // Tambah event listener untuk inline editing
+            document.querySelectorAll('.editable-caption').forEach(cell => {
+                cell.addEventListener('blur', async (e) => {
+                    const index = parseInt(e.target.dataset.index, 10);
+                    const newCaption = e.target.textContent.trim();
+                    await updateSchedule(index, { caption: newCaption });
+                });
+            });
+
+            document.querySelectorAll('.editable-time .time-input').forEach(input => {
+                input.addEventListener('change', async (e) => {
+                    const index = parseInt(e.target.parentElement.dataset.index, 10);
+                    const newTime = e.target.value;
+                    await updateSchedule(index, { time: newTime });
+                });
+            });
+
+            document.querySelectorAll('.delete-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const index = parseInt(e.target.getAttribute('data-index'), 10);
+                    if (confirm('Apakah Anda yakin ingin menghapus jadwal ini?')) {
+                        deleteSchedule(index);
+                    }
+                });
+            });
+        }
+
         async function loadSchedules() {
             try {
-                scheduleTableBody.innerHTML = '<tr><td colspan="7">Memuat jadwal...</td></tr>';
+                scheduleTableBody.innerHTML = '<tr><td colspan="8">Memuat jadwal...</td></tr>';
                 const res = await fetch('/api/get_schedules');
                 if (!res.ok) {
                     throw new Error(`HTTP error fetching schedules! status: ${res.status}`);
@@ -945,9 +1010,9 @@
                 console.log('Schedules fetched:', data);
 
                 scheduleTableBody.innerHTML = '';
-                const schedules = data.schedules || [];
+                allSchedules = data.schedules || [];
 
-                let filteredSchedules = schedules;
+                let filteredSchedules = allSchedules;
                 if (selectedAccountNum) {
                     filteredSchedules = filteredSchedules.filter(schedule => schedule.accountNum === selectedAccountNum);
                 }
@@ -955,50 +1020,27 @@
                     filteredSchedules = filteredSchedules.filter(schedule => schedule.accountId === selectedAccountId);
                 }
 
+                displayedSchedules = 0;
+
                 if (filteredSchedules.length > 0) {
-                    filteredSchedules.forEach((schedule, index) => {
-                        const row = document.createElement('tr');
-                        row.innerHTML = `
-                            <td><input type="checkbox" class="schedule-checkbox" data-index="${index}"></td>
-                            <td>${schedule.username || 'Unknown'}</td>
-                            <td><img src="${schedule.mediaUrl}" alt="Media" class="schedule-media-preview"></td>
-                            <td class="editable-caption" contenteditable="true" data-index="${index}">${schedule.caption}</td>
-                            <td class="editable-time" data-index="${index}">
-                                <input type="datetime-local" class="time-input" value="${new Date(schedule.time).toISOString().slice(0, 16)}">
-                            </td>
-                            <td>${schedule.completed ? 'Selesai' : 'Menunggu'}</td>
-                            <td>
-                                <button class="delete-btn" data-index="${index}">Hapus</button>
-                            </td>
-                        `;
-                        scheduleTableBody.appendChild(row);
-                    });
+                    // Tampilkan 20 jadwal pertama
+                    const initialSchedules = filteredSchedules.slice(0, ITEMS_PER_PAGE);
+                    renderSchedules(initialSchedules, 0);
+                    displayedSchedules = initialSchedules.length;
 
-                    // Tambah event listener untuk inline editing
-                    document.querySelectorAll('.editable-caption').forEach(cell => {
-                        cell.addEventListener('blur', async (e) => {
-                            const index = parseInt(e.target.dataset.index, 10);
-                            const newCaption = e.target.textContent.trim();
-                            await updateSchedule(index, { caption: newCaption });
-                        });
-                    });
+                    // Tampilkan total jadwal
+                    totalSchedules.textContent = `Total: ${filteredSchedules.length} jadwal`;
 
-                    document.querySelectorAll('.editable-time .time-input').forEach(input => {
-                        input.addEventListener('change', async (e) => {
-                            const index = parseInt(e.target.parentElement.dataset.index, 10);
-                            const newTime = e.target.value;
-                            await updateSchedule(index, { time: newTime });
-                        });
-                    });
+                    // Tampilkan tombol Load More jika masih ada jadwal yang belum ditampilkan
+                    if (displayedSchedules < filteredSchedules.length) {
+                        loadMoreBtn.classList.remove('hidden');
+                    } else {
+                        loadMoreBtn.classList.add('hidden');
+                    }
 
-                    document.querySelectorAll('.delete-btn').forEach(button => {
-                        button.addEventListener('click', (e) => {
-                            const index = parseInt(e.target.getAttribute('data-index'), 10);
-                            if (confirm('Apakah Anda yakin ingin menghapus jadwal ini?')) {
-                                deleteSchedule(index);
-                            }
-                        });
-                    });
+                    // Event listener untuk tombol Load More
+                    loadMoreBtn.removeEventListener('click', loadMoreSchedules); // Hapus listener lama jika ada
+                    loadMoreBtn.addEventListener('click', loadMoreSchedules);
 
                     selectAll.addEventListener('change', () => {
                         const checkboxes = document.querySelectorAll('.schedule-checkbox');
@@ -1013,12 +1055,32 @@
                         }
                     });
                 } else {
-                    scheduleTableBody.innerHTML = '<tr><td colspan="7">Belum ada jadwal untuk akun ini.</td></tr>';
+                    scheduleTableBody.innerHTML = '<tr><td colspan="8">Belum ada jadwal untuk akun ini.</td></tr>';
+                    totalSchedules.textContent = 'Total: 0 jadwal';
+                    loadMoreBtn.classList.add('hidden');
                 }
             } catch (error) {
                 status.innerText = `Error loading schedules: ${error.message}`;
                 console.error('Error fetching schedules:', error);
-                scheduleTableBody.innerHTML = '<tr><td colspan="7">Gagal memuat jadwal.</td></tr>';
+                scheduleTableBody.innerHTML = '<tr><td colspan="8">Gagal memuat jadwal.</td></tr>';
+                totalSchedules.textContent = 'Total: 0 jadwal';
+                loadMoreBtn.classList.add('hidden');
+            }
+        }
+
+        function loadMoreSchedules() {
+            const filteredSchedules = allSchedules.filter(schedule => {
+                if (selectedAccountNum && schedule.accountNum !== selectedAccountNum) return false;
+                if (selectedAccountId && schedule.accountId !== selectedAccountId) return false;
+                return true;
+            });
+
+            const nextSchedules = filteredSchedules.slice(displayedSchedules, displayedSchedules + ITEMS_PER_PAGE);
+            renderSchedules(nextSchedules, displayedSchedules);
+            displayedSchedules += nextSchedules.length;
+
+            if (displayedSchedules >= filteredSchedules.length) {
+                loadMoreBtn.classList.add('hidden');
             }
         }
 
