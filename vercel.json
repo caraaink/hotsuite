@@ -39,6 +39,14 @@
     "api/update_schedule.js": {
       "memory": 128,
       "maxDuration": 10
+    },
+    "api/upload_to_github.js": {
+      "memory": 128,
+      "maxDuration": 10
+    },
+    "api/delete_from_github.js": {
+      "memory": 128,
+      "maxDuration": 10
     }
   },
   "rewrites": [
