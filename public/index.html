@@ -74,6 +74,11 @@
             <input type="text" id="mediaUrl" name="mediaUrl" class="hidden" readonly>
         </form>
 
+        <div class="current-time">
+            <label>Tanggal dan Jam Awal:</label>
+            <span id="currentTimeDisplay"></span>
+        </div>
+
         <h2>Daftar Jadwal Posting</h2>
         <div id="scheduleList" class="schedule-list">
             <table>
@@ -133,6 +138,7 @@
         const saveSchedules = document.getElementById('saveSchedules');
         const loadMoreBtn = document.getElementById('loadMore');
         const totalSchedules = document.getElementById('totalSchedules');
+        const currentTimeDisplay = document.getElementById('currentTimeDisplay');
         let selectedToken = null;
         let selectedUsername = null;
         let selectedAccountNum = null;
@@ -144,6 +150,44 @@
         let allSchedules = [];
         let displayedSchedules = 0;
         const ITEMS_PER_PAGE = 20;
+
+        // Fungsi untuk mengonversi waktu dari UTC ke WIB dan memformatnya
+        function convertToWIB(utcTime) {
+            const date = new Date(utcTime);
+            const wibOffset = 7 * 60 * 60 * 1000; // 7 jam dalam milidetik
+            const wibTime = new Date(date.getTime() + wibOffset);
+            return wibTime.toLocaleString('id-ID', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            }).replace(',', '');
+        }
+
+        // Fungsi untuk mengonversi waktu ke format datetime-local (untuk input)
+        function convertToWIBForInput(utcTime) {
+            const date = new Date(utcTime);
+            const wibOffset = 7 * 60 * 60 * 1000; // 7 jam dalam milidetik
+            const wibTime = new Date(date.getTime() + wibOffset);
+            return wibTime.toISOString().slice(0, 16);
+        }
+
+        // Fungsi untuk memperbarui "Tanggal dan Jam Awal"
+        function updateCurrentTime() {
+            const now = new Date();
+            currentTimeDisplay.textContent = now.toLocaleString('id-ID', {
+                timeZone: 'Asia/Jakarta',
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            }).replace(',', '');
+            setTimeout(updateCurrentTime, 1000);
+        }
 
         // Function to show floating notification with auto-hide
         function showFloatingNotification(message, isError = false) {
@@ -625,7 +669,7 @@
 
                 const scheduleTime = document.createElement('p');
                 scheduleTime.className = 'schedule-time';
-                scheduleTime.textContent = scheduledTimes[file.path] ? new Date(scheduledTimes[file.path]).toLocaleString() : 'Belum dijadwalkan';
+                scheduleTime.textContent = scheduledTimes[file.path] ? convertToWIB(scheduledTimes[file.path]) : 'Belum dijadwalkan';
 
                 const buttonGroup = document.createElement('div');
                 buttonGroup.className = 'button-group';
@@ -686,7 +730,7 @@
                         }
 
                         scheduledTimes[file.path] = datetimeInput.value;
-                        scheduleTime.textContent = new Date(scheduledTimes[file.path]).toLocaleString();
+                        scheduleTime.textContent = convertToWIB(scheduledTimes[file.path]);
                         editor.remove();
                         showFloatingNotification(`Waktu jadwal untuk ${file.name} disimpan sementara. Klik "Simpan Jadwal" untuk mengirimkan.`);
                     });
@@ -781,7 +825,7 @@
                     const newDate = new Date(start);
                     newDate.setDate(start.getDate() + (index * dayIncrement));
                     scheduledTimes[file.path] = formatDateTime(newDate, hours, minutes);
-                    scheduleTime.textContent = new Date(scheduledTimes[file.path]).toLocaleString();
+                    scheduleTime.textContent = convertToWIB(scheduledTimes[file.path]);
                 }
             });
 
@@ -814,7 +858,7 @@
                     newDate.setDate(start.getDate() + (index * dayIncrement));
                     scheduledTimes[file.path] = formatDateTime(newDate, hours, minutes);
                     const scheduleTimeElement = gallery.children[index].querySelector('.schedule-time');
-                    scheduleTimeElement.textContent = new Date(scheduledTimes[file.path]).toLocaleString();
+                    scheduleTimeElement.textContent = convertToWIB(scheduledTimes[file.path]);
                 });
             });
 
@@ -829,7 +873,7 @@
                     newDate.setDate(start.getDate() + (index * dayIncrement));
                     scheduledTimes[file.path] = formatDateTime(newDate, hours, minutes);
                     const scheduleTimeElement = gallery.children[index].querySelector('.schedule-time');
-                    scheduleTimeElement.textContent = new Date(scheduledTimes[file.path]).toLocaleString();
+                    scheduleTimeElement.textContent = convertToWIB(scheduledTimes[file.path]);
                 });
             });
 
@@ -848,7 +892,7 @@
                     newDate.setDate(start.getDate() + (index * dayIncrement));
                     scheduledTimes[file.path] = formatDateTime(newDate, hours, minutes);
                     const scheduleTimeElement = gallery.children[index].querySelector('.schedule-time');
-                    scheduleTimeElement.textContent = new Date(scheduledTimes[file.path]).toLocaleString();
+                    scheduleTimeElement.textContent = convertToWIB(scheduledTimes[file.path]);
                 });
 
                 showFloatingNotification(`Waktu jadwal untuk semua foto disimpan sementara. Klik "Simpan Jadwal" untuk mengirimkan.`);
@@ -870,8 +914,24 @@
                 showFloatingNotification('Menyimpan jadwal...');
                 spinner.classList.remove('hidden');
 
+                let successCount = 0;
+                let errorMessages = [];
+
                 try {
                     for (const file of scheduledFiles) {
+                        // Validasi data sebelum mengirim
+                        if (!file.download_url || !scheduledTimes[file.path] || !selectedUsername || !userAccount.value || !selectedToken) {
+                            const missingFields = [];
+                            if (!file.download_url) missingFields.push('mediaUrl');
+                            if (!scheduledTimes[file.path]) missingFields.push('time');
+                            if (!selectedUsername) missingFields.push('username');
+                            if (!userAccount.value) missingFields.push('accountNum');
+                            if (!selectedToken) missingFields.push('userToken');
+                            console.error(`Skipping file ${file.path}: Missing fields: ${missingFields.join(', ')}`);
+                            errorMessages.push(`File ${file.name}: Missing fields: ${missingFields.join(', ')}`);
+                            continue; // Lewati file ini dan lanjutkan ke file berikutnya
+                        }
+
                         const formData = {
                             accountId: accountId.value,
                             username: selectedUsername,
@@ -885,17 +945,33 @@
 
                         console.log('Scheduling file:', file.path, 'with data:', formData);
 
-                        const response = await fetch('/api/schedule', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(formData),
-                        });
-                        if (!response.ok) {
-                            const errorData = await response.json();
-                            throw new Error(`HTTP error scheduling post! status: ${response.status}, details: ${JSON.stringify(errorData)}`);
+                        try {
+                            const response = await fetch('/api/schedule', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(formData),
+                            });
+
+                            if (!response.ok) {
+                                const errorData = await response.json();
+                                throw new Error(`HTTP error scheduling post! status: ${response.status}, details: ${JSON.stringify(errorData)}`);
+                            }
+
+                            successCount++;
+                        } catch (error) {
+                            console.error(`Error scheduling file ${file.path}:`, error.message);
+                            errorMessages.push(`File ${file.name}: ${error.message}`);
                         }
                     }
-                    showFloatingNotification(`${scheduledFiles.length} foto berhasil dijadwalkan!`);
+
+                    // Tampilkan hasil
+                    if (successCount === scheduledFiles.length) {
+                        showFloatingNotification(`${successCount} foto berhasil dijadwalkan!`);
+                    } else {
+                        showFloatingNotification(`Berhasil menjadwalkan ${successCount} dari ${scheduledFiles.length} foto. Lihat error di console untuk detail.`, true);
+                        console.log('Error messages:', errorMessages);
+                    }
+
                     scheduledTimes = {};
                     await loadSchedules();
                 } catch (error) {
@@ -971,6 +1047,8 @@
         function renderSchedules(schedulesToRender, startIndex) {
             schedulesToRender.forEach((schedule, idx) => {
                 const globalIndex = startIndex + idx;
+                const wibTime = convertToWIB(schedule.time); // Tampilkan waktu dalam WIB
+                const wibTimeForInput = convertToWIBForInput(schedule.time); // Untuk input datetime-local
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${globalIndex + 1}</td>
@@ -979,7 +1057,8 @@
                     <td><img src="${schedule.mediaUrl}" alt="Media" class="schedule-media-preview"></td>
                     <td class="editable-caption" contenteditable="true" data-index="${globalIndex}">${schedule.caption}</td>
                     <td class="editable-time" data-index="${globalIndex}">
-                        <input type="datetime-local" class="time-input" value="${new Date(schedule.time).toISOString().slice(0, 16)}">
+                        ${wibTime} <input type="datetime-local" class="time-input hidden" value="${wibTimeForInput}">
+                        <button class="edit-time-btn" data-index="${globalIndex}">✏️</button>
                     </td>
                     <td>${schedule.completed ? 'Selesai' : 'Menunggu'}</td>
                     <td>
@@ -998,11 +1077,29 @@
                 });
             });
 
-            document.querySelectorAll('.editable-time .time-input').forEach(input => {
-                input.addEventListener('change', async (e) => {
-                    const index = parseInt(e.target.parentElement.dataset.index, 10);
-                    const newTime = e.target.value;
-                    await updateSchedule(index, { time: newTime });
+            document.querySelectorAll('.editable-time .edit-time-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const index = e.target.dataset.index;
+                    const timeCell = e.target.parentElement;
+                    const timeDisplay = timeCell.childNodes[0]; // Text node (wibTime)
+                    const timeInput = timeCell.querySelector('.time-input');
+                    timeDisplay.nodeValue = ''; // Sembunyikan waktu
+                    timeInput.classList.remove('hidden');
+                    e.target.classList.add('hidden');
+                    timeInput.focus();
+
+                    timeInput.addEventListener('blur', async () => {
+                        const newTime = timeInput.value;
+                        if (newTime) {
+                            // Konversi waktu dari WIB ke UTC sebelum menyimpan
+                            const wibDate = new Date(newTime);
+                            const utcDate = new Date(wibDate.getTime() - 7 * 60 * 60 * 1000);
+                            const utcTime = utcDate.toISOString().slice(0, 16);
+                            await updateSchedule(index, { time: utcTime });
+                        }
+                        timeInput.classList.add('hidden');
+                        e.target.classList.remove('hidden');
+                    }, { once: true });
                 });
             });
 
@@ -1101,9 +1198,11 @@
             }
         }
 
+        updateCurrentTime();
         loadSchedules();
     </script>
     <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'924bd8b1db1eb023',t:'MTc0MjcxMTA3My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
     <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'924d0307cac86766',t:'MTc0MjcyMzI5My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
+    <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'924e8f4edd72bd02',t:'MTc0MjczOTUyNC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
 </body>
 </html>
