@@ -855,56 +855,88 @@
                 window.history.pushState({}, document.title, window.location.pathname);
             });
 
-            saveSchedules.addEventListener('click', async () => {
-                if (!selectedToken || !accountId.value) {
-                    showFloatingNotification('Pilih akun dan username terlebih dahulu.', true);
-                    return;
+           saveSchedules.addEventListener('click', async () => {
+    if (!selectedToken || !accountId.value) {
+        showFloatingNotification('Pilih akun dan username terlebih dahulu.', true);
+        return;
+    }
+
+    const scheduledFiles = imageFiles.filter(file => scheduledTimes[file.path]);
+    if (scheduledFiles.length === 0) {
+        showFloatingNotification('Tidak ada foto yang dijadwalkan.', true);
+        return;
+    }
+
+    showFloatingNotification('Menyimpan jadwal...');
+    spinner.classList.remove('hidden');
+
+    let successCount = 0;
+    let errorMessages = [];
+
+    try {
+        for (const file of scheduledFiles) {
+            // Validasi data sebelum mengirim
+            if (!file.download_url || !scheduledTimes[file.path] || !selectedUsername || !userAccount.value || !selectedToken) {
+                const missingFields = [];
+                if (!file.download_url) missingFields.push('mediaUrl');
+                if (!scheduledTimes[file.path]) missingFields.push('time');
+                if (!selectedUsername) missingFields.push('username');
+                if (!userAccount.value) missingFields.push('accountNum');
+                if (!selectedToken) missingFields.push('userToken');
+                console.error(`Skipping file ${file.path}: Missing fields: ${missingFields.join(', ')}`);
+                errorMessages.push(`File ${file.name}: Missing fields: ${missingFields.join(', ')}`);
+                continue; // Lewati file ini dan lanjutkan ke file berikutnya
+            }
+
+            const formData = {
+                accountId: accountId.value,
+                username: selectedUsername,
+                mediaUrl: file.download_url,
+                caption: captions[file.path] || '',
+                time: scheduledTimes[file.path],
+                userToken: selectedToken,
+                accountNum: userAccount.value,
+                completed: false,
+            };
+
+            console.log('Scheduling file:', file.path, 'with data:', formData);
+
+            try {
+                const response = await fetch('/api/schedule', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData),
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(`HTTP error scheduling post! status: ${response.status}, details: ${JSON.stringify(errorData)}`);
                 }
 
-                const scheduledFiles = imageFiles.filter(file => scheduledTimes[file.path]);
-                if (scheduledFiles.length === 0) {
-                    showFloatingNotification('Tidak ada foto yang dijadwalkan.', true);
-                    return;
-                }
+                successCount++;
+            } catch (error) {
+                console.error(`Error scheduling file ${file.path}:`, error.message);
+                errorMessages.push(`File ${file.name}: ${error.message}`);
+            }
+        }
 
-                showFloatingNotification('Menyimpan jadwal...');
-                spinner.classList.remove('hidden');
+        // Tampilkan hasil
+        if (successCount === scheduledFiles.length) {
+            showFloatingNotification(`${successCount} foto berhasil dijadwalkan!`);
+        } else {
+            showFloatingNotification(`Berhasil menjadwalkan ${successCount} dari ${scheduledFiles.length} foto. Lihat error di console untuk detail.`, true);
+            console.log('Error messages:', errorMessages);
+        }
 
-                try {
-                    for (const file of scheduledFiles) {
-                        const formData = {
-                            accountId: accountId.value,
-                            username: selectedUsername,
-                            mediaUrl: file.download_url,
-                            caption: captions[file.path] || '',
-                            time: scheduledTimes[file.path],
-                            userToken: selectedToken,
-                            accountNum: userAccount.value,
-                            completed: false,
-                        };
-
-                        console.log('Scheduling file:', file.path, 'with data:', formData);
-
-                        const response = await fetch('/api/schedule', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(formData),
-                        });
-                        if (!response.ok) {
-                            const errorData = await response.json();
-                            throw new Error(`HTTP error scheduling post! status: ${response.status}, details: ${JSON.stringify(errorData)}`);
-                        }
-                    }
-                    showFloatingNotification(`${scheduledFiles.length} foto berhasil dijadwalkan!`);
-                    scheduledTimes = {};
-                    await loadSchedules();
-                } catch (error) {
-                    showFloatingNotification(`Error scheduling: ${error.message}`, true);
-                    console.error('Error scheduling posts:', error);
-                } finally {
-                    spinner.classList.add('hidden');
-                }
-            });
+        scheduledTimes = {};
+        await loadSchedules();
+    } catch (error) {
+        showFloatingNotification(`Error scheduling: ${error.message}`, true);
+        console.error('Error scheduling posts:', error);
+    } finally {
+        spinner.classList.add('hidden');
+    }
+});
         }
 
         loadGithubFolders();
