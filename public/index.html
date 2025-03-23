@@ -366,13 +366,16 @@
 
         githubFolder.addEventListener('change', async () => {
             const folderPath = githubFolder.value;
+            // Reset state sebelum memuat folder baru
+            allMediaFiles = [];
+            captions = {};
+            scheduledTimes = {};
+            gallery.innerHTML = '';
+            mediaUrl.value = '';
+
             if (!folderPath) {
                 subfolderContainer.classList.remove('hidden');
                 githubSubfolder.innerHTML = '<option value="">-- Pilih Subfolder --</option>';
-                gallery.innerHTML = '';
-                mediaUrl.value = '';
-                captions = {};
-                scheduledTimes = {};
                 return;
             }
 
@@ -383,6 +386,7 @@
                     subfolderContainer.classList.add('hidden');
                     // Langsung muat file di folder ig/image
                     const files = await fetchFilesInSubfolder(folderPath);
+                    allMediaFiles = files; // Pastikan allMediaFiles diperbarui
                     displayGallery(files);
 
                     if (files.length === 0) {
@@ -398,6 +402,7 @@
 
                     if (subfolders.length === 0) {
                         const files = await fetchFilesInSubfolder(folderPath);
+                        allMediaFiles = files; // Pastikan allMediaFiles diperbarui
                         githubSubfolder.innerHTML = '<option value="">-- Tidak Ada Subfolder --</option>';
                         displayGallery(files);
 
@@ -415,11 +420,6 @@
                             githubSubfolder.appendChild(option);
                         });
 
-                        gallery.innerHTML = '';
-                        mediaUrl.value = '';
-                        captions = {};
-                        scheduledTimes = {};
-
                         if (githubSubfolder.options.length === 1) {
                             status.innerText = 'No subfolders found in this folder.';
                         } else {
@@ -435,17 +435,21 @@
 
         githubSubfolder.addEventListener('change', async () => {
             const subfolderPath = githubSubfolder.value;
+            // Reset state sebelum memuat subfolder baru
+            allMediaFiles = [];
+            captions = {};
+            scheduledTimes = {};
+            gallery.innerHTML = '';
+            mediaUrl.value = '';
+
             if (!subfolderPath) {
-                gallery.innerHTML = '';
-                mediaUrl.value = '';
-                captions = {};
-                scheduledTimes = {};
                 return;
             }
 
             try {
                 const files = await fetchFilesInSubfolder(subfolderPath);
                 console.log('All media files found:', files);
+                allMediaFiles = files; // Pastikan allMediaFiles diperbarui
 
                 displayGallery(files);
 
@@ -827,13 +831,16 @@
                             completed: false,
                         };
 
+                        console.log('Scheduling file:', file.path, 'with data:', formData);
+
                         const response = await fetch('/api/schedule', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(formData),
                         });
                         if (!response.ok) {
-                            throw new Error(`HTTP error scheduling post! status: ${response.status}`);
+                            const errorData = await response.json();
+                            throw new Error(`HTTP error scheduling post! status: ${response.status}, details: ${JSON.stringify(errorData)}`);
                         }
                     }
                     status.innerText = `${scheduledFiles.length} foto berhasil dijadwalkan!`;
