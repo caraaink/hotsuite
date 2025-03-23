@@ -11,16 +11,14 @@ async function postToInstagram(igAccountId, mediaUrl, caption, userToken) {
     const mediaEndpoint = `https://graph.facebook.com/v19.0/${igAccountId}/media`;
     const params = {
       [isVideo ? 'video_url' : 'image_url']: mediaUrl,
-      caption,
+      caption: caption || '', // Pastikan caption opsional
       access_token: userToken,
       ...(isVideo && { media_type: 'REELS' }),
     };
 
-    // Langkah 1: Buat media container
     const mediaResponse = await axios.post(mediaEndpoint, params);
     console.log('Media container created:', mediaResponse.data);
 
-    // Langkah 2: Publikasikan media
     const creationId = mediaResponse.data.id;
     const publishEndpoint = `https://graph.facebook.com/v19.0/${igAccountId}/media_publish`;
     const publishParams = {
@@ -37,21 +35,60 @@ async function postToInstagram(igAccountId, mediaUrl, caption, userToken) {
   }
 }
 
-// Fungsi untuk menjalankan jadwal
+// Fungsi untuk menghapus file dari GitHub (gambar dan meta)
+async function deleteFromGithub(path) {
+  const octokit = require('@octokit/rest').Octokit;
+  const octokitInstance = new Octokit({ auth: process.env.GITHUB_TOKEN });
+  const owner = 'caraaink';
+  const repo = 'hotsuite';
+
+  try {
+    // Hapus file gambar
+    const { data: fileData } = await octokitInstance.repos.getContent({ owner, repo, path });
+    await octokitInstance.repos.deleteFile({
+      owner,
+      repo,
+      path,
+      message: `Delete file ${path}`,
+      sha: fileData.sha,
+    });
+    console.log(`File ${path} deleted from GitHub`);
+
+    // Hapus file meta terkait
+    const metaPath = `${path}.meta.json`;
+    try {
+      const { data: metaData } = await octokitInstance.repos.getContent({ owner, repo, path: metaPath });
+      await octokitInstance.repos.deleteFile({
+        owner,
+        repo,
+        path: metaPath,
+        message: `Delete meta file ${metaPath}`,
+        sha: metaData.sha,
+      });
+      console.log(`Meta file ${metaPath} deleted from GitHub`);
+    } catch (metaError) {
+      if (metaError.status === 404) {
+        console.log(`No meta file found for ${path}`);
+      } else {
+        throw metaError;
+      }
+    }
+  } catch (error) {
+    console.error(`Error deleting from GitHub: ${error.message}`);
+    throw error;
+  }
+}
+
+// Fungsi untuk menjalankan jadwal dengan delay
 async function runScheduledPosts() {
   try {
     let schedules = (await kv.get(SCHEDULE_KEY)) || [];
-    
-    // Jika tidak ada jadwal, catat log minimal dan keluar
     if (!schedules || schedules.length === 0) {
       console.log('No schedules to process.');
       return;
     }
 
-    // Filter jadwal yang belum selesai
     const pendingSchedules = schedules.filter(schedule => !schedule.completed);
-    
-    // Jika tidak ada jadwal yang belum selesai, hapus semua jadwal yang sudah selesai
     if (pendingSchedules.length === 0) {
       console.log('No pending schedules to process. Removing completed schedules.');
       await kv.set(SCHEDULE_KEY, []);
@@ -63,45 +100,70 @@ async function runScheduledPosts() {
     const now = new Date();
     console.log('Current time (UTC):', now.toISOString());
 
-    const updatedSchedules = [];
+    // Kelompokkan jadwal berdasarkan waktu
+    const schedulesByTime = {};
+    pendingSchedules.forEach(schedule => {
+      const scheduledTimeWIB = new Date(schedule.time + ':00');
+      const scheduledTimeUTC = new Date(scheduledTimeWIB.getTime() - 7 * 60 * 60 * 1000);
+      const timeKey = scheduledTimeUTC.toISOString();
+      if (!schedulesByTime[timeKey]) schedulesByTime[timeKey] = [];
+      schedulesByTime[timeKey].push(schedule);
+    });
 
-    for (const schedule of schedules) {
-      // Hanya proses jadwal yang belum selesai
-      if (schedule.completed) {
-        continue; // Lewati jadwal yang sudah selesai, akan dihapus nanti
-      }
+    const updatedSchedules = [...schedules.filter(s => s.completed)]; // Simpan yang sudah selesai
 
-      // Asumsikan waktu yang disimpan adalah WIB (UTC+7), konversi ke UTC
-      const scheduledTimeWIB = new Date(schedule.time + ':00'); // Tambahkan detik
-      const scheduledTimeUTC = new Date(scheduledTimeWIB.getTime() - 7 * 60 * 60 * 1000); // Kurangi 7 jam untuk konversi ke UTC
-      console.log(`Checking schedule: ${schedule.accountId}, Scheduled Time (WIB): ${scheduledTimeWIB.toISOString()}, Scheduled Time (UTC): ${scheduledTimeUTC.toISOString()}, Now: ${now.toISOString()}`);
+    for (const timeKey in schedulesByTime) {
+      const schedulesAtTime = schedulesByTime[timeKey];
+      const scheduledTimeUTC = new Date(timeKey);
 
-      if (now >= scheduledTimeUTC && !schedule.completed) {
-        console.log(`Processing schedule for account ${schedule.accountId}`);
-        const result = await postToInstagram(
-          schedule.accountId,
-          schedule.mediaUrl,
-          schedule.caption,
-          schedule.userToken
-        );
-        if (result.success) {
-          schedule.completed = true;
-          console.log(`Post successful for ${schedule.accountId}: ${result.creationId}`);
-          // Kirim notifikasi ke klien (opsional, akan diimplementasikan di frontend)
-        } else {
-          console.error(`Failed to post for ${schedule.accountId}: ${result.error}`);
-          schedule.error = result.error;
-          updatedSchedules.push(schedule); // Simpan jadwal yang gagal untuk dicoba lagi
+      if (now >= scheduledTimeUTC) {
+        for (let i = 0; i < schedulesAtTime.length; i++) {
+          const schedule = schedulesAtTime[i];
+          console.log(`Processing schedule ${i + 1}/${schedulesAtTime.length} for account ${schedule.accountId}`);
+
+          // Tambahkan delay 1 menit antar posting di waktu yang sama
+          if (i > 0) {
+            const delayMs = i * 60 * 1000; // Delay 1 menit per posting setelah yang pertama
+            console.log(`Delaying post ${i + 1} by ${delayMs / 1000} seconds`);
+            await new Promise(resolve => setTimeout(resolve, delayMs));
+          }
+
+          const result = await postToInstagram(
+            schedule.accountId,
+            schedule.mediaUrl,
+            schedule.caption,
+            schedule.userToken
+          );
+
+          if (result.success) {
+            schedule.completed = true;
+            console.log(`Post successful for ${schedule.accountId}: ${result.creationId}`);
+
+            // Hapus file dari GitHub jika dari folder ig/image
+            if (schedule.mediaUrl.includes('ig/image')) {
+              const path = schedule.mediaUrl.split('/').slice(-2).join('/');
+              try {
+                await deleteFromGithub(path);
+              } catch (deleteError) {
+                console.error(`Failed to delete files for ${path}: ${deleteError.message}`);
+              }
+            }
+          } else {
+            console.error(`Failed to post for ${schedule.accountId}: ${result.error}`);
+            schedule.error = result.error;
+            updatedSchedules.push(schedule); // Simpan yang gagal
+          }
+
+          // Simpan perubahan segera setelah setiap posting
+          await kv.set(SCHEDULE_KEY, [...updatedSchedules, ...schedulesAtTime.filter((_, idx) => idx >= i)]);
         }
       } else {
-        console.log(`Schedule not processed: ${now >= scheduledTimeUTC ? 'Already completed' : 'Time not yet reached'}`);
-        updatedSchedules.push(schedule); // Simpan jadwal yang belum waktunya
+        updatedSchedules.push(...schedulesAtTime); // Simpan yang belum waktunya
       }
     }
 
-    // Hanya simpan jadwal yang belum selesai atau gagal
     await kv.set(SCHEDULE_KEY, updatedSchedules);
-    console.log('Updated schedules (completed schedules removed):', updatedSchedules);
+    console.log('Updated schedules:', updatedSchedules);
   } catch (error) {
     console.error('Error running scheduled posts:', error);
   }
@@ -110,13 +172,14 @@ async function runScheduledPosts() {
 // Vercel Serverless Function
 module.exports = async (req, res) => {
   if (req.method === 'POST') {
-    const { accountId, username, mediaUrl, caption, time, userToken, accountNum, completed } = req.body;
-    if (!accountId || !mediaUrl || !caption || !time || !userToken || !accountNum || !username) {
-      return res.status(400).json({ error: 'Missing required fields' });
+    const { accountId, username, mediaUrl, time, userToken, accountNum, completed } = req.body;
+    const caption = req.body.caption || ''; // Caption opsional, default kosong
+    if (!accountId || !mediaUrl || !time || !userToken || !accountNum || !username) {
+      return res.status(400).json({ error: 'Missing required fields (accountId, mediaUrl, time, userToken, accountNum, username)' });
     }
 
     let schedules = (await kv.get(SCHEDULE_KEY)) || [];
-    schedules.push({ accountId, username, mediaUrl, caption, time, userToken, accountNum, completed });
+    schedules.push({ accountId, username, mediaUrl, caption, time, userToken, accountNum, completed: completed || false });
     await kv.set(SCHEDULE_KEY, schedules);
     return res.status(200).json({ message: 'Post scheduled successfully' });
   }
