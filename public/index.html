@@ -51,10 +51,10 @@
                 <option value="">-- Pilih Subfolder --</option>
             </select>
 
-            <label for="githubFile">Pilih File:</label>
-            <select id="githubFile" name="githubFile" required>
-                <option value="">-- Pilih File --</option>
-            </select>
+            <!-- Input untuk mengunggah file dari perangkat (opsional) -->
+            <label for="uploadFile">Unggah File (Opsional):</label>
+            <input type="file" id="uploadFile" name="uploadFile" accept="image/jpeg,image/png,video/mp4">
+            <button type="button" id="uploadToGithub" class="upload-btn">Unggah ke GitHub</button>
 
             <div id="gallery" class="gallery"></div>
 
@@ -69,7 +69,7 @@
                 <button type="button" id="saveSchedules" class="save-schedules-btn">Simpan Jadwal</button>
             </div>
 
-            <input type="text" id="mediaUrl" name="mediaUrl" class="hidden" readonly required>
+            <input type="text" id="mediaUrl" name="mediaUrl" class="hidden" readonly>
         </form>
 
         <div class="status-container">
@@ -105,7 +105,8 @@
         const userAccount = document.getElementById('userAccount');
         const githubFolder = document.getElementById('githubFolder');
         const githubSubfolder = document.getElementById('githubSubfolder');
-        const githubFile = document.getElementById('githubFile');
+        const uploadFile = document.getElementById('uploadFile');
+        const uploadToGithub = document.getElementById('uploadToGithub');
         const gallery = document.getElementById('gallery');
         const mediaUrl = document.getElementById('mediaUrl');
         const scheduleTableBody = document.getElementById('scheduleTableBody');
@@ -160,6 +161,7 @@
                 selectedToken = null;
                 selectedUsername = null;
                 selectedAccountNum = null;
+                await loadSchedules(); // Muat ulang daftar jadwal
                 return;
             }
 
@@ -206,17 +208,18 @@
                     status.innerText = 'No accounts data found for this account.';
                 }
 
-                await loadSchedules();
+                await loadSchedules(); // Muat ulang daftar jadwal
             } catch (error) {
                 status.innerText = `Error fetching accounts: ${error.message}`;
                 console.error('Error fetching accounts:', error);
             }
         });
 
-        accountId.addEventListener('change', () => {
+        accountId.addEventListener('change', async () => {
             const selectedOption = accountId.options[accountId.selectedIndex];
             selectedUsername = selectedOption ? selectedOption.dataset.username : null;
             console.log('Selected username:', selectedUsername);
+            await loadSchedules(); // Muat ulang daftar jadwal
         });
 
         function naturalSort(a, b) {
@@ -359,7 +362,6 @@
             const folderPath = githubFolder.value;
             if (!folderPath) {
                 githubSubfolder.innerHTML = '<option value="">-- Pilih Subfolder --</option>';
-                githubFile.innerHTML = '<option value="">-- Pilih File --</option>';
                 gallery.innerHTML = '';
                 mediaUrl.value = '';
                 captions = {};
@@ -374,17 +376,9 @@
                 if (subfolders.length === 0) {
                     const files = await fetchFilesInSubfolder(folderPath);
                     githubSubfolder.innerHTML = '<option value="">-- Tidak Ada Subfolder --</option>';
-                    githubFile.innerHTML = '<option value="">-- Pilih File --</option>';
-                    files.forEach(file => {
-                        const option = document.createElement('option');
-                        option.value = JSON.stringify(file);
-                        option.textContent = file.name;
-                        githubFile.appendChild(option);
-                    });
-
                     displayGallery(files);
 
-                    if (githubFile.options.length === 1) {
+                    if (files.length === 0) {
                         status.innerText = 'No supported media files found in this folder.';
                     } else {
                         status.innerText = '';
@@ -398,7 +392,6 @@
                         githubSubfolder.appendChild(option);
                     });
 
-                    githubFile.innerHTML = '<option value="">-- Pilih File --</option>';
                     gallery.innerHTML = '';
                     mediaUrl.value = '';
                     captions = {};
@@ -419,7 +412,6 @@
         githubSubfolder.addEventListener('change', async () => {
             const subfolderPath = githubSubfolder.value;
             if (!subfolderPath) {
-                githubFile.innerHTML = '<option value="">-- Pilih File --</option>';
                 gallery.innerHTML = '';
                 mediaUrl.value = '';
                 captions = {};
@@ -431,17 +423,9 @@
                 const files = await fetchFilesInSubfolder(subfolderPath);
                 console.log('All media files found:', files);
 
-                githubFile.innerHTML = '<option value="">-- Pilih File --</option>';
-                files.forEach(file => {
-                    const option = document.createElement('option');
-                    option.value = JSON.stringify(file);
-                    option.textContent = file.name;
-                    githubFile.appendChild(option);
-                });
-
                 displayGallery(files);
 
-                if (githubFile.options.length === 1) {
+                if (files.length === 0) {
                     status.innerText = 'No supported media files found in this subfolder.';
                 } else {
                     status.innerText = '';
@@ -449,6 +433,64 @@
             } catch (error) {
                 status.innerText = `Error loading files: ${error.message}`;
                 console.error('Error fetching files:', error);
+            }
+        });
+
+        // Upload file to GitHub
+        uploadToGithub.addEventListener('click', async () => {
+            if (!uploadFile.files || uploadFile.files.length === 0) {
+                status.innerText = 'Pilih file terlebih dahulu.';
+                return;
+            }
+
+            const file = uploadFile.files[0];
+            if (!file.type.match('image/jpeg') && !file.type.match('image/png') && !file.type.match('video/mp4')) {
+                status.innerText = 'File harus berupa JPG, PNG, atau MP4.';
+                return;
+            }
+
+            status.innerText = 'Mengunggah file ke GitHub...';
+            spinner.classList.remove('hidden');
+
+            try {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = async () => {
+                    const base64Content = reader.result.split(',')[1]; // Ambil bagian base64 tanpa prefix
+                    const response = await fetch('/api/upload_to_github', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            fileName: file.name,
+                            content: base64Content,
+                        }),
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error uploading to GitHub! status: ${response.status}`);
+                    }
+
+                    const result = await response.json();
+                    status.innerText = result.message;
+
+                    // Tambahkan file yang diunggah ke galeri
+                    const newFile = {
+                        name: file.name,
+                        path: `ig/image/${file.name}`,
+                        download_url: result.download_url,
+                    };
+                    allMediaFiles.push(newFile);
+                    captions[newFile.path] = ''; // Set caption kosong untuk file baru
+                    displayGallery(allMediaFiles);
+                };
+                reader.onerror = () => {
+                    throw new Error('Error reading file');
+                };
+            } catch (error) {
+                status.innerText = `Error uploading to GitHub: ${error.message}`;
+                console.error('Error uploading to GitHub:', error);
+            } finally {
+                spinner.classList.add('hidden');
             }
         });
 
@@ -481,9 +523,7 @@
                 img.addEventListener('click', () => {
                     gallery.querySelectorAll('img').forEach(i => i.classList.remove('selected'));
                     img.classList.add('selected');
-                    githubFile.value = JSON.stringify(file);
-                    const changeEvent = new Event('change');
-                    githubFile.dispatchEvent(changeEvent);
+                    mediaUrl.value = file.download_url;
                 });
 
                 const name = document.createElement('p');
@@ -564,6 +604,8 @@
 
                     status.innerText = 'Mempublikasikan...';
                     spinner.classList.remove('hidden');
+                    let isUploadedFile = file.path.startsWith('ig/image/');
+
                     try {
                         const response = await fetch('/api/publish', {
                             method: 'POST',
@@ -575,11 +617,39 @@
                                 userToken: selectedToken,
                             }),
                         });
+
                         if (!response.ok) {
                             throw new Error(`HTTP error publishing post! status: ${response.status}`);
                         }
+
                         const result = await response.json();
                         status.innerText = result.message || 'Berhasil dipublikasikan!';
+
+                        // Jika file diunggah dari perangkat (ke ig/image), hapus dari GitHub
+                        if (isUploadedFile) {
+                            try {
+                                const deleteResponse = await fetch('/api/delete_from_github', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        path: file.path,
+                                    }),
+                                });
+
+                                if (!deleteResponse.ok) {
+                                    throw new Error(`HTTP error deleting file from GitHub! status: ${deleteResponse.status}`);
+                                }
+
+                                const deleteResult = await deleteResponse.json();
+                                status.innerText += ` ${deleteResult.message}`;
+                                // Hapus file dari galeri
+                                allMediaFiles = allMediaFiles.filter(f => f.path !== file.path);
+                                displayGallery(allMediaFiles);
+                            } catch (deleteError) {
+                                status.innerText += ` Gagal menghapus file dari GitHub: ${deleteError.message}`;
+                                console.error('Error deleting file from GitHub:', deleteError);
+                            }
+                        }
                     } catch (error) {
                         status.innerText = `Error publishing: ${error.message}`;
                         console.error('Error publishing post:', error);
@@ -716,26 +786,6 @@
                 }
             });
         }
-
-        githubFile.addEventListener('change', async () => {
-            const fileData = githubFile.value ? JSON.parse(githubFile.value) : null;
-            if (!fileData) {
-                mediaUrl.value = '';
-                gallery.querySelectorAll('img').forEach(img => img.classList.remove('selected'));
-                return;
-            }
-
-            gallery.querySelectorAll('img').forEach(img => {
-                const imgData = JSON.parse(img.dataset.fileData);
-                if (imgData.path === fileData.path) {
-                    img.classList.add('selected');
-                } else {
-                    img.classList.remove('selected');
-                }
-            });
-
-            mediaUrl.value = fileData.download_url;
-        });
 
         loadGithubFolders();
 
