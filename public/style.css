@@ -611,3 +611,51 @@ body.dark-mode .skip-day-option label {
     background: #333;
     color: #fff;
 }
+/* Atur tombol Edit, Jadwalkan, dan Publish dalam satu baris */
+.button-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.button-group .btn {
+    flex: 1;
+}
+
+/* Atur container untuk Load More */
+.load-more-container {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0;
+}
+
+.load-more-btn {
+    background-color: #4a90e2;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.load-more-btn:hover {
+    background-color: #357abd;
+}
+
+.load-more-btn.hidden {
+    display: none;
+}
+
+/* Atur container untuk Hapus Terpilih dan Total Jadwal */
+.delete-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+#totalSchedules {
+    font-size: 14px;
+    color: #ccc;
+}
