@@ -35,50 +35,6 @@ async function postToInstagram(igAccountId, mediaUrl, caption, userToken) {
   }
 }
 
-// Fungsi untuk menghapus file dari GitHub (gambar dan meta)
-async function deleteFromGithub(path) {
-  const octokit = require('@octokit/rest').Octokit;
-  const octokitInstance = new Octokit({ auth: process.env.GITHUB_TOKEN });
-  const owner = 'caraaink';
-  const repo = 'hotsuite';
-
-  try {
-    // Hapus file gambar
-    const { data: fileData } = await octokitInstance.repos.getContent({ owner, repo, path });
-    await octokitInstance.repos.deleteFile({
-      owner,
-      repo,
-      path,
-      message: `Delete file ${path}`,
-      sha: fileData.sha,
-    });
-    console.log(`File ${path} deleted from GitHub`);
-
-    // Hapus file meta terkait
-    const metaPath = `${path}.meta.json`;
-    try {
-      const { data: metaData } = await octokitInstance.repos.getContent({ owner, repo, path: metaPath });
-      await octokitInstance.repos.deleteFile({
-        owner,
-        repo,
-        path: metaPath,
-        message: `Delete meta file ${metaPath}`,
-        sha: metaData.sha,
-      });
-      console.log(`Meta file ${metaPath} deleted from GitHub`);
-    } catch (metaError) {
-      if (metaError.status === 404) {
-        console.log(`No meta file found for ${path}`);
-      } else {
-        throw metaError;
-      }
-    }
-  } catch (error) {
-    console.error(`Error deleting from GitHub: ${error.message}`);
-    throw error;
-  }
-}
-
 // Fungsi untuk menjalankan jadwal dengan delay
 async function runScheduledPosts() {
   try {
@@ -136,14 +92,25 @@ async function runScheduledPosts() {
           );
 
           if (result.success) {
-            schedule.completed = true;
+            schedule.completed = true; // Set status completed langsung ke true
             console.log(`Post successful for ${schedule.accountId}: ${result.creationId}`);
 
             // Hapus file dari GitHub jika dari folder ig/image
             if (schedule.mediaUrl.includes('ig/image')) {
-              const path = schedule.mediaUrl.split('/').slice(-2).join('/');
+              const path = schedule.mediaUrl.split('/').slice(-2).join('/'); // Misalnya: ig/image/42382.jpg
               try {
-                await deleteFromGithub(path);
+                const deleteResponse = await fetch('/api/delete_from_github', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ path }),
+                });
+
+                if (!deleteResponse.ok) {
+                  throw new Error(`HTTP error deleting file from GitHub! status: ${deleteResponse.status}`);
+                }
+
+                const deleteResult = await deleteResponse.json();
+                console.log(`Delete result: ${deleteResult.message}`);
               } catch (deleteError) {
                 console.error(`Failed to delete files for ${path}: ${deleteError.message}`);
               }
