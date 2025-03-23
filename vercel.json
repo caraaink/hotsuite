@@ -19,11 +19,31 @@
     "api/get_schedules.js": {
       "memory": 128,
       "maxDuration": 10
+    },
+    "api/publish.js": {
+      "memory": 256,
+      "maxDuration": 30
+    },
+    "api/get_file_content.js": {
+      "memory": 128,
+      "maxDuration": 10
+    },
+    "api/check_schedules.js": {
+      "memory": 128,
+      "maxDuration": 10
+    },
+    "api/delete_schedule.js": {
+      "memory": 128,
+      "maxDuration": 10
+    },
+    "api/update_schedule.js": {
+      "memory": 128,
+      "maxDuration": 10
     }
   },
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/((?!api).*)",
       "destination": "/public/$1"
     }
   ]
