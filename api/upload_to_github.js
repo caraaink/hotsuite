@@ -14,8 +14,10 @@ module.exports = async (req, res) => {
 
         const owner = 'caraaink';
         const repo = 'hotsuite';
-        const path = `ig/image/${fileName}`;
-        const message = `Upload file ${fileName} to ig/image`;
+        const path = fileName.startsWith('ig/') ? fileName : `ig/image/${fileName}`; // Gunakan path langsung dari fileName
+        const message = fileName.includes('.meta.json') 
+            ? `Update meta file for ${fileName}` 
+            : `Upload file ${fileName} to ${path.split('/').slice(0, -1).join('/')}`;
 
         // Cek apakah file sudah ada
         let sha = null;
@@ -25,21 +27,21 @@ module.exports = async (req, res) => {
                 repo,
                 path,
             });
-            sha = data.sha; // Jika file sudah ada, kita akan memperbarui (update)
+            sha = data.sha;
         } catch (error) {
             if (error.status !== 404) {
-                throw error; // Jika error bukan 404, lempar error
+                throw error;
             }
         }
 
-        // Upload file ke GitHub
+        // Upload atau update file ke GitHub
         const response = await octokit.repos.createOrUpdateFileContents({
             owner,
             repo,
             path,
             message,
-            content, // Konten dalam base64
-            sha, // Jika file sudah ada, sertakan sha untuk update
+            content,
+            sha,
         });
 
         const download_url = `https://raw.githubusercontent.com/${owner}/${repo}/main/${path}`;
