@@ -112,8 +112,8 @@ body.dark-mode .schedule-list td {
 
 body.dark-mode .schedule-list th {
     background: #444;
-    color: #ffffff; /* Warna teks header tabel lebih terang di dark mode */
-    font-weight: 700; /* Membuat teks header lebih tebal */
+    color: #ffffff;
+    font-weight: 700;
 }
 
 body.dark-mode .gallery {
@@ -128,7 +128,7 @@ body.dark-mode .gallery-item {
 body.dark-mode .header h2,
 body.dark-mode .upload-form label,
 body.dark-mode h2 {
-    color: #e0e0e0; /* Warna teks lebih terang di dark mode */
+    color: #e0e0e0;
 }
 
 /* Perbaikan Warna Teks di Dalam Galeri */
@@ -139,7 +139,7 @@ body.dark-mode h2 {
 }
 
 body.dark-mode .gallery-item p {
-    color: #d0d0d0; /* Warna teks lebih terang di dark mode */
+    color: #d0d0d0;
 }
 
 .gallery-item .caption-text {
@@ -148,7 +148,7 @@ body.dark-mode .gallery-item p {
 }
 
 body.dark-mode .gallery-item .caption-text {
-    color: #b0b0b0; /* Warna caption lebih terang di dark mode */
+    color: #b0b0b0;
 }
 
 .gallery-item .schedule-time {
@@ -157,7 +157,7 @@ body.dark-mode .gallery-item .caption-text {
 }
 
 body.dark-mode .gallery-item .schedule-time {
-    color: #b0b0b0; /* Warna waktu jadwal lebih terang di dark mode */
+    color: #b0b0b0;
 }
 
 /* Upload Form */
@@ -303,6 +303,19 @@ body.dark-mode .skip-day-option label {
     100% { transform: rotate(360deg); }
 }
 
+/* Editor Spinner */
+.editor-spinner {
+    display: inline-block;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-left: 2px solid #fff;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    animation: spin 0.8s linear infinite;
+    margin-left: 8px;
+    vertical-align: middle;
+}
+
 /* Schedule List */
 .schedule-list {
     margin-top: 30px;
@@ -444,10 +457,14 @@ body.dark-mode .skip-day-option label {
     font-size: 14px;
 }
 
+.editor-buttons {
+    display: flex;
+    gap: 10px;
+}
+
 .caption-editor button,
 .schedule-editor button {
     padding: 6px 12px;
-    margin: 5px;
     border: none;
     border-radius: 4px;
     cursor: pointer;
