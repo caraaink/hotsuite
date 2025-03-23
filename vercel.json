@@ -54,8 +54,5 @@
       "source": "/((?!api).*)",
       "destination": "/public/$1"
     }
-  ],
-  "vercelIgnore": [
-    "ig/**"
   ]
 }
