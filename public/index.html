@@ -84,7 +84,7 @@
                     <tr>
                         <th><input type="checkbox" id="selectAll"></th>
                         <th>Akun IG</th>
-                        <th>Media URL</th>
+                        <th>Media</th>
                         <th>Caption</th>
                         <th>Waktu Posting</th>
                         <th>Status</th>
@@ -122,6 +122,7 @@
         let selectedToken = null;
         let selectedUsername = null;
         let selectedAccountNum = null;
+        let selectedAccountId = null; // Tambahkan untuk menyimpan accountId yang dipilih
         let allSubfolders = [];
         let allMediaFiles = [];
         let captions = {};
@@ -161,6 +162,7 @@
                 selectedToken = null;
                 selectedUsername = null;
                 selectedAccountNum = null;
+                selectedAccountId = null;
                 await loadSchedules(); // Muat ulang daftar jadwal
                 return;
             }
@@ -218,7 +220,8 @@
         accountId.addEventListener('change', async () => {
             const selectedOption = accountId.options[accountId.selectedIndex];
             selectedUsername = selectedOption ? selectedOption.dataset.username : null;
-            console.log('Selected username:', selectedUsername);
+            selectedAccountId = selectedOption ? selectedOption.value : null; // Simpan accountId
+            console.log('Selected username:', selectedUsername, 'Selected accountId:', selectedAccountId);
             await loadSchedules(); // Muat ulang daftar jadwal
         });
 
@@ -437,67 +440,98 @@
         });
 
         // Upload file to GitHub
-uploadToGithub.addEventListener('click', async () => {
-    if (!uploadFile.files || uploadFile.files.length === 0) {
-        status.innerText = 'Pilih file terlebih dahulu.';
-        return;
-    }
-
-    const file = uploadFile.files[0];
-    if (!file.type.match('image/jpeg') && !file.type.match('image/png') && !file.type.match('video/mp4')) {
-        status.innerText = 'File harus berupa JPG, PNG, atau MP4.';
-        return;
-    }
-
-    status.innerText = 'Mengunggah file ke GitHub...';
-    spinner.classList.remove('hidden');
-
-    try {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = async () => {
-            const base64Content = reader.result.split(',')[1]; // Ambil bagian base64 tanpa prefix
-            // Buat nama file acak dengan 5 angka
-            const randomNum = Math.floor(10000 + Math.random() * 90000); // Angka acak antara 10000 dan 99999
-            const extension = file.name.split('.').pop(); // Ambil ekstensi file (jpg, png, mp4)
-            const newFileName = `${randomNum}.${extension}`; // Contoh: 83627.jpg
-
-            const response = await fetch('/api/upload_to_github', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    fileName: newFileName,
-                    content: base64Content,
-                }),
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error uploading to GitHub! status: ${response.status}`);
+        uploadToGithub.addEventListener('click', async () => {
+            if (!uploadFile.files || uploadFile.files.length === 0) {
+                status.innerText = 'Pilih file terlebih dahulu.';
+                return;
             }
 
-            const result = await response.json();
-            status.innerText = result.message;
+            const file = uploadFile.files[0];
+            if (!file.type.match('image/jpeg') && !file.type.match('image/png') && !file.type.match('video/mp4')) {
+                status.innerText = 'File harus berupa JPG, PNG, atau MP4.';
+                return;
+            }
 
-            // Tambahkan file yang diunggah ke galeri
-            const newFile = {
-                name: newFileName,
-                path: `ig/image/${newFileName}`,
-                download_url: result.download_url,
-            };
-            allMediaFiles.push(newFile);
-            captions[newFile.path] = ''; // Set caption kosong untuk file baru
-            displayGallery(allMediaFiles);
-        };
-        reader.onerror = () => {
-            throw new Error('Error reading file');
-        };
-    } catch (error) {
-        status.innerText = `Error uploading to GitHub: ${error.message}`;
-        console.error('Error uploading to GitHub:', error);
-    } finally {
-        spinner.classList.add('hidden');
-    }
-});
+            status.innerText = 'Mengunggah file ke GitHub...';
+            spinner.classList.remove('hidden');
+
+            try {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = async () => {
+                    const base64Content = reader.result.split(',')[1]; // Ambil bagian base64 tanpa prefix
+                    // Buat nama file acak dengan 5 angka
+                    const randomNum = Math.floor(10000 + Math.random() * 90000); // Angka acak antara 10000 dan 99999
+                    const extension = file.name.split('.').pop(); // Ambil ekstensi file (jpg, png, mp4)
+                    const newFileName = `${randomNum}.${extension}`; // Contoh: 83627.jpg
+
+                    const response = await fetch('/api/upload_to_github', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            fileName: newFileName,
+                            content: base64Content,
+                        }),
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error uploading to GitHub! status: ${response.status}`);
+                    }
+
+                    const result = await response.json();
+                    status.innerText = result.message;
+
+                    // Tambahkan file yang diunggah ke galeri
+                    const newFile = {
+                        name: newFileName,
+                        path: `ig/image/${newFileName}`,
+                        download_url: result.download_url,
+                    };
+                    allMediaFiles.push(newFile);
+                    captions[newFile.path] = ''; // Set caption kosong untuk file baru
+                    displayGallery(allMediaFiles);
+                };
+                reader.onerror = () => {
+                    throw new Error('Error reading file');
+                };
+            } catch (error) {
+                status.innerText = `Error uploading to GitHub: ${error.message}`;
+                console.error('Error uploading to GitHub:', error);
+            } finally {
+                spinner.classList.add('hidden');
+            }
+        });
+
+        async function saveCaptionToGithub(file, caption) {
+            try {
+                const folderPath = file.path.substring(0, file.path.lastIndexOf('/'));
+                const metaFileName = `${file.name}.meta.json`;
+                const metaPath = `${folderPath}/${metaFileName}`;
+                const metaContent = JSON.stringify({ caption }, null, 2);
+                const base64Content = btoa(metaContent); // Encode ke base64
+
+                const response = await fetch('/api/upload_to_github', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        fileName: metaPath.split('/').slice(1).join('/'), // Hilangkan 'ig/' dari awal path
+                        content: base64Content,
+                    }),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error uploading meta to GitHub! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                console.log(`Meta file ${metaPath} saved to GitHub:`, result);
+                return true;
+            } catch (error) {
+                console.error(`Error saving meta file for ${file.name}:`, error);
+                status.innerText = `Error saving meta file for ${file.name}: ${error.message}`;
+                return false;
+            }
+        }
 
         function displayGallery(files) {
             gallery.innerHTML = '';
@@ -552,9 +586,10 @@ uploadToGithub.addEventListener('click', async () => {
                     textarea.value = captions[file.path] || '';
                     const saveBtn = document.createElement('button');
                     saveBtn.textContent = 'Simpan';
-                    saveBtn.addEventListener('click', () => {
+                    saveBtn.addEventListener('click', async () => {
                         captions[file.path] = textarea.value;
                         captionText.textContent = captions[file.path] || 'Tidak ada caption';
+                        await saveCaptionToGithub(file, captions[file.path]); // Simpan ke GitHub
                         editor.remove();
                         status.innerText = `Caption untuk ${file.name} berhasil disimpan.`;
                     });
@@ -847,17 +882,22 @@ uploadToGithub.addEventListener('click', async () => {
                 scheduleTableBody.innerHTML = '';
                 const schedules = data.schedules || [];
 
-                const filteredSchedules = selectedAccountNum
-                    ? schedules.filter(schedule => schedule.accountNum === selectedAccountNum)
-                    : schedules;
+                // Filter berdasarkan accountNum dan accountId
+                let filteredSchedules = schedules;
+                if (selectedAccountNum) {
+                    filteredSchedules = filteredSchedules.filter(schedule => schedule.accountNum === selectedAccountNum);
+                }
+                if (selectedAccountId) {
+                    filteredSchedules = filteredSchedules.filter(schedule => schedule.accountId === selectedAccountId);
+                }
 
                 if (filteredSchedules.length > 0) {
                     filteredSchedules.forEach((schedule, index) => {
                         const row = document.createElement('tr');
                         row.innerHTML = `
                             <td><input type="checkbox" class="schedule-checkbox" data-index="${index}"></td>
-                            <td>${schedule.username || schedule.accountId}</td>
-                            <td><a href="${schedule.mediaUrl}" target="_blank">Lihat Media</a></td>
+                            <td>${schedule.username || 'Unknown'}</td>
+                            <td><img src="${schedule.mediaUrl}" alt="Media" class="schedule-media-preview"></td>
                             <td>${schedule.caption}</td>
                             <td>${new Date(schedule.time).toLocaleString()}</td>
                             <td>${schedule.completed ? 'Selesai' : 'Menunggu'}</td>
@@ -903,5 +943,6 @@ uploadToGithub.addEventListener('click', async () => {
 
         loadSchedules();
     </script>
+    <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'924bd8b1db1eb023',t:'MTc0MjcxMTA3My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
 </body>
 </html>
