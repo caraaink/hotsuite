@@ -122,7 +122,7 @@
         let selectedToken = null;
         let selectedUsername = null;
         let selectedAccountNum = null;
-        let selectedAccountId = null; // Tambahkan untuk menyimpan accountId yang dipilih
+        let selectedAccountId = null;
         let allSubfolders = [];
         let allMediaFiles = [];
         let captions = {};
@@ -163,7 +163,7 @@
                 selectedUsername = null;
                 selectedAccountNum = null;
                 selectedAccountId = null;
-                await loadSchedules(); // Muat ulang daftar jadwal
+                await loadSchedules();
                 return;
             }
 
@@ -210,7 +210,7 @@
                     status.innerText = 'No accounts data found for this account.';
                 }
 
-                await loadSchedules(); // Muat ulang daftar jadwal
+                await loadSchedules();
             } catch (error) {
                 status.innerText = `Error fetching accounts: ${error.message}`;
                 console.error('Error fetching accounts:', error);
@@ -220,9 +220,9 @@
         accountId.addEventListener('change', async () => {
             const selectedOption = accountId.options[accountId.selectedIndex];
             selectedUsername = selectedOption ? selectedOption.dataset.username : null;
-            selectedAccountId = selectedOption ? selectedOption.value : null; // Simpan accountId
+            selectedAccountId = selectedOption ? selectedOption.value : null;
             console.log('Selected username:', selectedUsername, 'Selected accountId:', selectedAccountId);
-            await loadSchedules(); // Muat ulang daftar jadwal
+            await loadSchedules();
         });
 
         function naturalSort(a, b) {
@@ -459,11 +459,10 @@
                 const reader = new FileReader();
                 reader.readAsDataURL(file);
                 reader.onload = async () => {
-                    const base64Content = reader.result.split(',')[1]; // Ambil bagian base64 tanpa prefix
-                    // Buat nama file acak dengan 5 angka
-                    const randomNum = Math.floor(10000 + Math.random() * 90000); // Angka acak antara 10000 dan 99999
-                    const extension = file.name.split('.').pop(); // Ambil ekstensi file (jpg, png, mp4)
-                    const newFileName = `${randomNum}.${extension}`; // Contoh: 83627.jpg
+                    const base64Content = reader.result.split(',')[1];
+                    const randomNum = Math.floor(10000 + Math.random() * 90000);
+                    const extension = file.name.split('.').pop();
+                    const newFileName = `${randomNum}.${extension}`;
 
                     const response = await fetch('/api/upload_to_github', {
                         method: 'POST',
@@ -481,14 +480,13 @@
                     const result = await response.json();
                     status.innerText = result.message;
 
-                    // Tambahkan file yang diunggah ke galeri
                     const newFile = {
                         name: newFileName,
                         path: `ig/image/${newFileName}`,
                         download_url: result.download_url,
                     };
                     allMediaFiles.push(newFile);
-                    captions[newFile.path] = ''; // Set caption kosong untuk file baru
+                    captions[newFile.path] = '';
                     displayGallery(allMediaFiles);
                 };
                 reader.onerror = () => {
@@ -503,35 +501,35 @@
         });
 
         async function saveCaptionToGithub(file, caption) {
-    try {
-        const folderPath = file.path.substring(0, file.path.lastIndexOf('/')); // Ambil folder path dari file foto
-        const metaFileName = `${file.name}.meta.json`;
-        const metaPath = `${folderPath}/${metaFileName}`; // Path meta JSON di folder yang sama
-        const metaContent = JSON.stringify({ caption }, null, 2);
-        const base64Content = btoa(unescape(encodeURIComponent(metaContent))); // Encode ke base64 dengan handling karakter khusus
+            try {
+                const folderPath = file.path.substring(0, file.path.lastIndexOf('/'));
+                const metaFileName = `${file.name}.meta.json`;
+                const metaPath = `${folderPath}/${metaFileName}`;
+                const metaContent = JSON.stringify({ caption }, null, 2);
+                const base64Content = btoa(unescape(encodeURIComponent(metaContent)));
 
-        const response = await fetch('/api/upload_to_github', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                fileName: metaPath.split('/').slice(1).join('/'), // Hilangkan 'ig/' dari awal path
-                content: base64Content,
-            }),
-        });
+                const response = await fetch('/api/upload_to_github', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        fileName: metaPath,
+                        content: base64Content,
+                    }),
+                });
 
-        if (!response.ok) {
-            throw new Error(`HTTP error uploading meta to GitHub! status: ${response.status}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error uploading meta to GitHub! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                console.log(`Meta file ${metaPath} saved to GitHub:`, result);
+                return true;
+            } catch (error) {
+                console.error(`Error saving meta file for ${file.name}:`, error);
+                status.innerText = `Error saving meta file for ${file.name}: ${error.message}`;
+                return false;
+            }
         }
-
-        const result = await response.json();
-        console.log(`Meta file ${metaPath} saved to GitHub:`, result);
-        return true;
-    } catch (error) {
-        console.error(`Error saving meta file for ${file.name}:`, error);
-        status.innerText = `Error saving meta file for ${file.name}: ${error.message}`;
-        return false;
-    }
-}
 
         function displayGallery(files) {
             gallery.innerHTML = '';
@@ -542,7 +540,6 @@
                 return;
             }
 
-            // Fungsi untuk format tanggal dan jam dengan benar
             function formatDateTime(date, hours, minutes) {
                 const year = date.getFullYear();
                 const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -584,21 +581,33 @@
                     editor.className = 'caption-editor';
                     const textarea = document.createElement('textarea');
                     textarea.value = captions[file.path] || '';
+                    const buttonContainer = document.createElement('div');
+                    buttonContainer.className = 'editor-buttons';
                     const saveBtn = document.createElement('button');
                     saveBtn.textContent = 'Simpan';
+                    const saveSpinner = document.createElement('span');
+                    saveSpinner.className = 'editor-spinner hidden';
+                    saveBtn.appendChild(saveSpinner);
                     saveBtn.addEventListener('click', async () => {
+                        saveSpinner.classList.remove('hidden');
+                        saveBtn.disabled = true;
                         captions[file.path] = textarea.value;
-                        captionText.textContent = captions[file.path] || 'Tidak ada caption';
-                        await saveCaptionToGithub(file, captions[file.path]); // Simpan ke GitHub
-                        editor.remove();
-                        status.innerText = `Caption untuk ${file.name} berhasil disimpan.`;
+                        const success = await saveCaptionToGithub(file, captions[file.path]);
+                        if (success) {
+                            captionText.textContent = captions[file.path] || 'Tidak ada caption';
+                            editor.remove();
+                            status.innerText = `Caption untuk ${file.name} berhasil disimpan.`;
+                        }
+                        saveSpinner.classList.add('hidden');
+                        saveBtn.disabled = false;
                     });
                     const cancelBtn = document.createElement('button');
                     cancelBtn.textContent = 'Batal';
                     cancelBtn.addEventListener('click', () => editor.remove());
+                    buttonContainer.appendChild(saveBtn);
+                    buttonContainer.appendChild(cancelBtn);
                     editor.appendChild(textarea);
-                    editor.appendChild(saveBtn);
-                    editor.appendChild(cancelBtn);
+                    editor.appendChild(buttonContainer);
                     container.appendChild(editor);
                 });
 
@@ -665,7 +674,6 @@
                         const result = await response.json();
                         status.innerText = result.message || 'Berhasil dipublikasikan!';
 
-                        // Jika file diunggah dari perangkat (ke ig/image), hapus dari GitHub
                         if (isUploadedFile) {
                             try {
                                 const deleteResponse = await fetch('/api/delete_from_github', {
@@ -682,7 +690,6 @@
 
                                 const deleteResult = await deleteResponse.json();
                                 status.innerText += ` ${deleteResult.message}`;
-                                // Hapus file dari galeri
                                 allMediaFiles = allMediaFiles.filter(f => f.path !== file.path);
                                 displayGallery(allMediaFiles);
                             } catch (deleteError) {
@@ -707,7 +714,6 @@
                 container.appendChild(publishBtn);
                 gallery.appendChild(container);
 
-                // Set default schedule time with 1-day or 2-day interval based on skipDay
                 if (startDateTime.value && !scheduledTimes[file.path]) {
                     const start = new Date(startDateTime.value);
                     const hours = start.getHours();
@@ -720,7 +726,6 @@
                 }
             });
 
-            // Update schedule times when startDateTime changes
             startDateTime.addEventListener('change', () => {
                 if (!startDateTime.value) return;
                 const start = new Date(startDateTime.value);
@@ -736,7 +741,6 @@
                 });
             });
 
-            // Update schedule times when skipDay changes
             skipDay.addEventListener('change', () => {
                 if (!startDateTime.value) return;
                 const start = new Date(startDateTime.value);
@@ -752,7 +756,6 @@
                 });
             });
 
-            // Schedule All Button
             scheduleAll.addEventListener('click', () => {
                 if (!startDateTime.value) {
                     status.innerText = 'Pilih tanggal dan jam awal terlebih dahulu.';
@@ -772,12 +775,9 @@
                 });
 
                 status.innerText = `Waktu jadwal untuk semua foto disimpan sementara. Klik "Simpan Jadwal" untuk mengirimkan.`;
-
-                // Bersihkan URL setelah klik "Jadwalkan Semua"
                 window.history.pushState({}, document.title, window.location.pathname);
             });
 
-            // Save Schedules Button
             saveSchedules.addEventListener('click', async () => {
                 if (!selectedToken || !accountId.value) {
                     status.innerText = 'Pilih akun dan username terlebih dahulu.';
@@ -816,7 +816,7 @@
                         }
                     }
                     status.innerText = `${scheduledFiles.length} foto berhasil dijadwalkan!`;
-                    scheduledTimes = {}; // Reset scheduled times after saving
+                    scheduledTimes = {};
                     await loadSchedules();
                 } catch (error) {
                     status.innerText = `Error scheduling: ${error.message}`;
@@ -856,7 +856,7 @@
             }
 
             const indices = Array.from(checkboxes).map(checkbox => parseInt(checkbox.dataset.index, 10));
-            indices.sort((a, b) => b - a); // Urutkan dari besar ke kecil agar penghapusan tidak mengganggu indeks
+            indices.sort((a, b) => b - a);
 
             try {
                 for (const index of indices) {
@@ -882,7 +882,6 @@
                 scheduleTableBody.innerHTML = '';
                 const schedules = data.schedules || [];
 
-                // Filter berdasarkan accountNum dan accountId
                 let filteredSchedules = schedules;
                 if (selectedAccountNum) {
                     filteredSchedules = filteredSchedules.filter(schedule => schedule.accountNum === selectedAccountNum);
@@ -917,7 +916,6 @@
                         });
                     });
 
-                    // Select All Checkbox
                     selectAll.addEventListener('change', () => {
                         const checkboxes = document.querySelectorAll('.schedule-checkbox');
                         checkboxes.forEach(checkbox => {
@@ -925,7 +923,6 @@
                         });
                     });
 
-                    // Delete Selected Button
                     deleteSelected.addEventListener('click', () => {
                         if (confirm('Apakah Anda yakin ingin menghapus jadwal yang dipilih?')) {
                             deleteSelectedSchedules();
