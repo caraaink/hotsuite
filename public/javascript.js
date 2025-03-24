@@ -779,7 +779,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function displayGallery(files) {
+    async function displayGallery(files) {
         gallery.innerHTML = '';
         const imageFiles = files.filter(file => file.name.endsWith('.jpg') || file.name.endsWith('.png'));
 
@@ -787,6 +787,11 @@ document.addEventListener('DOMContentLoaded', () => {
             gallery.innerHTML = '<p>Tidak ada gambar untuk ditampilkan.</p>';
             return;
         }
+
+        // Ambil jadwal yang ada untuk mencocokkan dengan mediaUrl
+        const schedulesResponse = await fetch('/api/get_schedules');
+        const schedules = await schedulesResponse.json();
+        console.log('Schedules for gallery:', schedules);
 
         function formatDateTime(date, hours, minutes) {
             const year = date.getFullYear();
@@ -843,6 +848,10 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 scheduleTime.textContent = 'Belum dijadwalkan';
             }
+
+            // Cari jadwal yang sesuai dengan mediaUrl
+            const existingSchedule = schedules.schedules.find(schedule => schedule.mediaUrl === file.download_url);
+            const scheduleId = existingSchedule ? existingSchedule.scheduleId : null;
 
             const buttonGroup = document.createElement('div');
             buttonGroup.className = 'button-group';
@@ -930,6 +939,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 container.appendChild(editor);
             });
 
+            const deleteScheduleBtn = document.createElement('button');
+            deleteScheduleBtn.className = 'btn delete';
+            deleteScheduleBtn.textContent = 'Hapus Jadwal';
+            deleteScheduleBtn.disabled = !scheduleId; // Nonaktifkan jika tidak ada jadwal
+            deleteScheduleBtn.addEventListener('click', async () => {
+                if (!scheduleId) {
+                    showFloatingNotification('File ini belum memiliki jadwal.', true);
+                    return;
+                }
+
+                const confirmed = await showConfirmModal(`Apakah Anda yakin ingin menghapus jadwal untuk ${file.name}?`);
+                if (confirmed) {
+                    await deleteSchedule(scheduleId);
+                    deleteScheduleBtn.disabled = true; // Nonaktifkan tombol setelah dihapus
+                    scheduleTime.textContent = 'Belum dijadwalkan';
+                    showFloatingNotification(`Jadwal untuk ${file.name} berhasil dihapus.`);
+                }
+            });
+
             const publishBtn = document.createElement('button');
             publishBtn.className = 'btn publish';
             publishBtn.textContent = 'Publish';
@@ -981,6 +1009,7 @@ document.addEventListener('DOMContentLoaded', () => {
             container.appendChild(captionText);
             container.appendChild(scheduleTime);
             container.appendChild(buttonGroup);
+            container.appendChild(deleteScheduleBtn); // Tambahkan tombol Hapus Jadwal
             container.appendChild(publishBtn);
             gallery.appendChild(container);
 
@@ -1099,73 +1128,6 @@ document.addEventListener('DOMContentLoaded', () => {
             showFloatingNotification(`Waktu jadwal untuk semua foto disimpan sementara. Klik "Simpan Jadwal" untuk mengirimkan.`);
             window.history.pushState({}, document.title, window.location.pathname);
         });
-
-        // Bagian saveSchedules di javascript.js (sekitar baris 1148)
-saveSchedules.addEventListener('click', async () => {
-    if (!selectedToken || !accountId.value) {
-        showFloatingNotification('Pilih akun dan username terlebih dahulu.', true);
-        return;
-    }
-
-    const scheduledFiles = imageFiles.filter(file => scheduledTimes[file.path]);
-    if (scheduledFiles.length === 0) {
-        showFloatingNotification('Tidak ada foto yang dijadwalkan.', true);
-        return;
-    }
-
-    showFloatingNotification('Menyimpan jadwal...');
-    spinner.classList.remove('hidden');
-
-    try {
-        for (const file of scheduledFiles) {
-            const formData = {
-                accountId: accountId.value,
-                username: selectedUsername,
-                mediaUrl: file.download_url,
-                caption: captions[file.path] || '',
-                time: scheduledTimes[file.path],
-                userToken: selectedToken,
-                accountNum: userAccount.value,
-                completed: false,
-            };
-
-            console.log('Scheduling file:', file.path, 'with data:', formData);
-
-            const response = await fetch('/api/schedule', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData),
-            });
-
-            // Tambahkan logging untuk melihat status dan respons mentah
-            console.log('Response status:', response.status);
-            const responseText = await response.text(); // Ambil respons sebagai teks terlebih dahulu
-            console.log('Raw response:', responseText);
-
-            // Coba parse respons sebagai JSON
-            let result;
-            try {
-                result = JSON.parse(responseText);
-            } catch (parseError) {
-                throw new Error(`Failed to parse server response as JSON: ${responseText}`);
-            }
-
-            if (!response.ok) {
-                throw new Error(`HTTP error scheduling post! status: ${response.status}, details: ${result.error || responseText}`);
-            }
-
-            console.log('Schedule response:', result);
-        }
-        showFloatingNotification(`${scheduledFiles.length} foto berhasil dijadwalkan!`);
-        scheduledTimes = {};
-        await loadSchedules();
-    } catch (error) {
-        showFloatingNotification(`Error scheduling: ${error.message}`, true);
-        console.error('Error scheduling posts:', error);
-    } finally {
-        spinner.classList.add('hidden');
-    }
-});
     }
 
     loadGithubFolders();
@@ -1305,6 +1267,9 @@ saveSchedules.addEventListener('click', async () => {
             scheduleTableBody.innerHTML = '';
             allSchedules = data.schedules || [];
 
+            // Urutkan jadwal berdasarkan tanggal (time) secara ascending
+            allSchedules.sort((a, b) => new Date(a.time) - new Date(b.time));
+
             let filteredSchedules = allSchedules;
             if (selectedAccountNum) {
                 filteredSchedules = filteredSchedules.filter(schedule => schedule.accountNum === selectedAccountNum);
@@ -1375,6 +1340,70 @@ saveSchedules.addEventListener('click', async () => {
             loadMoreBtn.classList.add('hidden');
         }
     }
+
+    saveSchedules.addEventListener('click', async () => {
+        if (!selectedToken || !accountId.value) {
+            showFloatingNotification('Pilih akun dan username terlebih dahulu.', true);
+            return;
+        }
+
+        const scheduledFiles = allMediaFiles.filter(file => scheduledTimes[file.path]);
+        if (scheduledFiles.length === 0) {
+            showFloatingNotification('Tidak ada foto yang dijadwalkan.', true);
+            return;
+        }
+
+        showFloatingNotification('Menyimpan jadwal...');
+        spinner.classList.remove('hidden');
+
+        try {
+            for (const file of scheduledFiles) {
+                const formData = {
+                    accountId: accountId.value,
+                    username: selectedUsername,
+                    mediaUrl: file.download_url,
+                    caption: captions[file.path] || '',
+                    time: scheduledTimes[file.path],
+                    userToken: selectedToken,
+                    accountNum: userAccount.value,
+                    completed: false,
+                };
+
+                console.log('Scheduling file:', file.path, 'with data:', formData);
+
+                const response = await fetch('/api/schedule', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData),
+                });
+
+                console.log('Response status:', response.status);
+                const responseText = await response.text();
+                console.log('Raw response:', responseText);
+
+                let result;
+                try {
+                    result = JSON.parse(responseText);
+                } catch (parseError) {
+                    throw new Error(`Failed to parse server response as JSON: ${responseText}`);
+                }
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error scheduling post! status: ${response.status}, details: ${result.error || responseText}`);
+                }
+
+                console.log('Schedule response:', result);
+            }
+            showFloatingNotification(`${scheduledFiles.length} foto berhasil dijadwalkan!`);
+            scheduledTimes = {};
+            await loadSchedules();
+        } catch (error) {
+            showFloatingNotification(`Error scheduling: ${error.message}`, true);
+            console.error('Error scheduling posts:', error);
+        } finally {
+            spinner.classList.add('hidden');
+        }
+    });
 
     loadSchedules();
 });
