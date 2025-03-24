@@ -27,7 +27,7 @@ module.exports = async (req, res) => {
 
     const partners = response.data.data; // Data akun dari respons
     const igAccounts = [];
-    const MAX_LIMIT = 200; // Batas maksimum total akun
+    const MAX_LIMIT = 200; // Batas maksimal total akun
 
     // Proses hanya sejumlah 'limit' akun per request
     const promises = partners
