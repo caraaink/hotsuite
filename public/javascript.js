@@ -527,8 +527,9 @@ document.addEventListener('DOMContentLoaded', () => {
             return fileName.endsWith('.json');
         });
 
-        if (mediaFiles.length === 0) {
-            showFloatingNotification('Pilih setidaknya satu file media (JPG, JPEG, PNG, atau MP4).', true);
+        // Jika tidak ada file media maupun meta JSON yang valid
+        if (mediaFiles.length === 0 && metaFiles.length === 0) {
+            showFloatingNotification('Pilih setidaknya satu file media (JPG, JPEG, PNG, atau MP4) atau file meta JSON.', true);
             return;
         }
 
@@ -539,12 +540,77 @@ document.addEventListener('DOMContentLoaded', () => {
             metaFileMap[baseName] = metaFile;
         });
 
-        let uploadedCount = 0;
-        const totalFiles = mediaFiles.length;
-        showFloatingNotification(`Mengunggah file 1 dari ${totalFiles}...`);
-        spinner.classList.remove('hidden');
+        // Proses file meta JSON terlebih dahulu (jika ada)
+        if (metaFiles.length > 0) {
+            for (const metaFile of metaFiles) {
+                const baseName = metaFile.name.replace(/\.meta\.json$/i, '');
+                const existingMediaFile = allMediaFiles.find(file => file.name === baseName);
 
-        try {
+                if (!existingMediaFile) {
+                    showFloatingNotification(`File media untuk ${metaFile.name} (misalnya ${baseName}) tidak ditemukan di folder ini. Unggah file media terlebih dahulu.`, true);
+                    continue;
+                }
+
+                // Baca isi file meta JSON
+                const metaReader = new FileReader();
+                const metaResult = await new Promise((metaResolve, metaReject) => {
+                    metaReader.readAsText(metaFile);
+                    metaReader.onload = () => {
+                        try {
+                            const content = JSON.parse(metaReader.result);
+                            if (content.caption) {
+                                captions[existingMediaFile.path] = content.caption;
+                            } else {
+                                captions[existingMediaFile.path] = '';
+                            }
+                            metaResolve(content);
+                        } catch (error) {
+                            metaReject(new Error(`Error parsing meta JSON for ${metaFile.name}: ${error.message}`));
+                        }
+                    };
+                    metaReader.onerror = () => metaReject(new Error(`Error reading meta file ${metaFile.name}`));
+                });
+
+                // Upload file meta JSON ke GitHub
+                const metaFileName = `${existingMediaFile.path}.meta.json`;
+                const metaContent = JSON.stringify({ caption: captions[existingMediaFile.path] }, null, 2);
+                const metaBase64Content = btoa(unescape(encodeURIComponent(metaContent)));
+                const metaCommitMessage = uploadFolderValue.startsWith('ig/') 
+                    ? `Update meta for ${existingMediaFile.name} to ${uploadFolderValue} [vercel-skip]` 
+                    : `Update meta for ${existingMediaFile.name} to ${uploadFolderValue}`;
+
+                console.log(`Uploading meta file: ${metaFileName}`);
+
+                const metaResponse = await fetch('/api/upload_to_github', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        fileName: metaFileName,
+                        content: metaBase64Content,
+                        message: metaCommitMessage,
+                    }),
+                });
+
+                const metaResponseData = await metaResponse.json();
+                if (!metaResponse.ok) {
+                    console.error(`Meta upload failed: ${metaResponseData.error}`);
+                    showFloatingNotification(`Gagal mengunggah meta untuk ${existingMediaFile.name}: ${metaResponseData.error}`, true);
+                } else {
+                    console.log(`Meta file uploaded successfully: ${metaFileName}`);
+                    showFloatingNotification(`Meta JSON untuk ${existingMediaFile.name} berhasil diunggah!`);
+                }
+            }
+
+            // Perbarui galeri untuk menampilkan caption yang baru
+            displayGallery(allMediaFiles);
+        }
+
+        // Proses file media (jika ada)
+        if (mediaFiles.length > 0) {
+            let uploadedCount = 0;
+            const totalFiles = mediaFiles.length;
+            showFloatingNotification(`Mengunggah file media 1 dari ${totalFiles}...`);
+
             for (const file of mediaFiles) {
                 const reader = new FileReader();
                 const result = await new Promise((resolve, reject) => {
@@ -595,7 +661,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             // Cek apakah ada file meta JSON yang sesuai
                             const originalFileName = file.name; // Nama file asli (misalnya 1.jpg)
                             let metaContent = { caption: '' }; // Default jika tidak ada meta JSON
-                            let metaBase64Content;
 
                             if (metaFileMap[originalFileName]) {
                                 const metaFile = metaFileMap[originalFileName];
@@ -624,7 +689,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             // Upload file meta JSON
                             const metaFileName = `${uploadFolderValue}/${newFileName}.meta.json`;
                             const metaContentString = JSON.stringify(metaContent, null, 2);
-                            metaBase64Content = btoa(unescape(encodeURIComponent(metaContentString)));
+                            const metaBase64Content = btoa(unescape(encodeURIComponent(metaContentString)));
                             const metaCommitMessage = uploadFolderValue.startsWith('ig/') 
                                 ? `Upload meta for ${newFileName} to ${uploadFolderValue} [vercel-skip]` 
                                 : `Upload meta for ${newFileName} to ${uploadFolderValue}`;
@@ -653,7 +718,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             captions[newFile.path] = metaContent.caption || '';
                             uploadedCount++;
                             if (uploadedCount < totalFiles) {
-                                showFloatingNotification(`Mengunggah file ${uploadedCount + 1} dari ${totalFiles}...`);
+                                showFloatingNotification(`Mengunggah file media ${uploadedCount + 1} dari ${totalFiles}...`);
                             }
 
                             resolve(newFile);
@@ -668,13 +733,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             showFloatingNotification(`${mediaFiles.length} file media berhasil diunggah ke GitHub!`);
             displayGallery(allMediaFiles);
-        } catch (error) {
-            showFloatingNotification(`Error uploading to GitHub: ${error.message}`, true);
-            console.error('Error uploading to GitHub:', error);
-        } finally {
-            spinner.classList.add('hidden');
         }
-    });
+    } finally {
+        spinner.classList.add('hidden');
+    }
+});
 
     async function deletePhoto(filePath) {
         showFloatingNotification(`Menghapus ${filePath}...`);
