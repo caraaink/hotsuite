@@ -727,7 +727,7 @@ body.dark-mode .skip-day-option label {
 }
 .upload-row {
     display: flex;
-    align-items: center;
+    align-items: flex-end; /* Sejajarkan elemen di bagian bawah */
     gap: 15px; /* Jarak antar elemen */
     margin-bottom: 15px;
 }
@@ -754,7 +754,7 @@ body.dark-mode .skip-day-option label {
 }
 
 .upload-btn {
-    padding: 10px 20px;
+    padding: 8px 20px; /* Sesuaikan padding agar tombol sejajar */
     background-color: #3498db;
     color: white;
     border: none;
@@ -762,6 +762,10 @@ body.dark-mode .skip-day-option label {
     cursor: pointer;
     font-size: 14px;
     transition: background-color 0.3s;
+    height: 36px; /* Atur tinggi tombol agar sama dengan input */
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .upload-btn:hover {
