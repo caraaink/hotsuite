@@ -7,6 +7,15 @@ module.exports = async (req, res) => {
         return res.status(400).json({ error: 'Missing required fields: fileName and content' });
     }
 
+    // Validasi format file (jika bukan meta JSON)
+    if (!fileName.endsWith('.meta.json')) {
+        const allowedExtensions = ['.jpg', '.png', '.jpeg', '.mp4'];
+        const fileExtension = fileName.slice(fileName.lastIndexOf('.')).toLowerCase();
+        if (!allowedExtensions.includes(fileExtension)) {
+            return res.status(400).json({ error: 'File must be JPG, PNG, or MP4' });
+        }
+    }
+
     try {
         const octokit = new Octokit({
             auth: process.env.GITHUB_TOKEN,
@@ -14,8 +23,8 @@ module.exports = async (req, res) => {
 
         const owner = 'caraaink';
         const repo = 'hotsuite';
-        const path = fileName.startsWith('ig/') ? fileName : `ig/image/${fileName}`; // Gunakan path langsung dari fileName
-        const message = fileName.includes('.meta.json') 
+        const path = fileName; // Gunakan path langsung dari fileName
+        const message = fileName.endsWith('.meta.json') 
             ? `Update meta file for ${fileName}` 
             : `Upload file ${fileName} to ${path.split('/').slice(0, -1).join('/')}`;
 
