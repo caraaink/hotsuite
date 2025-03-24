@@ -1,136 +1,946 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Instagram Scheduler</title>
-    <link rel="stylesheet" href="/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
-</head>
-<body class="dark-mode">
-    <div class="container">
-        <div class="header">
-            <h2>Jadwalkan Posting Instagram</h2>
-            <div class="theme-toggle">
-                <button id="themeToggle" class="theme-toggle-btn">⚙️</button>
-                <div id="themeMenu" class="theme-menu hidden">
-                    <button id="toggleDarkMode">Toggle Dark Mode</button>
-                </div>
-            </div>
-        </div>
+/* Reset dan Font */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
 
-        <form id="scheduleForm" class="upload-form">
-            <label for="userAccount">Pilih Akun:</label>
-            <select id="userAccount" name="userAccount" required>
-                <option value="">-- Pilih Akun --</option>
-                <option value="1">Akun 1</option>
-                <option value="2">Akun 2</option>
-                <option value="3">Akun 3</option>
-                <option value="4">Akun 4</option>
-                <option value="5">Akun 5</option>
-                <option value="6">Akun 6</option>
-                <option value="7">Akun 7</option>
-                <option value="8">Akun 8</option>
-                <option value="9">Akun 9</option>
-                <option value="10">Akun 10</option>
-                <option value="11">Akun 11</option>
-            </select>
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
 
-            <label for="accountId">Pilih Username IG:</label>
-            <select id="accountId" name="accountId" required>
-                <option value="">-- Pilih Username --</option>
-            </select>
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: #f7f9fc;
+    color: #333;
+    line-height: 1.6;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
 
-            <label for="githubFolder">Pilih Folder di GitHub:</label>
-            <select id="githubFolder" name="githubFolder">
-                <option value="ig">-- Pilih Folder --</option>
-            </select>
+.container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 15px;
+    background: #fff;
+    border-radius: 0;
+    box-shadow: none;
+    flex: 1;
+}
 
-            <div id="subfolderContainer">
-                <label for="githubSubfolder">Pilih Subfolder:</label>
-                <select id="githubSubfolder" name="githubSubfolder">
-                    <option value="">-- Pilih Subfolder --</option>
-                </select>
-            </div>
+/* Header */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
 
-            <!-- Input untuk mengunggah file dari perangkat (opsional) -->
-            <div class="upload-row">
-                <div class="upload-file-section">
-                    <label for="uploadFile">Unggah File (Opsional):</label>
-                    <input type="file" id="uploadFile" name="uploadFile" accept="image/jpeg,image/png,video/mp4" multiple>
-                </div>
-                <div class="upload-folder-section">
-                    <label for="uploadFolder">Folder Tujuan:</label>
-                    <input type="text" id="uploadFolder" name="uploadFolder" placeholder="Masukkan path folder (opsional)">
-                </div>
-                <button type="button" id="uploadToGithub" class="upload-btn">Unggah ke GitHub</button>
-            </div>
+.header h2 {
+    font-size: 24px;
+    font-weight: 600;
+    color: #2c3e50;
+}
 
-            <div id="gallery" class="gallery"></div>
+/* Theme Toggle */
+.theme-toggle-btn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
 
-            <div class="schedule-all-container">
-                <label for="startDateTime">Tanggal dan Jam Awal:</label>
-                <input type="datetime-local" id="startDateTime" name="startDateTime">
-                <div class="skip-day-option">
-                    <input type="checkbox" id="skipDay" name="skipDay">
-                    <label for="skipDay">Lompat Satu Hari</label>
-                </div>
-                <button type="button" id="scheduleAll" class="schedule-all-btn">Jadwalkan Semua</button>
-                <button type="button" id="saveSchedules" class="save-schedules-btn">Simpan Jadwal</button>
-            </div>
+.theme-toggle-btn:hover {
+    transform: rotate(90deg);
+}
 
-            <input type="text" id="mediaUrl" name="mediaUrl" class="hidden" readonly>
-        </form>
+.theme-menu {
+    position: absolute;
+    top: 50px;
+    right: 20px;
+    background: #2c3e50;
+    color: #fff;
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+}
 
-        <h2>Daftar Jadwal Posting</h2>
-        <div id="scheduleList" class="schedule-list">
-            <div class="table-wrapper">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>No</th>
-                            <th><input type="checkbox" id="selectAll"></th>
-                            <th>Akun IG</th>
-                            <th>Media</th>
-                            <th>Caption</th>
-                            <th>Waktu Posting</th>
-                            <th>Status</th>
-                            <th>Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody id="scheduleTableBody">
-                        <!-- Tambahkan pesan default jika tabel kosong -->
-                        <tr class="empty-message">
-                            <td colspan="8">Belum ada jadwal posting.</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <div class="load-more-container">
-                <button id="loadMore" class="load-more-btn hidden">Load More</button>
-            </div>
-            <div class="delete-container">
-                <span id="totalSchedules"></span>
-                <button id="deleteSelected" class="delete-selected-btn">Hapus Terpilih</button>
-            </div>
-        </div>
-    </div>
+.theme-menu button {
+    background: none;
+    border: none;
+    color: #fff;
+    padding: 8px 12px;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+    font-size: 14px;
+}
 
-    <!-- Tambahkan elemen melayang untuk loading dan notifikasi -->
-    <div id="floatingNotification" class="floating-notification hidden">
-        <div id="floatingSpinner" class="spinner hidden"></div>
-        <p id="floatingStatus"></p>
-    </div>
+.theme-menu button:hover {
+    background: #34495e;
+}
 
-    <!-- Panggil file javascript.js -->
-    <script src="/javascript.js"></script>
+/* Dark Mode */
+body.dark-mode {
+    background-color: #1a1a1a;
+    color: #e0e0e0;
+}
 
-    <!-- Script Cloudflare tetap di sini -->
-    <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'924bd8b1db1eb023',t:'MTc0MjcxMTA3My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
-    <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'924d0307cac86766',t:'MTc0MjcyMzI5My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
-    <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'924eb3939ad7bff2',t:'MTc0Mjc0MTAxMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
-    <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9252eee93f54675f',t:'MTc0Mjc4NTM4My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
-    <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9253ffa85a5312db',t:'MTc0Mjc5NjU1NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
-    <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'92546b298b50e58e',t:'MTc0MjgwMDk1OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
-</body>
-</html>
+body.dark-mode .container {
+    background: #2c2c2c;
+    box-shadow: none;
+}
+
+body.dark-mode .upload-form input,
+body.dark-mode .upload-form select,
+body.dark-mode .upload-form textarea {
+    background: #3a3a3a;
+    color: #e0e0e0;
+    border: 1px solid #4a4a4a;
+}
+
+body.dark-mode .upload-btn,
+body.dark-mode .btn {
+    background: #4a4a4a;
+    color: #fff;
+}
+
+body.dark-mode .schedule-list table {
+    background: #3a3a3a;
+    color: #e0e0e0;
+}
+
+body.dark-mode .schedule-list th,
+body.dark-mode .schedule-list td {
+    border: 1px solid #4a4a4a;
+}
+
+body.dark-mode .schedule-list th {
+    background: #444;
+    color: #ffffff;
+    font-weight: 700;
+}
+
+body.dark-mode .gallery {
+    background: #3a3a3a;
+}
+
+body.dark-mode .gallery-item {
+    background: #444;
+}
+
+/* Perbaikan Warna Teks di Dark Mode */
+body.dark-mode .header h2,
+body.dark-mode .upload-form label,
+body.dark-mode h2 {
+    color: #e0e0e0;
+}
+
+/* Perbaikan Warna Teks di Dalam Galeri */
+.gallery-item p {
+    margin: 8px 0 0;
+    font-size: 14px;
+    color: #555;
+}
+
+body.dark-mode .gallery-item p {
+    color: #d0d0d0;
+}
+
+.gallery-item .caption-text {
+    font-size: 12px;
+    color: #777;
+}
+
+body.dark-mode .gallery-item .caption-text {
+    color: #b0b0b0;
+}
+
+.gallery-item .schedule-time {
+    font-size: 12px;
+    color: #777;
+}
+
+body.dark-mode .gallery-item .schedule-time {
+    color: #b0b0b0;
+}
+
+/* Upload Form */
+.upload-form {
+    display: grid;
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.upload-form label {
+    font-weight: 500;
+    color: #2c3e50;
+    font-size: 16px;
+}
+
+.upload-form select,
+.upload-form input,
+.upload-form textarea {
+    padding: 12px;
+    font-size: 16px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    width: 100%;
+    background: #f9f9f9;
+    transition: border-color 0.3s ease;
+}
+
+.upload-form select:focus,
+.upload-form input:focus,
+.upload-form textarea:focus {
+    border-color: #3498db;
+    outline: none;
+}
+
+.upload-form textarea {
+    resize: vertical;
+    height: 120px;
+}
+
+/* Schedule All Container */
+.schedule-all-container {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.skip-day-option {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.skip-day-option label {
+    font-size: 16px;
+    color: #2c3e50;
+}
+
+body.dark-mode .skip-day-option label {
+    color: #e0e0e0;
+}
+
+.schedule-all-btn {
+    padding: 12px 24px;
+    background-color: #f39c12;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 500;
+    transition: background-color 0.3s ease;
+    min-width: 150px;
+}
+
+.schedule-all-btn:hover {
+    background-color: #e67e22;
+}
+
+.save-schedules-btn {
+    padding: 12px 24px;
+    background-color: #2ecc71;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 500;
+    transition: background-color 0.3s ease;
+    min-width: 150px;
+}
+
+.save-schedules-btn:hover {
+    background-color: #27ae60;
+}
+
+/* Buttons */
+.upload-btn,
+.btn {
+    padding: 12px 24px;
+    background-color: #3498db;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 500;
+    transition: background-color 0.3s ease;
+}
+
+.upload-btn:hover,
+.btn:hover {
+    background-color: #2980b9;
+}
+
+.delete-btn {
+    padding: 8px 16px;
+    margin-right: 5px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    background-color: #e74c3c;
+    color: #fff;
+}
+
+/* Floating Notification */
+.floating-notification {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #333;
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 1000;
+    max-width: 90%;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.floating-notification.error {
+    background-color: #e74c3c;
+}
+
+.floating-notification.hidden {
+    display: none;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(-50%) translateY(20px);
+    }
+}
+
+/* Spinner */
+.spinner {
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-left: 4px solid #fff;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.spinner {
+    border: 4px solid rgba(0, 0, 0, 0.1);
+    border-left: 4px solid #3498db;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Editor Spinner */
+.editor-spinner {
+    display: inline-block;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-left: 2px solid #fff;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    animation: spin 0.8s linear infinite;
+    margin-left: 8px;
+    vertical-align: middle;
+}
+
+/* Schedule List */
+.schedule-list {
+    margin-top: 30px;
+}
+
+.table-wrapper {
+    overflow-x: auto;
+}
+
+.schedule-list table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    display: table;
+}
+
+.schedule-list th,
+.schedule-list td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+    font-size: 16px;
+}
+
+.schedule-list th {
+    background-color: #f4f4f4;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.schedule-list td a {
+    color: #3498db;
+    text-decoration: none;
+}
+
+.schedule-list td a:hover {
+    text-decoration: underline;
+}
+
+/* Styling untuk preview media di tabel */
+.schedule-media-preview {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+/* Tombol Hapus Terpilih */
+.delete-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+#totalSchedules {
+    font-size: 16px;
+    color: #ccc;
+}
+
+.delete-selected-btn {
+    padding: 12px 24px;
+    background-color: #e74c3c;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 500;
+    transition: background-color 0.3s ease;
+    width: auto;
+    max-width: 200px;
+}
+
+.delete-selected-btn:hover {
+    background-color: #c0392b;
+}
+
+/* Gallery */
+.gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 15px;
+    margin-top: 20px;
+    padding: 10px;
+    background: #f9f9f9;
+    border-radius: 8px;
+}
+
+.gallery-item {
+    text-align: center;
+    position: relative;
+    background: #fff;
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.gallery-item img {
+    width: 100%;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 6px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: border 0.3s ease;
+}
+
+.gallery-item img:hover,
+.gallery-item img.selected {
+    border: 2px solid #3498db;
+}
+
+.gallery-item .btn {
+    margin: 5px 0;
+    padding: 6px 10px;
+    font-size: 14px;
+    width: 100%;
+}
+
+.gallery-item .btn.edit {
+    background-color: #3498db;
+}
+
+.gallery-item .btn.publish {
+    background-color: #2ecc71;
+}
+
+.gallery-item .btn.schedule {
+    background-color: #f39c12;
+}
+
+/* Atur tombol Edit dan Jadwalkan dalam satu baris */
+.button-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+    margin-left: -10px;
+}
+
+.button-group .btn {
+    flex: 1;
+}
+
+/* Atur container untuk Load More */
+.load-more-container {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0;
+}
+
+.load-more-btn {
+    background-color: #4a90e2;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.load-more-btn:hover {
+    background-color: #357abd;
+}
+
+.load-more-btn.hidden {
+    display: none;
+}
+
+/* Editors */
+.caption-editor,
+.schedule-editor {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+    border-radius: 8px;
+}
+
+.caption-editor textarea,
+.schedule-editor input {
+    width: 80%;
+    margin-bottom: 10px;
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    font-size: 14px;
+}
+
+.editor-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.caption-editor button,
+.schedule-editor button {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.caption-editor button:first-child,
+.schedule-editor button:first-child {
+    background-color: #2ecc71;
+    color: #fff;
+}
+
+.caption-editor button:last-child,
+.schedule-editor button:last-child {
+    background-color: #e74c3c;
+    color: #fff;
+}
+
+/* Hidden Class */
+.hidden {
+    display: none;
+}
+
+/* Upload Row */
+.upload-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.upload-file-section,
+.upload-folder-section {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.upload-file-section label,
+.upload-folder-section label {
+    margin-bottom: 5px;
+    font-size: 16px;
+    font-weight: 500;
+    color: #ddd;
+}
+
+.upload-file-section input[type="file"],
+.upload-folder-section input[type="text"] {
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 16px;
+    height: 48px;
+    box-sizing: border-box;
+    background-color: #333;
+    color: #ddd;
+}
+
+.upload-folder-section input[type="text"] {
+    width: 100%;
+}
+
+.upload-btn {
+    padding: 12px 24px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 23px;
+}
+
+.upload-btn:hover {
+    background-color: #2980b9;
+}
+
+/* Tombol Hapus Langsung (Tanda X) */
+.delete-direct-btn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background-color: #e74c3c;
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+}
+
+.delete-direct-btn:hover {
+    background-color: #c0392b;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+
+    .header h2 {
+        font-size: 20px;
+    }
+
+    .upload-form {
+        gap: 15px;
+    }
+
+    .upload-form select,
+    .upload-form input,
+    .upload-form textarea {
+        font-size: 16px;
+        padding: 10px;
+    }
+
+    .upload-row {
+        flex-direction: column;
+    }
+
+    .upload-file-section,
+    .upload-folder-section {
+        width: 100%;
+    }
+
+    .upload-btn {
+        margin-top: 0;
+        width: 100%;
+    }
+
+    .schedule-all-container {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .schedule-all-btn,
+    .save-schedules-btn {
+        width: 100%;
+    }
+
+    .gallery {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    }
+
+    .gallery-item img {
+        height: 100px;
+    }
+
+    .schedule-list table {
+        font-size: 14px;
+    }
+
+    .schedule-list th,
+    .schedule-list td {
+        padding: 10px;
+        font-size: 14px;
+    }
+
+    .schedule-media-preview {
+        width: 40px;
+        height: 40px;
+    }
+}
+
+@media (max-width: 480px) {
+    .header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .theme-toggle-btn {
+        font-size: 20px;
+    }
+
+    .theme-menu {
+        top: 70px;
+        right: 10px;
+    }
+
+    .upload-form label {
+        font-size: 14px;
+    }
+
+    .upload-form select,
+    .upload-form input,
+    .upload-form textarea {
+        font-size: 14px;
+        padding: 8px;
+    }
+
+    .schedule-all-btn,
+    .save-schedules-btn,
+    .upload-btn,
+    .delete-selected-btn {
+        font-size: 14px;
+        padding: 10px 20px;
+    }
+
+    .gallery {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    }
+
+    .gallery-item img {
+        height: 80px;
+    }
+
+    /* Ubah tabel menjadi card layout seperti daftar lagu */
+    .table-wrapper {
+        overflow-x: visible;
+    }
+
+    .schedule-list table {
+        display: block;
+        background: transparent;
+        border: none;
+    }
+
+    .schedule-list thead {
+        display: none;
+    }
+
+    .schedule-list tbody {
+        display: block;
+    }
+
+    .schedule-list tr {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        background: #3a3a3a;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        padding: 10px;
+        border-bottom: 1px solid #4a4a4a;
+    }
+
+    .schedule-list td {
+        display: block;
+        border: none;
+        padding: 0;
+        font-size: 14px;
+    }
+
+    /* Sembunyikan kolom yang tidak diperlukan */
+    .schedule-list td[data-label="No"],
+    .schedule-list td[data-label="Select"] {
+        display: none;
+    }
+
+    /* Media (Gambar) */
+    .schedule-list td[data-label="Media"] {
+        flex: 0 0 auto;
+        margin-right: 10px;
+    }
+
+    .schedule-media-preview {
+        width: 50px;
+        height: 50px;
+        border-radius: 4px;
+    }
+
+    /* Konten utama (Akun IG, Caption, Waktu Posting, Status) */
+    .schedule-list td[data-label="Akun IG"],
+    .schedule-list td[data-label="Caption"],
+    .schedule-list td[data-label="Waktu Posting"],
+    .schedule-list td[data-label="Status"] {
+        flex: 1;
+        display: block;
+    }
+
+    /* Akun IG dan Caption sebagai teks utama */
+    .schedule-list td[data-label="Akun IG"] {
+        font-size: 16px;
+        font-weight: 600;
+        color: #e0e0e0;
+        margin-bottom: 4px;
+    }
+
+    .schedule-list td[data-label="Caption"] {
+        font-size: 14px;
+        color: #b0b0b0;
+        margin-bottom: 4px;
+    }
+
+    /* Waktu Posting dan Status sebagai teks sekunder */
+    .schedule-list td[data-label="Waktu Posting"],
+    .schedule-list td[data-label="Status"] {
+        font-size: 12px;
+        color: #b0b0b0;
+    }
+
+    /* Aksi (Tombol Hapus) */
+    .schedule-list td[data-label="Aksi"] {
+        flex: 0 0 auto;
+        margin-left: 10px;
+    }
+
+    .delete-btn {
+        padding: 6px 12px;
+        font-size: 12px;
+    }
+
+    /* Pastikan pesan "Belum ada jadwal" terlihat */
+    .schedule-list .empty-message td {
+        display: block;
+        text-align: center;
+        padding: 20px;
+        font-size: 14px;
+        color: #e0e0e0;
+    }
+}
+
+/* Sembunyikan elemen kosong */
+.gallery:empty,
+.gallery-item:empty {
+    display: none;
+}
+
+.editable-caption {
+    border: 1px solid transparent;
+    padding: 5px;
+}
+
+.editable-caption:hover,
+.editable-caption:focus {
+    border: 1px solid #ccc;
+    outline: none;
+}
+
+.editable-time input {
+    border: 1px solid #ccc;
+    padding: 5px;
+    background: #333;
+    color: #fff;
+}
