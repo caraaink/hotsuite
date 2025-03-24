@@ -54,13 +54,17 @@
             </div>
 
             <!-- Input untuk mengunggah file dari perangkat (opsional) -->
-            <label for="uploadFile">Unggah File (Opsional):</label>
-            <input type="file" id="uploadFile" name="uploadFile" accept="image/jpeg,image/png,video/mp4" multiple>
-            <label for="uploadFolder">Pilih Folder Tujuan:</label>
-            <select id="uploadFolder" name="uploadFolder">
-                <option value="ig/image">ig/image</option>
-            </select>
-            <button type="button" id="uploadToGithub" class="upload-btn">Unggah ke GitHub</button>
+            <div class="upload-row">
+                <div class="upload-file-section">
+                    <label for="uploadFile">Unggah File (Opsional):</label>
+                    <input type="file" id="uploadFile" name="uploadFile" accept="image/jpeg,image/png,video/mp4" multiple>
+                </div>
+                <div class="upload-folder-section">
+                    <label for="uploadFolder">Folder Tujuan:</label>
+                    <input type="text" id="uploadFolder" name="uploadFolder" placeholder="Masukkan path folder (contoh: ig/image)" value="ig/image">
+                </div>
+                <button type="button" id="uploadToGithub" class="upload-btn">Unggah ke GitHub</button>
+            </div>
 
             <div id="gallery" class="gallery"></div>
 
@@ -111,7 +115,7 @@
         <p id="floatingStatus"></p>
     </div>
 
-    <!-- Tambahkan referensi ke file index.js -->
+    <!-- Panggil file javascript.js -->
     <script src="/javascript.js"></script>
 
     <!-- Script Cloudflare tetap di sini -->
