@@ -803,3 +803,51 @@ body.dark-mode .skip-day-option label {
 .delete-direct-btn:hover {
     background-color: #c0392b;
 }
+/* Gaya untuk modal konfirmasi */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal.hidden {
+    display: none;
+}
+
+.modal-content {
+    background: white;
+    padding: 20px;
+    border-radius: 5px;
+    text-align: center;
+    max-width: 400px;
+    width: 100%;
+}
+
+.modal-buttons {
+    margin-top: 20px;
+}
+
+.modal-buttons button {
+    padding: 10px 20px;
+    margin: 0 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.modal-buttons #confirmOk {
+    background: #007bff;
+    color: white;
+}
+
+.modal-buttons #confirmCancel {
+    background: #dc3545;
+    color: white;
+}
