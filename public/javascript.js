@@ -139,40 +139,59 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load Instagram usernames when an account is selected with pagination
     let allIgAccounts = [];
     let nextCursor = null;
-    const MAX_IG_LIMIT = 200; // Batas maksimum 200 akun IG
-    const PER_PAGE = 20; // Ambil 20 akun per request (disesuaikan agar lebih cepat)
+    const PER_PAGE = 20; // Ambil 20 akun per request
 
     async function fetchIgAccounts(accountKey) {
+        const MAX_IG_LIMIT = 100; // Kurangi batas maksimum menjadi 100 untuk mencegah overload
+        let fetchCount = 0;
+        const MAX_FETCH_ATTEMPTS = 5; // Batasi jumlah percobaan pagination
+
         try {
             spinner.classList.remove('hidden');
             showFloatingNotification('Memuat akun Instagram...');
-            const url = nextCursor
-                ? `/api/get_accounts?account_key=${accountKey}&limit=${PER_PAGE}&after=${nextCursor}`
-                : `/api/get_accounts?account_key=${accountKey}&limit=${PER_PAGE}`;
-            
-            const accountsRes = await fetch(url);
-            if (!accountsRes.ok) {
-                throw new Error(`HTTP error fetching accounts! status: ${accountsRes.status}`);
+
+            while (fetchCount < MAX_FETCH_ATTEMPTS && allIgAccounts.length < MAX_IG_LIMIT && nextCursor !== null) {
+                const url = nextCursor
+                    ? `/api/get_accounts?account_key=${accountKey}&limit=${PER_PAGE}&after=${nextCursor}`
+                    : `/api/get_accounts?account_key=${accountKey}&limit=${PER_PAGE}`;
+                
+                try {
+                    const accountsRes = await fetch(url);
+                    if (!accountsRes.ok) {
+                        const errorData = await accountsRes.json();
+                        throw new Error(`HTTP error fetching accounts! status: ${accountsRes.status}, details: ${errorData.error || 'Unknown error'}`);
+                    }
+                    const accountsData = await accountsRes.json();
+                    console.log('Accounts fetched:', accountsData);
+
+                    if (!accountsData.accounts || !accountsData.accounts[accountKey] || !Array.isArray(accountsData.accounts[accountKey].accounts)) {
+                        throw new Error('Invalid accounts data structure');
+                    }
+
+                    const igAccounts = accountsData.accounts[accountKey].accounts;
+                    const validIgAccounts = igAccounts.filter(acc => acc && acc.type === 'ig' && acc.id && acc.username);
+                    allIgAccounts = allIgAccounts.concat(validIgAccounts);
+                    nextCursor = accountsData.next || null;
+
+                    updateAccountIdDropdown();
+                    fetchCount++;
+                } catch (error) {
+                    console.error(`Error during fetch attempt ${fetchCount + 1}:`, error);
+                    showFloatingNotification(`Error fetching accounts on attempt ${fetchCount + 1}: ${error.message}`, true);
+                    break; // Hentikan loop jika ada error
+                }
+
+                // Tambahkan delay kecil untuk mencegah rate limiting
+                if (nextCursor) {
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
             }
-            const accountsData = await accountsRes.json();
-            console.log('Accounts fetched:', accountsData);
 
-            if (!accountsData.accounts || !accountsData.accounts[accountKey] || !Array.isArray(accountsData.accounts[accountKey].accounts)) {
-                throw new Error('Invalid accounts data structure');
-            }
-
-            const igAccounts = accountsData.accounts[accountKey].accounts;
-            const validIgAccounts = igAccounts.filter(acc => acc && acc.type === 'ig' && acc.id && acc.username);
-            allIgAccounts = allIgAccounts.concat(validIgAccounts);
-            nextCursor = accountsData.next;
-
-            updateAccountIdDropdown();
-
-            if (allIgAccounts.length < MAX_IG_LIMIT && nextCursor) {
-                await fetchIgAccounts(accountKey);
-            } else if (allIgAccounts.length >= MAX_IG_LIMIT) {
+            if (allIgAccounts.length >= MAX_IG_LIMIT) {
                 showFloatingNotification(`Mencapai batas maksimum ${MAX_IG_LIMIT} akun.`, false, 3000);
-            } else {
+            } else if (fetchCount >= MAX_FETCH_ATTEMPTS) {
+                showFloatingNotification(`Berhenti setelah ${fetchCount} percobaan. Total ${allIgAccounts.length} akun dimuat.`, false, 3000);
+            } else if (nextCursor === null) {
                 showFloatingNotification(`Berhasil memuat ${allIgAccounts.length} akun Instagram.`, false, 3000);
             }
         } catch (error) {
@@ -222,13 +241,14 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const tokenRes = await fetch(`/api/refresh-token?accountNum=${accountNum}`);
             if (!tokenRes.ok) {
-                throw new Error(`HTTP error fetching token! status: ${tokenRes.status}`);
+                const errorData = await tokenRes.json();
+                throw new Error(`HTTP error fetching token! status: ${tokenRes.status}, details: ${errorData.error || 'Unknown error'}`);
             }
             const tokenData = await tokenRes.json();
             console.log('Token fetched:', tokenData);
             selectedToken = tokenData.token;
             if (!selectedToken) {
-                throw new Error('No token found for this account');
+                throw new Error('No token found for this account. Please check your environment variables.');
             }
 
             allIgAccounts = [];
@@ -241,6 +261,13 @@ document.addEventListener('DOMContentLoaded', () => {
             showFloatingNotification(`Error fetching accounts: ${error.message}`, true);
             console.error('Error fetching accounts:', error);
             accountId.innerHTML = '<option value="">-- Gagal Memuat --</option>';
+            // Reset state agar aplikasi tidak stuck
+            selectedToken = null;
+            selectedUsername = null;
+            selectedAccountId = null;
+            allIgAccounts = [];
+            nextCursor = null;
+            await loadSchedules();
         }
     });
 
@@ -715,7 +742,7 @@ document.addEventListener('DOMContentLoaded', () => {
         spinner.classList.remove('hidden');
 
         try {
-            const folderPath = filePath.substring(0, filePath.lastIndexOf('/'));
+            const folderPath = filePath.substring(0, file.path.lastIndexOf('/'));
             const commitMessage = folderPath.startsWith('ig/') 
                 ? `Delete file ${filePath} [vercel-skip]` 
                 : `Delete file ${filePath}`;
