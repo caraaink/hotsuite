@@ -5,31 +5,20 @@
     box-sizing: border-box;
 }
 
-html, body {
-    height: 100%;
-    margin: 0;
-    padding: 0;
-}
-
 body {
     font-family: 'Poppins', sans-serif;
     background-color: #f7f9fc;
     color: #333;
     line-height: 1.6;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
 }
 
 .container {
-    width: 100%;
     max-width: 1200px;
-    margin: 0 auto;
-    padding: 15px;
+    margin: 30px auto;
+    padding: 20px;
     background: #fff;
-    border-radius: 0;
-    box-shadow: none;
-    flex: 1;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
 }
 
 /* Header */
@@ -37,7 +26,7 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
+    margin-bottom: 30px;
 }
 
 .header h2 {
@@ -94,7 +83,7 @@ body.dark-mode {
 
 body.dark-mode .container {
     background: #2c2c2c;
-    box-shadow: none;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
 body.dark-mode .upload-form input,
@@ -174,20 +163,19 @@ body.dark-mode .gallery-item .schedule-time {
 /* Upload Form */
 .upload-form {
     display: grid;
-    gap: 20px;
+    gap: 15px;
     margin-bottom: 30px;
 }
 
 .upload-form label {
     font-weight: 500;
     color: #2c3e50;
-    font-size: 16px;
 }
 
 .upload-form select,
 .upload-form input,
 .upload-form textarea {
-    padding: 12px;
+    padding: 10px;
     font-size: 16px;
     border: 1px solid #ddd;
     border-radius: 6px;
@@ -211,7 +199,6 @@ body.dark-mode .gallery-item .schedule-time {
 /* Schedule All Container */
 .schedule-all-container {
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
     gap: 15px;
     margin-top: 20px;
@@ -224,7 +211,7 @@ body.dark-mode .gallery-item .schedule-time {
 }
 
 .skip-day-option label {
-    font-size: 16px;
+    font-size: 14px;
     color: #2c3e50;
 }
 
@@ -233,7 +220,7 @@ body.dark-mode .skip-day-option label {
 }
 
 .schedule-all-btn {
-    padding: 12px 24px;
+    padding: 10px 20px;
     background-color: #f39c12;
     color: #fff;
     border: none;
@@ -242,7 +229,6 @@ body.dark-mode .skip-day-option label {
     font-size: 16px;
     font-weight: 500;
     transition: background-color 0.3s ease;
-    min-width: 150px;
 }
 
 .schedule-all-btn:hover {
@@ -250,7 +236,7 @@ body.dark-mode .skip-day-option label {
 }
 
 .save-schedules-btn {
-    padding: 12px 24px;
+    padding: 10px 20px;
     background-color: #2ecc71;
     color: #fff;
     border: none;
@@ -259,7 +245,6 @@ body.dark-mode .skip-day-option label {
     font-size: 16px;
     font-weight: 500;
     transition: background-color 0.3s ease;
-    min-width: 150px;
 }
 
 .save-schedules-btn:hover {
@@ -269,7 +254,7 @@ body.dark-mode .skip-day-option label {
 /* Buttons */
 .upload-btn,
 .btn {
-    padding: 12px 24px;
+    padding: 10px 20px;
     background-color: #3498db;
     color: #fff;
     border: none;
@@ -287,10 +272,11 @@ body.dark-mode .skip-day-option label {
 
 .delete-btn {
     padding: 6px 12px;
+    margin-right: 5px;
     border: none;
     border-radius: 6px;
     cursor: pointer;
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 500;
     background-color: #e74c3c;
     color: #fff;
@@ -378,7 +364,7 @@ body.dark-mode .skip-day-option label {
 /* Editor Spinner */
 .editor-spinner {
     display: inline-block;
-    border: 2px solid rgba(255, 255, 0.3);
+    border: 2px solid rgba(255, 255, 255, 0.3);
     border-left: 2px solid #fff;
     border-radius: 50%;
     width: 16px;
@@ -393,17 +379,12 @@ body.dark-mode .skip-day-option label {
     margin-top: 30px;
 }
 
-.table-wrapper {
-    overflow-x: auto;
-}
-
 .schedule-list table {
     width: 100%;
     border-collapse: collapse;
     background: #fff;
     border-radius: 8px;
     overflow: hidden;
-    display: table;
 }
 
 .schedule-list th,
@@ -411,7 +392,6 @@ body.dark-mode .skip-day-option label {
     padding: 12px 15px;
     text-align: left;
     border-bottom: 1px solid #eee;
-    font-size: 16px;
 }
 
 .schedule-list th {
@@ -431,8 +411,8 @@ body.dark-mode .skip-day-option label {
 
 /* Styling untuk preview media di tabel */
 .schedule-media-preview {
-    width: 60px; /* Ukuran foto diperbesar */
-    height: 60px;
+    width: 50px;
+    height: 50px;
     object-fit: cover;
     border-radius: 4px;
 }
@@ -442,17 +422,17 @@ body.dark-mode .skip-day-option label {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 10px;
-    margin-top: 15px;
+    gap: 5px;
+    margin-top: 10px;
 }
 
 #totalSchedules {
-    font-size: 16px;
+    font-size: 14px;
     color: #ccc;
 }
 
 .delete-selected-btn {
-    padding: 12px 24px;
+    padding: 10px 20px; /* Padding tetap sama */
     background-color: #e74c3c;
     color: #fff;
     border: none;
@@ -461,8 +441,8 @@ body.dark-mode .skip-day-option label {
     font-size: 16px;
     font-weight: 500;
     transition: background-color 0.3s ease;
-    width: auto;
-    max-width: 200px;
+    width: auto; /* Ubah dari width: 100% menjadi width: auto agar tombol menyesuaikan konten */
+    max-width: 200px; /* Batasi lebar maksimum tombol agar tidak terlalu panjang */
 }
 
 .delete-selected-btn:hover {
@@ -528,7 +508,7 @@ body.dark-mode .skip-day-option label {
     display: flex;
     gap: 10px;
     margin-top: 10px;
-    margin-left: -10px;
+    margin-left: -10px; /* Geser ke kiri agar sejajar dengan elemen label */
 }
 
 .button-group .btn {
@@ -546,7 +526,7 @@ body.dark-mode .skip-day-option label {
     background-color: #4a90e2;
     color: white;
     border: none;
-    padding: 12px 24px;
+    padding: 10px 20px;
     border-radius: 5px;
     cursor: pointer;
     font-size: 16px;
@@ -618,60 +598,182 @@ body.dark-mode .skip-day-option label {
     display: none;
 }
 
-/* Upload Row */
+/* Responsive Design */
+@media (max-width: 768px) {
+    .container {
+        margin: 15px;
+        padding: 15px;
+    }
+
+    .header h2 {
+        font-size: 20px;
+    }
+
+    .upload-form {
+        gap: 10px;
+    }
+
+    .upload-form select,
+    .upload-form input,
+    .upload-form textarea {
+        font-size: 14px;
+        padding: 8px;
+    }
+
+    .gallery {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    }
+
+    .gallery-item img {
+        height: 100px;
+    }
+
+    .schedule-list th,
+    .schedule-list td {
+        padding: 8px 10px;
+        font-size: 14px;
+    }
+
+    .schedule-list table {
+        font-size: 14px;
+    }
+
+    .schedule-all-container {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .schedule-all-btn,
+    .save-schedules-btn {
+        width: 100%;
+    }
+
+    .schedule-media-preview {
+        width: 40px;
+        height: 40px;
+    }
+}
+
+@media (max-width: 480px) {
+    .header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .theme-toggle-btn {
+        font-size: 20px;
+    }
+
+    .theme-menu {
+        top: 70px;
+        right: 10px;
+    }
+
+    .gallery {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    }
+
+    .gallery-item img {
+        height: 80px;
+    }
+
+    .schedule-list th,
+    .schedule-list td {
+        font-size: 12px;
+        padding: 6px 8px;
+    }
+
+    .schedule-media-preview {
+        width: 30px;
+        height: 30px;
+    }
+}
+
+/* Sembunyikan elemen kosong */
+.gallery:empty,
+.schedule-list:empty,
+.gallery-item:empty {
+    display: none;
+}
+
+/* Pastikan tabel jadwal kosong juga disembunyikan */
+.schedule-list table:empty,
+.schedule-list table tbody:empty {
+    display: none;
+}
+
+/* Sembunyikan pesan "Belum ada jadwal" jika tidak ada jadwal */
+.schedule-list table tbody tr td[colspan="7"] {
+    display: none;
+}
+
+.editable-caption {
+    border: 1px solid transparent;
+    padding: 5px;
+}
+
+.editable-caption:hover, .editable-caption:focus {
+    border: 1px solid #ccc;
+    outline: none;
+}
+
+.editable-time input {
+    border: 1px solid #ccc;
+    padding: 5px;
+    background: #333;
+    color: #fff;
+}
+
 .upload-row {
     display: flex;
-    flex-wrap: wrap;
-    align-items: flex-start;
-    gap: 15 Wpx;
+    align-items: center; /* Sejajarkan semua elemen di tengah secara vertikal */
+    gap: 15px; /* Jarak antar elemen */
     margin-bottom: 15px;
 }
 
-.upload-file-section,
-.upload-folder-section {
+.upload-file-section, .upload-folder-section {
     display: flex;
     flex-direction: column;
-    flex: 1;
+    flex: 1; /* Pastikan elemen mengambil ruang yang sama */
 }
 
-.upload-file-section label,
-.upload-folder-section label {
+.upload-file-section label, .upload-folder-section label {
     margin-bottom: 5px;
-    font-size: 16px;
-    font-weight: 500;
-    color: #ddd;
+    font-size: 14px;
+    font-weight: 500; /* Membuat label lebih tebal agar terlihat jelas */
+    color: #ddd; /* Sesuaikan dengan tema dark mode */
 }
 
-.upload-file-section input[type="file"],
-.upload-folder-section input[type="text"] {
-    padding: 12px;
+.upload-file-section input[type="file"], .upload-folder-section input[type="text"] {
+    padding: 8px;
     border: 1px solid #ddd;
     border-radius: 6px;
-    font-size: 16px;
-    height: 48px;
-    box-sizing: border-box;
-    background-color: #333;
+    font-size: 14px;
+    height: 36px; /* Pastikan tinggi input sama */
+    box-sizing: border-box; /* Pastikan padding tidak memengaruhi tinggi */
+    background-color: #333; /* Sesuaikan dengan tema dark mode */
     color: #ddd;
 }
 
 .upload-folder-section input[type="text"] {
-    width: 100%;
+    width: 300px; /* Atur lebar input folder tujuan */
 }
 
 .upload-btn {
-    padding: 12px 24px;
+    padding: 8px 20px;
     background-color: #3498db;
     color: white;
     border: none;
     border-radius: 6px;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 14px;
     transition: background-color 0.3s;
-    height: 48px;
+    height: 36px; /* Pastikan tinggi tombol sama dengan input */
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-top: 23px;
+    margin-top: 23px; /* Sesuaikan posisi tombol agar sejajar dengan input */
 }
 
 .upload-btn:hover {
@@ -700,261 +802,4 @@ body.dark-mode .skip-day-option label {
 
 .delete-direct-btn:hover {
     background-color: #c0392b;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-    .container {
-        padding: 10px;
-    }
-
-    .header h2 {
-        font-size: 20px;
-    }
-
-    .upload-form {
-        gap: 15px;
-    }
-
-    .upload-form select,
-    .upload-form input,
-    .upload-form textarea {
-        font-size: 16px;
-        padding: 10px;
-    }
-
-    .upload-row {
-        flex-direction: column;
-    }
-
-    .upload-file-section,
-    .upload-folder-section {
-        width: 100%;
-    }
-
-    .upload-btn {
-        margin-top: 0;
-        width: 100%;
-    }
-
-    .schedule-all-container {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .schedule-all-btn,
-    .save-schedules-btn {
-        width: 100%;
-    }
-
-    .gallery {
-        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-    }
-
-    .gallery-item img {
-        height: 100px;
-    }
-
-    .schedule-list table {
-        font-size: 14px;
-    }
-
-    .schedule-list th,
-    .schedule-list td {
-        padding: 10px;
-        font-size: 14px;
-    }
-
-    .schedule-media-preview {
-        width: 60px;
-        height: 60px;
-    }
-}
-
-@media (max-width: 480px) {
-    .header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
-    }
-
-    .theme-toggle-btn {
-        font-size: 20px;
-    }
-
-    .theme-menu {
-        top: 70px;
-        right: 10px;
-    }
-
-    .upload-form label {
-        font-size: 14px;
-    }
-
-    .upload-form select,
-    .upload-form input,
-    .upload-form textarea {
-        font-size: 14px;
-        padding: 8px;
-    }
-
-    .schedule-all-btn,
-    .save-schedules-btn,
-    .upload-btn,
-    .delete-selected-btn {
-        font-size: 14px;
-        padding: 10px 20px;
-    }
-
-    .gallery {
-        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-    }
-
-    .gallery-item img {
-        height: 80px;
-    }
-
-    /* Ubah tabel menjadi card layout */
-    .table-wrapper {
-        overflow-x: visible;
-    }
-
-    .schedule-list table {
-        display: block;
-        background: transparent;
-        border: none;
-    }
-
-    .schedule-list thead {
-        display: none;
-    }
-
-    .schedule-list tbody {
-        display: block;
-    }
-
-    .schedule-list tr {
-        display: flex;
-        flex-direction: row;
-        align-items: flex-start;
-        background: #3a3a3a;
-        border-radius: 8px;
-        margin-bottom: 10px;
-        padding: 10px;
-        border-bottom: 1px solid #4a4a4a;
-    }
-
-    .schedule-list td {
-        display: block;
-        border: none;
-        padding: 0;
-        font-size: 14px;
-    }
-
-    /* Nomor dan Ceklis di sisi kiri foto */
-    .schedule-list td[data-label="No"],
-    .schedule-list td[data-label="Select"] {
-        flex: 0 0 auto;
-        margin-right: 5px;
-    }
-
-    .schedule-list td[data-label="No"] {
-        font-size: 14px;
-        color: #e0e0e0;
-        font-weight: 600;
-    }
-
-    .schedule-list td[data-label="Select"] {
-        display: flex;
-        align-items: center;
-    }
-
-    /* Media (Gambar) */
-    .schedule-list td[data-label="Media"] {
-        flex: 0 0 auto;
-        margin-right: 10px;
-    }
-
-    .schedule-media-preview {
-        width: 60px;
-        height: 60px;
-        border-radius: 4px;
-    }
-
-    /* Konten utama (Akun IG, Caption, Waktu Posting, Status, Aksi) */
-    .schedule-list td[data-label="Akun IG"],
-    .schedule-list td[data-label="Caption"],
-    .schedule-list td[data-label="Waktu Posting"],
-    .schedule-list td[data-label="Status"],
-    .schedule-list td[data-label="Aksi"] {
-        flex: 1;
-        display: block;
-    }
-
-    /* Akun IG di sisi kanan atas foto */
-    .schedule-list td[data-label="Akun IG"] {
-        font-size: 16px;
-        font-weight: 600;
-        color: #e0e0e0;
-        margin-bottom: 4px;
-    }
-
-    /* Caption di bawah Akun IG */
-    .schedule-list td[data-label="Caption"] {
-        font-size: 14px;
-        color: #b0b0b0;
-        margin-bottom: 4px;
-    }
-
-    /* Waktu Posting di bawah Caption */
-    .schedule-list td[data-label="Waktu Posting"] {
-        font-size: 12px;
-        color: #b0b0b0;
-        margin-bottom: 4px;
-    }
-
-    /* Status dan Aksi (Hapus) dalam satu baris di sisi kanan jadwal */
-    .schedule-list td[data-label="Status"],
-    .schedule-list td[data-label="Aksi"] {
-        display: inline-block;
-        font-size: 12px;
-        color: #b0b0b0;
-    }
-
-    .schedule-list td[data-label="Status"] {
-        margin-right: 10px;
-    }
-
-    /* Pastikan pesan "Belum ada jadwal" terlihat */
-    .schedule-list .empty-message td {
-        display: block;
-        text-align: center;
-        padding: 20px;
-        font-size: 14px;
-        color: #e0e0e0;
-    }
-}
-
-/* Sembunyikan elemen kosong */
-.gallery:empty,
-.gallery-item:empty {
-    display: none;
-}
-
-.editable-caption {
-    border: 1px solid transparent;
-    padding: 5px;
-}
-
-.editable-caption:hover,
-.editable-caption:focus {
-    border: 1px solid #ccc;
-    outline: none;
-}
-
-.editable-time input {
-    border: 1px solid #ccc;
-    padding: 5px;
-    background: #333;
-    color: #fff;
 }
