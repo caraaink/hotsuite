@@ -1100,56 +1100,72 @@ document.addEventListener('DOMContentLoaded', () => {
             window.history.pushState({}, document.title, window.location.pathname);
         });
 
-        saveSchedules.addEventListener('click', async () => {
-            if (!selectedToken || !accountId.value) {
-                showFloatingNotification('Pilih akun dan username terlebih dahulu.', true);
-                return;
-            }
+        // Bagian saveSchedules di javascript.js (sekitar baris 1148)
+saveSchedules.addEventListener('click', async () => {
+    if (!selectedToken || !accountId.value) {
+        showFloatingNotification('Pilih akun dan username terlebih dahulu.', true);
+        return;
+    }
 
-            const scheduledFiles = imageFiles.filter(file => scheduledTimes[file.path]);
-            if (scheduledFiles.length === 0) {
-                showFloatingNotification('Tidak ada foto yang dijadwalkan.', true);
-                return;
-            }
+    const scheduledFiles = imageFiles.filter(file => scheduledTimes[file.path]);
+    if (scheduledFiles.length === 0) {
+        showFloatingNotification('Tidak ada foto yang dijadwalkan.', true);
+        return;
+    }
 
-            showFloatingNotification('Menyimpan jadwal...');
-            spinner.classList.remove('hidden');
+    showFloatingNotification('Menyimpan jadwal...');
+    spinner.classList.remove('hidden');
 
+    try {
+        for (const file of scheduledFiles) {
+            const formData = {
+                accountId: accountId.value,
+                username: selectedUsername,
+                mediaUrl: file.download_url,
+                caption: captions[file.path] || '',
+                time: scheduledTimes[file.path],
+                userToken: selectedToken,
+                accountNum: userAccount.value,
+                completed: false,
+            };
+
+            console.log('Scheduling file:', file.path, 'with data:', formData);
+
+            const response = await fetch('/api/schedule', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData),
+            });
+
+            // Tambahkan logging untuk melihat status dan respons mentah
+            console.log('Response status:', response.status);
+            const responseText = await response.text(); // Ambil respons sebagai teks terlebih dahulu
+            console.log('Raw response:', responseText);
+
+            // Coba parse respons sebagai JSON
+            let result;
             try {
-                for (const file of scheduledFiles) {
-                    const formData = {
-                        accountId: accountId.value,
-                        username: selectedUsername,
-                        mediaUrl: file.download_url,
-                        caption: captions[file.path] || '',
-                        time: scheduledTimes[file.path],
-                        userToken: selectedToken,
-                        accountNum: userAccount.value,
-                        completed: false,
-                    };
-
-                    console.log('Scheduling file:', file.path, 'with data:', formData);
-
-                    const response = await fetch('/api/schedule', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(formData),
-                    });
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(`HTTP error scheduling post! status: ${response.status}, details: ${JSON.stringify(errorData)}`);
-                    }
-                }
-                showFloatingNotification(`${scheduledFiles.length} foto berhasil dijadwalkan!`);
-                scheduledTimes = {};
-                await loadSchedules();
-            } catch (error) {
-                showFloatingNotification(`Error scheduling: ${error.message}`, true);
-                console.error('Error scheduling posts:', error);
-            } finally {
-                spinner.classList.add('hidden');
+                result = JSON.parse(responseText);
+            } catch (parseError) {
+                throw new Error(`Failed to parse server response as JSON: ${responseText}`);
             }
-        });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error scheduling post! status: ${response.status}, details: ${result.error || responseText}`);
+            }
+
+            console.log('Schedule response:', result);
+        }
+        showFloatingNotification(`${scheduledFiles.length} foto berhasil dijadwalkan!`);
+        scheduledTimes = {};
+        await loadSchedules();
+    } catch (error) {
+        showFloatingNotification(`Error scheduling: ${error.message}`, true);
+        console.error('Error scheduling posts:', error);
+    } finally {
+        spinner.classList.add('hidden');
+    }
+});
     }
 
     loadGithubFolders();
