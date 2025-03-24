@@ -725,3 +725,45 @@ body.dark-mode .skip-day-option label {
     background: #333;
     color: #fff;
 }
+.upload-row {
+    display: flex;
+    align-items: center;
+    gap: 15px; /* Jarak antar elemen */
+    margin-bottom: 15px;
+}
+
+.upload-file-section, .upload-folder-section {
+    display: flex;
+    flex-direction: column;
+}
+
+.upload-file-section label, .upload-folder-section label {
+    margin-bottom: 5px;
+    font-size: 14px;
+}
+
+.upload-file-section input[type="file"], .upload-folder-section input[type="text"] {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.upload-folder-section input[type="text"] {
+    width: 300px; /* Atur lebar input folder tujuan */
+}
+
+.upload-btn {
+    padding: 10px 20px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+
+.upload-btn:hover {
+    background-color: #2980b9;
+}
