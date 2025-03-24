@@ -139,59 +139,40 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load Instagram usernames when an account is selected with pagination
     let allIgAccounts = [];
     let nextCursor = null;
-    const PER_PAGE = 20; // Ambil 20 akun per request
+    const MAX_IG_LIMIT = 200; // Batas maksimum 200 akun IG
+    const PER_PAGE = 20; // Ambil 20 akun per request (disesuaikan agar lebih cepat)
 
     async function fetchIgAccounts(accountKey) {
-        const MAX_IG_LIMIT = 100; // Kurangi batas maksimum menjadi 100 untuk mencegah overload
-        let fetchCount = 0;
-        const MAX_FETCH_ATTEMPTS = 5; // Batasi jumlah percobaan pagination
-
         try {
             spinner.classList.remove('hidden');
             showFloatingNotification('Memuat akun Instagram...');
+            const url = nextCursor
+                ? `/api/get_accounts?account_key=${accountKey}&limit=${PER_PAGE}&after=${nextCursor}`
+                : `/api/get_accounts?account_key=${accountKey}&limit=${PER_PAGE}`;
+            
+            const accountsRes = await fetch(url);
+            if (!accountsRes.ok) {
+                throw new Error(`HTTP error fetching accounts! status: ${accountsRes.status}`);
+            }
+            const accountsData = await accountsRes.json();
+            console.log('Accounts fetched:', accountsData);
 
-            while (fetchCount < MAX_FETCH_ATTEMPTS && allIgAccounts.length < MAX_IG_LIMIT && nextCursor !== null) {
-                const url = nextCursor
-                    ? `/api/get_accounts?account_key=${accountKey}&limit=${PER_PAGE}&after=${nextCursor}`
-                    : `/api/get_accounts?account_key=${accountKey}&limit=${PER_PAGE}`;
-                
-                try {
-                    const accountsRes = await fetch(url);
-                    if (!accountsRes.ok) {
-                        const errorData = await accountsRes.json();
-                        throw new Error(`HTTP error fetching accounts! status: ${accountsRes.status}, details: ${errorData.error || 'Unknown error'}`);
-                    }
-                    const accountsData = await accountsRes.json();
-                    console.log('Accounts fetched:', accountsData);
-
-                    if (!accountsData.accounts || !accountsData.accounts[accountKey] || !Array.isArray(accountsData.accounts[accountKey].accounts)) {
-                        throw new Error('Invalid accounts data structure');
-                    }
-
-                    const igAccounts = accountsData.accounts[accountKey].accounts;
-                    const validIgAccounts = igAccounts.filter(acc => acc && acc.type === 'ig' && acc.id && acc.username);
-                    allIgAccounts = allIgAccounts.concat(validIgAccounts);
-                    nextCursor = accountsData.next || null;
-
-                    updateAccountIdDropdown();
-                    fetchCount++;
-                } catch (error) {
-                    console.error(`Error during fetch attempt ${fetchCount + 1}:`, error);
-                    showFloatingNotification(`Error fetching accounts on attempt ${fetchCount + 1}: ${error.message}`, true);
-                    break; // Hentikan loop jika ada error
-                }
-
-                // Tambahkan delay kecil untuk mencegah rate limiting
-                if (nextCursor) {
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                }
+            if (!accountsData.accounts || !accountsData.accounts[accountKey] || !Array.isArray(accountsData.accounts[accountKey].accounts)) {
+                throw new Error('Invalid accounts data structure');
             }
 
-            if (allIgAccounts.length >= MAX_IG_LIMIT) {
+            const igAccounts = accountsData.accounts[accountKey].accounts;
+            const validIgAccounts = igAccounts.filter(acc => acc && acc.type === 'ig' && acc.id && acc.username);
+            allIgAccounts = allIgAccounts.concat(validIgAccounts);
+            nextCursor = accountsData.next;
+
+            updateAccountIdDropdown();
+
+            if (allIgAccounts.length < MAX_IG_LIMIT && nextCursor) {
+                await fetchIgAccounts(accountKey);
+            } else if (allIgAccounts.length >= MAX_IG_LIMIT) {
                 showFloatingNotification(`Mencapai batas maksimum ${MAX_IG_LIMIT} akun.`, false, 3000);
-            } else if (fetchCount >= MAX_FETCH_ATTEMPTS) {
-                showFloatingNotification(`Berhenti setelah ${fetchCount} percobaan. Total ${allIgAccounts.length} akun dimuat.`, false, 3000);
-            } else if (nextCursor === null) {
+            } else {
                 showFloatingNotification(`Berhasil memuat ${allIgAccounts.length} akun Instagram.`, false, 3000);
             }
         } catch (error) {
@@ -241,14 +222,13 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const tokenRes = await fetch(`/api/refresh-token?accountNum=${accountNum}`);
             if (!tokenRes.ok) {
-                const errorData = await tokenRes.json();
-                throw new Error(`HTTP error fetching token! status: ${tokenRes.status}, details: ${errorData.error || 'Unknown error'}`);
+                throw new Error(`HTTP error fetching token! status: ${tokenRes.status}`);
             }
             const tokenData = await tokenRes.json();
             console.log('Token fetched:', tokenData);
             selectedToken = tokenData.token;
             if (!selectedToken) {
-                throw new Error('No token found for this account. Please check your environment variables.');
+                throw new Error('No token found for this account');
             }
 
             allIgAccounts = [];
@@ -261,13 +241,6 @@ document.addEventListener('DOMContentLoaded', () => {
             showFloatingNotification(`Error fetching accounts: ${error.message}`, true);
             console.error('Error fetching accounts:', error);
             accountId.innerHTML = '<option value="">-- Gagal Memuat --</option>';
-            // Reset state agar aplikasi tidak stuck
-            selectedToken = null;
-            selectedUsername = null;
-            selectedAccountId = null;
-            allIgAccounts = [];
-            nextCursor = null;
-            await loadSchedules();
         }
     });
 
@@ -742,7 +715,7 @@ document.addEventListener('DOMContentLoaded', () => {
         spinner.classList.remove('hidden');
 
         try {
-            const folderPath = filePath.substring(0, file.path.lastIndexOf('/'));
+            const folderPath = filePath.substring(0, filePath.lastIndexOf('/'));
             const commitMessage = folderPath.startsWith('ig/') 
                 ? `Delete file ${filePath} [vercel-skip]` 
                 : `Delete file ${filePath}`;
@@ -806,7 +779,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    async function displayGallery(files) {
+    function displayGallery(files) {
         gallery.innerHTML = '';
         const imageFiles = files.filter(file => file.name.endsWith('.jpg') || file.name.endsWith('.png'));
 
@@ -814,11 +787,6 @@ document.addEventListener('DOMContentLoaded', () => {
             gallery.innerHTML = '<p>Tidak ada gambar untuk ditampilkan.</p>';
             return;
         }
-
-        // Ambil jadwal yang ada untuk mencocokkan dengan mediaUrl
-        const schedulesResponse = await fetch('/api/get_schedules');
-        const schedules = await schedulesResponse.json();
-        console.log('Schedules for gallery:', schedules);
 
         function formatDateTime(date, hours, minutes) {
             const year = date.getFullYear();
@@ -875,10 +843,6 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 scheduleTime.textContent = 'Belum dijadwalkan';
             }
-
-            // Cari jadwal yang sesuai dengan mediaUrl
-            const existingSchedule = schedules.schedules.find(schedule => schedule.mediaUrl === file.download_url);
-            const scheduleId = existingSchedule ? existingSchedule.scheduleId : null;
 
             const buttonGroup = document.createElement('div');
             buttonGroup.className = 'button-group';
@@ -966,25 +930,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 container.appendChild(editor);
             });
 
-            const deleteScheduleBtn = document.createElement('button');
-            deleteScheduleBtn.className = 'btn delete';
-            deleteScheduleBtn.textContent = 'Hapus Jadwal';
-            deleteScheduleBtn.disabled = !scheduleId; // Nonaktifkan jika tidak ada jadwal
-            deleteScheduleBtn.addEventListener('click', async () => {
-                if (!scheduleId) {
-                    showFloatingNotification('File ini belum memiliki jadwal.', true);
-                    return;
-                }
-
-                const confirmed = await showConfirmModal(`Apakah Anda yakin ingin menghapus jadwal untuk ${file.name}?`);
-                if (confirmed) {
-                    await deleteSchedule(scheduleId);
-                    deleteScheduleBtn.disabled = true; // Nonaktifkan tombol setelah dihapus
-                    scheduleTime.textContent = 'Belum dijadwalkan';
-                    showFloatingNotification(`Jadwal untuk ${file.name} berhasil dihapus.`);
-                }
-            });
-
             const publishBtn = document.createElement('button');
             publishBtn.className = 'btn publish';
             publishBtn.textContent = 'Publish';
@@ -1036,7 +981,6 @@ document.addEventListener('DOMContentLoaded', () => {
             container.appendChild(captionText);
             container.appendChild(scheduleTime);
             container.appendChild(buttonGroup);
-            container.appendChild(deleteScheduleBtn); // Tambahkan tombol Hapus Jadwal
             container.appendChild(publishBtn);
             gallery.appendChild(container);
 
@@ -1155,6 +1099,73 @@ document.addEventListener('DOMContentLoaded', () => {
             showFloatingNotification(`Waktu jadwal untuk semua foto disimpan sementara. Klik "Simpan Jadwal" untuk mengirimkan.`);
             window.history.pushState({}, document.title, window.location.pathname);
         });
+
+        // Bagian saveSchedules di javascript.js (sekitar baris 1148)
+saveSchedules.addEventListener('click', async () => {
+    if (!selectedToken || !accountId.value) {
+        showFloatingNotification('Pilih akun dan username terlebih dahulu.', true);
+        return;
+    }
+
+    const scheduledFiles = imageFiles.filter(file => scheduledTimes[file.path]);
+    if (scheduledFiles.length === 0) {
+        showFloatingNotification('Tidak ada foto yang dijadwalkan.', true);
+        return;
+    }
+
+    showFloatingNotification('Menyimpan jadwal...');
+    spinner.classList.remove('hidden');
+
+    try {
+        for (const file of scheduledFiles) {
+            const formData = {
+                accountId: accountId.value,
+                username: selectedUsername,
+                mediaUrl: file.download_url,
+                caption: captions[file.path] || '',
+                time: scheduledTimes[file.path],
+                userToken: selectedToken,
+                accountNum: userAccount.value,
+                completed: false,
+            };
+
+            console.log('Scheduling file:', file.path, 'with data:', formData);
+
+            const response = await fetch('/api/schedule', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData),
+            });
+
+            // Tambahkan logging untuk melihat status dan respons mentah
+            console.log('Response status:', response.status);
+            const responseText = await response.text(); // Ambil respons sebagai teks terlebih dahulu
+            console.log('Raw response:', responseText);
+
+            // Coba parse respons sebagai JSON
+            let result;
+            try {
+                result = JSON.parse(responseText);
+            } catch (parseError) {
+                throw new Error(`Failed to parse server response as JSON: ${responseText}`);
+            }
+
+            if (!response.ok) {
+                throw new Error(`HTTP error scheduling post! status: ${response.status}, details: ${result.error || responseText}`);
+            }
+
+            console.log('Schedule response:', result);
+        }
+        showFloatingNotification(`${scheduledFiles.length} foto berhasil dijadwalkan!`);
+        scheduledTimes = {};
+        await loadSchedules();
+    } catch (error) {
+        showFloatingNotification(`Error scheduling: ${error.message}`, true);
+        console.error('Error scheduling posts:', error);
+    } finally {
+        spinner.classList.add('hidden');
+    }
+});
     }
 
     loadGithubFolders();
@@ -1294,9 +1305,6 @@ document.addEventListener('DOMContentLoaded', () => {
             scheduleTableBody.innerHTML = '';
             allSchedules = data.schedules || [];
 
-            // Urutkan jadwal berdasarkan tanggal (time) secara ascending
-            allSchedules.sort((a, b) => new Date(a.time) - new Date(b.time));
-
             let filteredSchedules = allSchedules;
             if (selectedAccountNum) {
                 filteredSchedules = filteredSchedules.filter(schedule => schedule.accountNum === selectedAccountNum);
@@ -1367,70 +1375,6 @@ document.addEventListener('DOMContentLoaded', () => {
             loadMoreBtn.classList.add('hidden');
         }
     }
-
-    saveSchedules.addEventListener('click', async () => {
-        if (!selectedToken || !accountId.value) {
-            showFloatingNotification('Pilih akun dan username terlebih dahulu.', true);
-            return;
-        }
-
-        const scheduledFiles = allMediaFiles.filter(file => scheduledTimes[file.path]);
-        if (scheduledFiles.length === 0) {
-            showFloatingNotification('Tidak ada foto yang dijadwalkan.', true);
-            return;
-        }
-
-        showFloatingNotification('Menyimpan jadwal...');
-        spinner.classList.remove('hidden');
-
-        try {
-            for (const file of scheduledFiles) {
-                const formData = {
-                    accountId: accountId.value,
-                    username: selectedUsername,
-                    mediaUrl: file.download_url,
-                    caption: captions[file.path] || '',
-                    time: scheduledTimes[file.path],
-                    userToken: selectedToken,
-                    accountNum: userAccount.value,
-                    completed: false,
-                };
-
-                console.log('Scheduling file:', file.path, 'with data:', formData);
-
-                const response = await fetch('/api/schedule', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(formData),
-                });
-
-                console.log('Response status:', response.status);
-                const responseText = await response.text();
-                console.log('Raw response:', responseText);
-
-                let result;
-                try {
-                    result = JSON.parse(responseText);
-                } catch (parseError) {
-                    throw new Error(`Failed to parse server response as JSON: ${responseText}`);
-                }
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error scheduling post! status: ${response.status}, details: ${result.error || responseText}`);
-                }
-
-                console.log('Schedule response:', result);
-            }
-            showFloatingNotification(`${scheduledFiles.length} foto berhasil dijadwalkan!`);
-            scheduledTimes = {};
-            await loadSchedules();
-        } catch (error) {
-            showFloatingNotification(`Error scheduling: ${error.message}`, true);
-            console.error('Error scheduling posts:', error);
-        } finally {
-            spinner.classList.add('hidden');
-        }
-    });
 
     loadSchedules();
 });
