@@ -1,7 +1,7 @@
 const axios = require('axios');
 
 module.exports = async (req, res) => {
-  const { account_key, limit = 50, after } = req.query; // Default limit 50, optional 'after' untuk pagination
+  const { account_key, limit = 20, after } = req.query; // Default limit 50, optional 'after' untuk pagination
 
   if (!account_key) {
     return res.status(400).json({ error: 'Missing account_key parameter' });
