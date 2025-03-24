@@ -261,15 +261,27 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log(`Files fetched for path ${path}:`, data);
 
             allMediaFiles = [];
-            data.files.forEach(item => {
-                if (item.type === 'file' && (item.name.endsWith('.jpg') || item.name.endsWith('.png') || item.name.endsWith('.mp4'))) {
-                    allMediaFiles.push({
-                        name: item.name,
-                        path: item.path,
-                        download_url: item.download_url,
-                    });
-                }
-            });
+            const mediaFiles = data.files.filter(item => 
+                item.type === 'file' && 
+                (item.name.endsWith('.jpg') || item.name.endsWith('.png') || item.name.endsWith('.mp4'))
+            );
+            const totalFiles = mediaFiles.length;
+
+            if (totalFiles === 0) {
+                showFloatingNotification('Tidak ada file media yang didukung di folder ini.', true);
+                return allMediaFiles;
+            }
+
+            let loadedCount = 0;
+            for (const item of mediaFiles) {
+                loadedCount++;
+                showFloatingNotification(`Memuat file ${loadedCount} dari ${totalFiles}...`);
+                allMediaFiles.push({
+                    name: item.name,
+                    path: item.path,
+                    download_url: item.download_url,
+                });
+            }
 
             allMediaFiles.sort(naturalSort);
 
@@ -301,6 +313,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
 
+            showFloatingNotification(`Berhasil memuat ${totalFiles} file.`);
             return allMediaFiles;
         } catch (error) {
             console.error(`Error fetching files for path ${path}:`, error);
