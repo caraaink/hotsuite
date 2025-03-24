@@ -98,7 +98,12 @@
                             <th>Aksi</th>
                         </tr>
                     </thead>
-                    <tbody id="scheduleTableBody"></tbody>
+                    <tbody id="scheduleTableBody">
+                        <!-- Tambahkan pesan default jika tabel kosong -->
+                        <tr class="empty-message">
+                            <td colspan="8">Belum ada jadwal posting.</td>
+                        </tr>
+                    </tbody>
                 </table>
             </div>
             <div class="load-more-container">
