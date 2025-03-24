@@ -7,20 +7,20 @@ module.exports = async (req, res) => {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { index } = req.body;
+  const { scheduleId } = req.body;
 
-  if (index === undefined || index < 0) {
-    return res.status(400).json({ error: 'Invalid index' });
+  if (!scheduleId) {
+    return res.status(400).json({ error: 'Invalid scheduleId' });
   }
 
   try {
     let schedules = (await kv.get(SCHEDULE_KEY)) || [];
-    if (index >= schedules.length) {
+    const scheduleIndex = schedules.findIndex(schedule => schedule.scheduleId === scheduleId);
+    if (scheduleIndex === -1) {
       return res.status(400).json({ error: 'Schedule not found' });
     }
 
-    // Hapus jadwal berdasarkan indeks
-    schedules.splice(index, 1);
+    schedules.splice(scheduleIndex, 1);
     await kv.set(SCHEDULE_KEY, schedules);
 
     res.status(200).json({ message: 'Jadwal berhasil dihapus' });
