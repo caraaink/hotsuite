@@ -491,138 +491,144 @@ document.addEventListener('DOMContentLoaded', () => {
     loadUploadFolders();
 
     uploadToGithub.addEventListener('click', async () => {
-        if (!uploadFile.files || uploadFile.files.length === 0) {
-            showFloatingNotification('Pilih file terlebih dahulu.', true);
+    if (!uploadFile.files || uploadFile.files.length === 0) {
+        showFloatingNotification('Pilih file terlebih dahulu.', true);
+        return;
+    }
+
+    let uploadFolderValue = uploadFolder.value.trim();
+    if (!uploadFolderValue) {
+        uploadFolderValue = 'ig/image';
+    } else {
+        if (!uploadFolderValue.startsWith('ig/')) {
+            uploadFolderValue = `ig/${uploadFolderValue}`;
+        }
+
+        const invalidChars = /[<>:"|?*]/;
+        if (invalidChars.test(uploadFolderValue)) {
+            showFloatingNotification('Path folder tujuan mengandung karakter yang tidak diizinkan.', true);
             return;
         }
+    }
 
-        let uploadFolderValue = uploadFolder.value.trim();
-        if (!uploadFolderValue) {
-            uploadFolderValue = 'ig/image';
-        } else {
-            if (!uploadFolderValue.startsWith('ig/')) {
-                uploadFolderValue = `ig/${uploadFolderValue}`;
-            }
+    const files = Array.from(uploadFile.files);
+    const validFiles = files.filter(file => 
+        file.type.match('image/jpeg') || 
+        file.type.match('image/png') || 
+        file.type.match('video/mp4')
+    );
 
-            const invalidChars = /[<>:"|?*]/;
-            if (invalidChars.test(uploadFolderValue)) {
-                showFloatingNotification('Path folder tujuan mengandung karakter yang tidak diizinkan.', true);
-                return;
-            }
-        }
+    if (validFiles.length !== files.length) {
+        showFloatingNotification('Semua file yang diunggah harus berupa JPG, PNG, atau MP4.', true);
+        return;
+    }
 
-        const files = Array.from(uploadFile.files);
-        // Validasi hanya untuk file dari input pengguna (JPG, PNG, MP4)
-        const validFiles = files.filter(file => 
-            file.type.match('image/jpeg') || 
-            file.type.match('image/png') || 
-            file.type.match('video/mp4')
-        );
+    let uploadedCount = 0;
+    const totalFiles = validFiles.length;
+    showFloatingNotification(`Mengunggah file 1 dari ${totalFiles}...`);
+    spinner.classList.remove('hidden');
 
-        if (validFiles.length !== files.length) {
-            showFloatingNotification('Semua file yang diunggah harus berupa JPG, PNG, atau MP4.', true);
-            return;
-        }
+    try {
+        for (const file of validFiles) {
+            const reader = new FileReader();
+            const result = await new Promise((resolve, reject) => {
+                reader.readAsDataURL(file);
+                reader.onload = async () => {
+                    try {
+                        const base64Content = reader.result.split(',')[1];
+                        let newFileName;
 
-        let uploadedCount = 0;
-        const totalFiles = validFiles.length;
-        showFloatingNotification(`Mengunggah file 1 dari ${totalFiles}...`);
-        spinner.classList.remove('hidden');
-
-        try {
-            for (const file of validFiles) {
-                const reader = new FileReader();
-                const result = await new Promise((resolve, reject) => {
-                    reader.readAsDataURL(file);
-                    reader.onload = async () => {
-                        try {
-                            const base64Content = reader.result.split(',')[1];
-                            let newFileName;
-
-                            if (uploadFolderValue && uploadFolderValue !== 'ig/image') {
-                                newFileName = file.name;
-                            } else {
-                                const randomNum = Math.floor(10000 + Math.random() * 90000);
-                                const extension = file.name.split('.').pop();
-                                newFileName = `${randomNum}.${extension}`;
-                            }
-
-                            const filePath = `${uploadFolderValue}/${newFileName}`;
-                            const commitMessage = uploadFolderValue.startsWith('ig/') 
-                                ? `Upload ${newFileName} to ${uploadFolderValue} [vercel-skip]` 
-                                : `Upload ${newFileName} to ${uploadFolderValue}`;
-
-                            // Upload file media
-                            const fileResponse = await fetch('/api/upload_to_github', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    fileName: filePath,
-                                    content: base64Content,
-                                    message: commitMessage,
-                                }),
-                            });
-
-                            if (!fileResponse.ok) {
-                                const errorData = await fileResponse.json();
-                                throw new Error(`HTTP error uploading file ${newFileName}! status: ${fileResponse.status}, details: ${errorData.error}`);
-                            }
-
-                            const fileResult = await fileResponse.json();
-                            const newFile = {
-                                name: newFileName,
-                                path: filePath,
-                                download_url: fileResult.download_url,
-                            };
-
-                            // Upload file meta JSON
-                            const metaFileName = `${uploadFolderValue}/${newFileName}.meta.json`;
-                            const metaContent = JSON.stringify({ caption: '' }, null, 2);
-                            const metaBase64Content = btoa(unescape(encodeURIComponent(metaContent)));
-                            const metaCommitMessage = uploadFolderValue.startsWith('ig/') 
-                                ? `Upload meta for ${newFileName} to ${uploadFolderValue} [vercel-skip]` 
-                                : `Upload meta for ${newFileName} to ${uploadFolderValue}`;
-
-                            const metaResponse = await fetch('/api/upload_to_github', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    fileName: metaFileName,
-                                    content: metaBase64Content,
-                                    message: metaCommitMessage,
-                                }),
-                            });
-
-                            if (!metaResponse.ok) {
-                                const errorData = await metaResponse.json();
-                                throw new Error(`HTTP error uploading meta for ${newFileName}! status: ${metaResponse.status}, details: ${errorData.error}`);
-                            }
-
-                            allMediaFiles.push(newFile);
-                            captions[newFile.path] = '';
-                            uploadedCount++;
-                            if (uploadedCount < totalFiles) {
-                                showFloatingNotification(`Mengunggah file ${uploadedCount + 1} dari ${totalFiles}...`);
-                            }
-
-                            resolve(newFile);
-                        } catch (error) {
-                            reject(error);
+                        if (uploadFolderValue && uploadFolderValue !== 'ig/image') {
+                            newFileName = file.name;
+                        } else {
+                            const randomNum = Math.floor(10000 + Math.random() * 90000);
+                            const extension = file.name.split('.').pop();
+                            newFileName = `${randomNum}.${extension}`;
                         }
-                    };
-                    reader.onerror = () => reject(new Error(`Error reading file ${file.name}`));
-                });
-            }
 
-            showFloatingNotification(`${validFiles.length} file berhasil diunggah ke GitHub!`);
-            displayGallery(allMediaFiles);
-        } catch (error) {
-            showFloatingNotification(`Error uploading to GitHub: ${error.message}`, true);
-            console.error('Error uploading to GitHub:', error);
-        } finally {
-            spinner.classList.add('hidden');
+                        const filePath = `${uploadFolderValue}/${newFileName}`;
+                        const commitMessage = uploadFolderValue.startsWith('ig/') 
+                            ? `Upload ${newFileName} to ${uploadFolderValue} [vercel-skip]` 
+                            : `Upload ${newFileName} to ${uploadFolderValue}`;
+
+                        console.log(`Uploading file: ${filePath}`);
+
+                        // Upload file media
+                        const fileResponse = await fetch('/api/upload_to_github', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                fileName: filePath,
+                                content: base64Content,
+                                message: commitMessage,
+                            }),
+                        });
+
+                        if (!fileResponse.ok) {
+                            const errorData = await fileResponse.json();
+                            throw new Error(`HTTP error uploading file ${newFileName}! status: ${fileResponse.status}, details: ${errorData.error}`);
+                        }
+
+                        const fileResult = await fileResponse.json();
+                        const newFile = {
+                            name: newFileName,
+                            path: filePath,
+                            download_url: fileResult.download_url,
+                        };
+
+                        // Upload file meta JSON
+                        const metaFileName = `${uploadFolderValue}/${newFileName}.meta.json`;
+                        const metaContent = JSON.stringify({ caption: '' }, null, 2);
+                        const metaBase64Content = btoa(unescape(encodeURIComponent(metaContent)));
+                        const metaCommitMessage = uploadFolderValue.startsWith('ig/') 
+                            ? `Upload meta for ${newFileName} to ${uploadFolderValue} [vercel-skip]` 
+                            : `Upload meta for ${newFileName} to ${uploadFolderValue}`;
+
+                        console.log(`Uploading meta file: ${metaFileName}`);
+
+                        const metaResponse = await fetch('/api/upload_to_github', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                fileName: metaFileName,
+                                content: metaBase64Content,
+                                message: metaCommitMessage,
+                            }),
+                        });
+
+                        const metaResponseData = await metaResponse.json();
+                        if (!metaResponse.ok) {
+                            throw new Error(`HTTP error uploading meta for ${newFileName}! status: ${metaResponse.status}, details: ${metaResponseData.error}`);
+                        }
+
+                        console.log(`Meta file uploaded successfully: ${metaFileName}`);
+
+                        allMediaFiles.push(newFile);
+                        captions[newFile.path] = '';
+                        uploadedCount++;
+                        if (uploadedCount < totalFiles) {
+                            showFloatingNotification(`Mengunggah file ${uploadedCount + 1} dari ${totalFiles}...`);
+                        }
+
+                        resolve(newFile);
+                    } catch (error) {
+                        console.error(`Error in upload process for ${file.name}:`, error);
+                        reject(error);
+                    }
+                };
+                reader.onerror = () => reject(new Error(`Error reading file ${file.name}`));
+            });
         }
-    });
+
+        showFloatingNotification(`${validFiles.length} file berhasil diunggah ke GitHub!`);
+        displayGallery(allMediaFiles);
+    } catch (error) {
+        showFloatingNotification(`Error uploading to GitHub: ${error.message}`, true);
+        console.error('Error uploading to GitHub:', error);
+    } finally {
+        spinner.classList.add('hidden');
+    }
+});
 
     async function deletePhoto(filePath) {
         showFloatingNotification(`Menghapus ${filePath}...`);
