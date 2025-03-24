@@ -103,107 +103,119 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Load Instagram usernames when an account is selected with pagination
-    let allIgAccounts = []; // Menyimpan semua akun IG
-    let nextCursor = null; // Cursor untuk pagination
-    const MAX_IG_LIMIT = 200; // Batas maksimum 200 akun IG
-    const PER_PAGE = 20; // Ambil 20 akun per request
+let allIgAccounts = [];
+let nextCursor = null;
+const MAX_IG_LIMIT = 200; // Batas maksimum 200 akun IG
+const PER_PAGE = 20; // Ambil 20 akun per request (disesuaikan agar lebih cepat)
 
-    async function fetchIgAccounts(accountKey) {
-        try {
-            spinner.classList.remove('hidden');
-            showFloatingNotification('Memuat akun Instagram...');
-            const url = nextCursor
-                ? `/api/get_accounts?account_key=${accountKey}&limit=${PER_PAGE}&after=${nextCursor}`
-                : `/api/get_accounts?account_key=${accountKey}&limit=${PER_PAGE}`;
-            
-            const accountsRes = await fetch(url);
-            if (!accountsRes.ok) {
-                throw new Error(`HTTP error fetching accounts! status: ${accountsRes.status}`);
-            }
-            const accountsData = await accountsRes.json();
-            console.log('Accounts fetched:', accountsData);
-
-            if (accountsData.accounts && accountsData.accounts[accountKey]) {
-                const igAccounts = accountsData.accounts[accountKey].accounts;
-                allIgAccounts = allIgAccounts.concat(igAccounts);
-                nextCursor = accountsData.next;
-
-                // Perbarui dropdown
-                updateAccountIdDropdown();
-
-                // Lanjutkan fetch jika belum 200 dan ada cursor berikutnya
-                if (allIgAccounts.length < MAX_IG_LIMIT && nextCursor) {
-                    await fetchIgAccounts(accountKey);
-                } else if (allIgAccounts.length >= MAX_IG_LIMIT) {
-                    showFloatingNotification(`Mencapai batas maksimum ${MAX_IG_LIMIT} akun.`, false, 3000);
-                } else {
-                    showFloatingNotification(`Berhasil memuat ${allIgAccounts.length} akun Instagram.`, false, 3000);
-                }
-            }
-        } catch (error) {
-            showFloatingNotification(`Error fetching accounts: ${error.message}`, true);
-            console.error('Error fetching accounts:', error);
-        } finally {
-            spinner.classList.add('hidden');
+async function fetchIgAccounts(accountKey) {
+    try {
+        spinner.classList.remove('hidden');
+        showFloatingNotification('Memuat akun Instagram...');
+        const url = nextCursor
+            ? `/api/get_accounts?account_key=${accountKey}&limit=${PER_PAGE}&after=${nextCursor}`
+            : `/api/get_accounts?account_key=${accountKey}&limit=${PER_PAGE}`;
+        
+        const accountsRes = await fetch(url);
+        if (!accountsRes.ok) {
+            throw new Error(`HTTP error fetching accounts! status: ${accountsRes.status}`);
         }
-    }
+        const accountsData = await accountsRes.json();
+        console.log('Accounts fetched:', accountsData);
 
-    function updateAccountIdDropdown() {
-        accountId.innerHTML = '<option value="">-- Pilih Username --</option>';
-        allIgAccounts.forEach(acc => {
-            if (acc.type === 'ig' && acc.username) {
-                const option = document.createElement('option');
-                option.value = acc.id;
-                option.textContent = acc.username;
-                option.dataset.username = acc.username;
-                accountId.appendChild(option);
-            }
-        });
-    }
-
-    userAccount.addEventListener('change', async () => {
-        const accountNum = userAccount.value;
-        selectedAccountNum = accountNum;
-        console.log('Selected account number:', accountNum);
-
-        if (!accountNum) {
-            accountId.innerHTML = '<option value="">-- Pilih Username --</option>';
-            selectedToken = null;
-            selectedUsername = null;
-            selectedAccountNum = null;
-            selectedAccountId = null;
-            allIgAccounts = [];
-            nextCursor = null;
-            await loadSchedules();
-            return;
+        // Pengecekan apakah data accounts ada dan valid
+        if (!accountsData.accounts || !accountsData.accounts[accountKey] || !Array.isArray(accountsData.accounts[accountKey].accounts)) {
+            throw new Error('Invalid accounts data structure');
         }
 
-        try {
-            const tokenRes = await fetch(`/api/refresh-token?accountNum=${accountNum}`);
-            if (!tokenRes.ok) {
-                throw new Error(`HTTP error fetching token! status: ${tokenRes.status}`);
-            }
-            const tokenData = await tokenRes.json();
-            console.log('Token fetched:', tokenData);
-            selectedToken = tokenData.token;
-            if (!selectedToken) {
-                throw new Error('No token found for this account');
-            }
+        const igAccounts = accountsData.accounts[accountKey].accounts;
+        // Filter hanya akun yang valid (memiliki id dan username)
+        const validIgAccounts = igAccounts.filter(acc => acc && acc.type === 'ig' && acc.id && acc.username);
+        allIgAccounts = allIgAccounts.concat(validIgAccounts);
+        nextCursor = accountsData.next;
 
-            // Reset data sebelum fetch baru
-            allIgAccounts = [];
-            nextCursor = null;
-            accountId.innerHTML = '<option value="">-- Memuat Username --</option>';
+        // Perbarui dropdown
+        updateAccountIdDropdown();
 
-            // Mulai fetch akun IG dengan pagination
-            await fetchIgAccounts(`Akun ${accountNum}`);
-            await loadSchedules();
-        } catch (error) {
-            showFloatingNotification(`Error fetching accounts: ${error.message}`, true);
-            console.error('Error fetching accounts:', error);
-            accountId.innerHTML = '<option value="">-- Gagal Memuat --</option>';
+        // Lanjutkan fetch jika belum mencapai 200 dan ada cursor berikutnya
+        if (allIgAccounts.length < MAX_IG_LIMIT && nextCursor) {
+            await fetchIgAccounts(accountKey);
+        } else if (allIgAccounts.length >= MAX_IG_LIMIT) {
+            showFloatingNotification(`Mencapai batas maksimum ${MAX_IG_LIMIT} akun.`, false, 3000);
+        } else {
+            showFloatingNotification(`Berhasil memuat ${allIgAccounts.length} akun Instagram.`, false, 3000);
+        }
+    } catch (error) {
+        showFloatingNotification(`Error fetching accounts: ${error.message}`, true);
+        console.error('Error fetching accounts:', error);
+        accountId.innerHTML = '<option value="">-- Gagal Memuat --</option>';
+    } finally {
+        spinner.classList.add('hidden');
+    }
+}
+
+function updateAccountIdDropdown() {
+    accountId.innerHTML = '<option value="">-- Pilih Username --</option>';
+    if (allIgAccounts.length === 0) {
+        accountId.innerHTML = '<option value="">-- Tidak Ada Akun Tersedia --</option>';
+        return;
+    }
+
+    allIgAccounts.forEach(acc => {
+        // Pastikan acc tidak undefined dan memiliki properti yang diperlukan
+        if (acc && acc.type === 'ig' && acc.id && acc.username) {
+            const option = document.createElement('option');
+            option.value = acc.id;
+            option.textContent = acc.username;
+            option.dataset.username = acc.username;
+            accountId.appendChild(option);
         }
     });
+}
+
+userAccount.addEventListener('change', async () => {
+    const accountNum = userAccount.value;
+    selectedAccountNum = accountNum;
+    console.log('Selected account number:', accountNum);
+
+    if (!accountNum) {
+        accountId.innerHTML = '<option value="">-- Pilih Username --</option>';
+        selectedToken = null;
+        selectedUsername = null;
+        selectedAccountNum = null;
+        selectedAccountId = null;
+        allIgAccounts = [];
+        nextCursor = null;
+        await loadSchedules();
+        return;
+    }
+
+    try {
+        const tokenRes = await fetch(`/api/refresh-token?accountNum=${accountNum}`);
+        if (!tokenRes.ok) {
+            throw new Error(`HTTP error fetching token! status: ${tokenRes.status}`);
+        }
+        const tokenData = await tokenRes.json();
+        console.log('Token fetched:', tokenData);
+        selectedToken = tokenData.token;
+        if (!selectedToken) {
+            throw new Error('No token found for this account');
+        }
+
+        // Reset data sebelum fetch baru
+        allIgAccounts = [];
+        nextCursor = null;
+        accountId.innerHTML = '<option value="">-- Memuat Username --</option>';
+
+        // Mulai fetch akun IG dengan pagination
+        await fetchIgAccounts(`Akun ${accountNum}`);
+        await loadSchedules();
+    } catch (error) {
+        showFloatingNotification(`Error fetching accounts: ${error.message}`, true);
+        console.error('Error fetching accounts:', error);
+        accountId.innerHTML = '<option value="">-- Gagal Memuat --</option>';
+    }
+});
 
     accountId.addEventListener('change', async () => {
         const selectedOption = accountId.options[accountId.selectedIndex];
