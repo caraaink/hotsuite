@@ -1,7 +1,7 @@
 const { Octokit } = require('@octokit/rest');
 
 module.exports = async (req, res) => {
-    const { path } = req.body;
+    const { path, message } = req.body;
 
     if (!path) {
         return res.status(400).json({ error: 'Missing required field: path' });
@@ -16,7 +16,7 @@ module.exports = async (req, res) => {
         const repo = 'hotsuite';
 
         // Hapus file utama (misalnya 42382.jpg)
-        const message = `Delete file ${path}`;
+        const deleteMessage = message || `Delete file ${path}`;
         const { data } = await octokit.repos.getContent({
             owner,
             repo,
@@ -27,7 +27,7 @@ module.exports = async (req, res) => {
             owner,
             repo,
             path,
-            message,
+            message: deleteMessage,
             sha: data.sha,
         });
 
@@ -40,7 +40,7 @@ module.exports = async (req, res) => {
                 path: metaPath,
             });
 
-            const metaMessage = `Delete meta file ${metaPath}`;
+            const metaMessage = message ? message.replace(`Delete file ${path}`, `Delete meta file ${metaPath}`) : `Delete meta file ${metaPath}`;
             await octokit.repos.deleteFile({
                 owner,
                 repo,
