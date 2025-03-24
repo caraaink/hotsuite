@@ -508,6 +508,11 @@ uploadToGithub.addEventListener('click', async () => {
 
                         const filePath = `${uploadFolderValue}/${newFileName}`;
 
+                        // Selalu tambahkan [vercel-skip] untuk file di folder ig dan subfoldernya
+                        const commitMessage = uploadFolderValue.startsWith('ig/') 
+                            ? `Upload ${newFileName} to ${uploadFolderValue} [vercel-skip]` 
+                            : `Upload ${newFileName} to ${uploadFolderValue}`;
+
                         // Upload file utama
                         const fileResponse = await fetch('/api/upload_to_github', {
                             method: 'POST',
@@ -515,6 +520,7 @@ uploadToGithub.addEventListener('click', async () => {
                             body: JSON.stringify({
                                 fileName: filePath,
                                 content: base64Content,
+                                message: commitMessage, // Tambahkan commit message
                             }),
                         });
 
@@ -534,12 +540,18 @@ uploadToGithub.addEventListener('click', async () => {
                         const metaContent = JSON.stringify({ caption: '' }, null, 2);
                         const metaBase64Content = btoa(unescape(encodeURIComponent(metaContent)));
 
+                        // Selalu tambahkan [vercel-skip] untuk meta file di folder ig dan subfoldernya
+                        const metaCommitMessage = uploadFolderValue.startsWith('ig/') 
+                            ? `Upload meta for ${newFileName} to ${uploadFolderValue} [vercel-skip]` 
+                            : `Upload meta for ${newFileName} to ${uploadFolderValue}`;
+
                         const metaResponse = await fetch('/api/upload_to_github', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
                                 fileName: metaFileName,
                                 content: metaBase64Content,
+                                message: metaCommitMessage, // Tambahkan commit message
                             }),
                         });
 
