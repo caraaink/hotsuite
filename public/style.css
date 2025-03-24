@@ -5,21 +5,31 @@
     box-sizing: border-box;
 }
 
+html, body {
+    height: 100%; /* Pastikan body mengisi tinggi layar */
+    margin: 0;
+    padding: 0;
+}
+
 body {
     font-family: 'Poppins', sans-serif;
     background-color: #f7f9fc;
     color: #333;
     line-height: 1.6;
-    padding-bottom: 60px; /* Hindari konten terpotong oleh tombol navigasi bawaan */
+    min-height: 100vh; /* Pastikan body minimal setinggi layar */
+    display: flex;
+    flex-direction: column;
 }
 
 .container {
+    width: 100%; /* Pastikan container mengisi lebar penuh */
     max-width: 1200px;
-    margin: 30px auto;
-    padding: 20px;
+    margin: 0 auto; /* Hapus margin atas/bawah untuk mengisi layar */
+    padding: 15px;
     background: #fff;
-    border-radius: 10px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    border-radius: 0; /* Hapus border-radius untuk tampilan penuh */
+    box-shadow: none; /* Hapus shadow untuk tampilan penuh */
+    flex: 1; /* Pastikan container mengisi ruang yang tersedia */
 }
 
 /* Header */
@@ -27,7 +37,7 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 30px;
+    margin-bottom: 20px;
 }
 
 .header h2 {
@@ -84,7 +94,7 @@ body.dark-mode {
 
 body.dark-mode .container {
     background: #2c2c2c;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    box-shadow: none;
 }
 
 body.dark-mode .upload-form input,
@@ -164,20 +174,20 @@ body.dark-mode .gallery-item .schedule-time {
 /* Upload Form */
 .upload-form {
     display: grid;
-    gap: 20px; /* Tambah spasi antar elemen */
+    gap: 20px;
     margin-bottom: 30px;
 }
 
 .upload-form label {
     font-weight: 500;
     color: #2c3e50;
-    font-size: 16px; /* Perbesar ukuran font label */
+    font-size: 16px;
 }
 
 .upload-form select,
 .upload-form input,
 .upload-form textarea {
-    padding: 12px; /* Tambah padding untuk kenyamanan */
+    padding: 12px;
     font-size: 16px;
     border: 1px solid #ddd;
     border-radius: 6px;
@@ -201,7 +211,7 @@ body.dark-mode .gallery-item .schedule-time {
 /* Schedule All Container */
 .schedule-all-container {
     display: flex;
-    flex-wrap: wrap; /* Agar elemen bisa wrap pada layar kecil */
+    flex-wrap: wrap;
     align-items: center;
     gap: 15px;
     margin-top: 20px;
@@ -214,7 +224,7 @@ body.dark-mode .gallery-item .schedule-time {
 }
 
 .skip-day-option label {
-    font-size: 16px; /* Perbesar ukuran font */
+    font-size: 16px;
     color: #2c3e50;
 }
 
@@ -223,7 +233,7 @@ body.dark-mode .skip-day-option label {
 }
 
 .schedule-all-btn {
-    padding: 12px 24px; /* Tambah padding untuk touch target */
+    padding: 12px 24px;
     background-color: #f39c12;
     color: #fff;
     border: none;
@@ -232,7 +242,7 @@ body.dark-mode .skip-day-option label {
     font-size: 16px;
     font-weight: 500;
     transition: background-color 0.3s ease;
-    min-width: 150px; /* Pastikan tombol cukup lebar */
+    min-width: 150px;
 }
 
 .schedule-all-btn:hover {
@@ -240,7 +250,7 @@ body.dark-mode .skip-day-option label {
 }
 
 .save-schedules-btn {
-    padding: 12px 24px; /* Tambah padding untuk touch target */
+    padding: 12px 24px;
     background-color: #2ecc71;
     color: #fff;
     border: none;
@@ -249,7 +259,7 @@ body.dark-mode .skip-day-option label {
     font-size: 16px;
     font-weight: 500;
     transition: background-color 0.3s ease;
-    min-width: 150px; /* Pastikan tombol cukup lebar */
+    min-width: 150px;
 }
 
 .save-schedules-btn:hover {
@@ -259,7 +269,7 @@ body.dark-mode .skip-day-option label {
 /* Buttons */
 .upload-btn,
 .btn {
-    padding: 12px 24px; /* Tambah padding untuk touch target */
+    padding: 12px 24px;
     background-color: #3498db;
     color: #fff;
     border: none;
@@ -276,7 +286,7 @@ body.dark-mode .skip-day-option label {
 }
 
 .delete-btn {
-    padding: 8px 16px; /* Tambah padding untuk touch target */
+    padding: 8px 16px;
     margin-right: 5px;
     border: none;
     border-radius: 6px;
@@ -385,7 +395,7 @@ body.dark-mode .skip-day-option label {
 }
 
 .table-wrapper {
-    overflow-x: auto; /* Tambahkan scroll horizontal untuk tabel */
+    overflow-x: auto;
 }
 
 .schedule-list table {
@@ -394,6 +404,7 @@ body.dark-mode .skip-day-option label {
     background: #fff;
     border-radius: 8px;
     overflow: hidden;
+    display: table; /* Pastikan tabel selalu menggunakan display: table */
 }
 
 .schedule-list th,
@@ -401,7 +412,7 @@ body.dark-mode .skip-day-option label {
     padding: 12px 15px;
     text-align: left;
     border-bottom: 1px solid #eee;
-    font-size: 16px; /* Perbesar ukuran font */
+    font-size: 16px;
 }
 
 .schedule-list th {
@@ -437,12 +448,12 @@ body.dark-mode .skip-day-option label {
 }
 
 #totalSchedules {
-    font-size: 16px; /* Perbesar ukuran font */
+    font-size: 16px;
     color: #ccc;
 }
 
 .delete-selected-btn {
-    padding: 12px 24px; /* Tambah padding untuk touch target */
+    padding: 12px 24px;
     background-color: #e74c3c;
     color: #fff;
     border: none;
@@ -536,7 +547,7 @@ body.dark-mode .skip-day-option label {
     background-color: #4a90e2;
     color: white;
     border: none;
-    padding: 12px 24px; /* Tambah padding untuk touch target */
+    padding: 12px 24px;
     border-radius: 5px;
     cursor: pointer;
     font-size: 16px;
@@ -611,7 +622,7 @@ body.dark-mode .skip-day-option label {
 /* Upload Row */
 .upload-row {
     display: flex;
-    flex-wrap: wrap; /* Agar elemen bisa wrap pada layar kecil */
+    flex-wrap: wrap;
     align-items: flex-start;
     gap: 15px;
     margin-bottom: 15px;
@@ -627,29 +638,29 @@ body.dark-mode .skip-day-option label {
 .upload-file-section label,
 .upload-folder-section label {
     margin-bottom: 5px;
-    font-size: 16px; /* Perbesar ukuran font */
+    font-size: 16px;
     font-weight: 500;
     color: #ddd;
 }
 
 .upload-file-section input[type="file"],
 .upload-folder-section input[type="text"] {
-    padding: 12px; /* Tambah padding untuk kenyamanan */
+    padding: 12px;
     border: 1px solid #ddd;
     border-radius: 6px;
     font-size: 16px;
-    height: 48px; /* Tinggi lebih besar untuk touch target */
+    height: 48px;
     box-sizing: border-box;
     background-color: #333;
     color: #ddd;
 }
 
 .upload-folder-section input[type="text"] {
-    width: 100%; /* Ubah menjadi 100% agar responsif */
+    width: 100%;
 }
 
 .upload-btn {
-    padding: 12px 24px; /* Tambah padding untuk touch target */
+    padding: 12px 24px;
     background-color: #3498db;
     color: white;
     border: none;
@@ -695,8 +706,7 @@ body.dark-mode .skip-day-option label {
 /* Responsive Design */
 @media (max-width: 768px) {
     .container {
-        margin: 15px;
-        padding: 15px;
+        padding: 10px;
     }
 
     .header h2 {
@@ -710,27 +720,27 @@ body.dark-mode .skip-day-option label {
     .upload-form select,
     .upload-form input,
     .upload-form textarea {
-        font-size: 16px; /* Pastikan font tetap terbaca */
+        font-size: 16px;
         padding: 10px;
     }
 
     .upload-row {
-        flex-direction: column; /* Susun elemen secara vertikal */
+        flex-direction: column;
     }
 
     .upload-file-section,
     .upload-folder-section {
-        width: 100%; /* Pastikan elemen mengambil lebar penuh */
+        width: 100%;
     }
 
     .upload-btn {
-        margin-top: 0; /* Hapus margin-top karena sudah vertikal */
-        width: 100%; /* Tombol mengambil lebar penuh */
+        margin-top: 0;
+        width: 100%;
     }
 
     .schedule-all-container {
         flex-direction: column;
-        align-items: stretch; /* Pastikan elemen mengambil lebar penuh */
+        align-items: stretch;
     }
 
     .schedule-all-btn,
@@ -746,7 +756,6 @@ body.dark-mode .skip-day-option label {
         height: 100px;
     }
 
-    /* Tabel Responsif */
     .schedule-list table {
         font-size: 14px;
     }
@@ -816,7 +825,7 @@ body.dark-mode .skip-day-option label {
     }
 
     .schedule-list thead {
-        display: none; /* Sembunyikan header tabel */
+        display: none;
     }
 
     .schedule-list tbody,
@@ -865,23 +874,20 @@ body.dark-mode .skip-day-option label {
         padding: 6px 12px;
         font-size: 12px;
     }
+
+    /* Pastikan pesan "Belum ada jadwal" terlihat */
+    .schedule-list .empty-message td {
+        display: block;
+        text-align: center;
+        padding: 20px;
+        font-size: 14px;
+        color: #e0e0e0;
+    }
 }
 
 /* Sembunyikan elemen kosong */
 .gallery:empty,
-.schedule-list:empty,
 .gallery-item:empty {
-    display: none;
-}
-
-/* Pastikan tabel jadwal kosong juga disembunyikan */
-.schedule-list table:empty,
-.schedule-list table tbody:empty {
-    display: none;
-}
-
-/* Sembunyikan pesan "Belum ada jadwal" jika tidak ada jadwal */
-.schedule-list table tbody tr td[colspan="7"] {
     display: none;
 }
 
