@@ -35,6 +35,7 @@ let scheduledTimes = {};
 let allSchedules = [];
 let displayedSchedules = 0;
 const ITEMS_PER_PAGE = 20;
+let selectedPhotos = new Set(); // Untuk melacak foto yang dipilih untuk hapus massal
 
 // Fungsi untuk mengonversi waktu dari UTC ke WIB
 function convertToWIB(utcTime) {
@@ -588,7 +589,114 @@ uploadToGithub.addEventListener('click', async () => {
     }
 });
 
-async function saveCaptionToGithub(file, caption) {
+// Fungsi untuk memperbarui jumlah foto yang dipilih
+function updateSelectedCount() {
+    const totalSelectedElement = document.getElementById('totalSelected');
+    totalSelectedElement.textContent = `Terpilih: ${selectedPhotos.size} foto`;
+}
+
+// Fungsi untuk menghapus foto dan meta JSON terkait
+async function deletePhoto(filePath) {
+    showFloatingNotification(`Menghapus ${filePath}...`);
+    spinner.classList.remove('hidden');
+
+    try {
+        // Selalu tambahkan [vercel-skip] untuk file di folder ig dan subfoldernya
+        const folderPath = filePath.substring(0, filePath.lastIndexOf('/'));
+        const commitMessage = folderPath.startsWith('ig/') 
+            ? `Delete file ${filePath} [vercel-skip]` 
+            : `Delete file ${filePath}`;
+
+        const deleteResponse = await fetch('/api/delete_from_github', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                path: filePath,
+                message: commitMessage, // Tambahkan commit message
+            }),
+        });
+
+        if (!deleteResponse.ok) {
+            throw new Error(`HTTP error deleting file from GitHub! status: ${deleteResponse.status}`);
+        }
+
+        const deleteResult = await deleteResponse.json();
+        showFloatingNotification(`${deleteResult.message}`);
+
+        // Hapus file dari allMediaFiles dan perbarui galeri
+        allMediaFiles = allMediaFiles.filter(f => f.path !== filePath);
+        delete captions[filePath];
+        delete scheduledTimes[filePath];
+        selectedPhotos.delete(filePath);
+        displayGallery(allMediaFiles);
+    } catch (error) {
+        showFloatingNotification(`Gagal menghapus file dari GitHub: ${error.message}`, true);
+        console.error('Error deleting file from GitHub:', error);
+    } finally {
+        spinner.classList.add('hidden');
+    }
+}
+
+// Fungsi untuk menghapus foto yang dipilih secara massal
+async function deleteSelectedPhotos() {
+    if (selectedPhotos.size === 0) {
+        showFloatingNotification('Pilih setidaknya satu foto untuk dihapus.', true);
+        return;
+    }
+
+    if (!confirm(`Apakah Anda yakin ingin menghapus ${selectedPhotos.size} foto yang dipilih?`)) {
+        return;
+    }
+
+    let deletedCount = 0;
+    const totalToDelete = selectedPhotos.size;
+    showFloatingNotification(`Menghapus foto 1 dari ${totalToDelete}...`);
+    spinner.classList.remove('hidden');
+
+    try {
+        for (const filePath of selectedPhotos) {
+            // Selalu tambahkan [vercel-skip] untuk file di folder ig dan subfoldernya
+            const folderPath = filePath.substring(0, filePath.lastIndexOf('/'));
+            const commitMessage = folderPath.startsWith('ig/') 
+                ? `Delete file ${filePath} [vercel-skip]` 
+                : `Delete file ${filePath}`;
+
+            const deleteResponse = await fetch('/api/delete_from_github', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    path: filePath,
+                    message: commitMessage, // Tambahkan commit message
+                }),
+            });
+
+            if (!deleteResponse.ok) {
+                throw new Error(`HTTP error deleting file ${filePath} from GitHub! status: ${deleteResponse.status}`);
+            }
+
+            const deleteResult = await deleteResponse.json();
+            allMediaFiles = allMediaFiles.filter(f => f.path !== filePath);
+            delete captions[filePath];
+            delete scheduledTimes[filePath];
+            selectedPhotos.delete(filePath);
+
+            deletedCount++;
+            if (deletedCount < totalToDelete) {
+                showFloatingNotification(`Menghapus foto ${deletedCount + 1} dari ${totalToDelete}...`);
+            }
+        }
+
+        showFloatingNotification(`${deletedCount} foto berhasil dihapus!`);
+        displayGallery(allMediaFiles);
+    } catch (error) {
+        showFloatingNotification(`Gagal menghapus foto: ${error.message}`, true);
+        console.error('Error deleting selected photos:', error);
+    } finally {
+        spinner.classList.add('hidden');
+    }
+}
+
+async function saveCaptionToGithub(file, caption, commitMessage) {
     try {
         const folderPath = file.path.substring(0, file.path.lastIndexOf('/'));
         const metaFileName = `${file.name}.meta.json`;
@@ -602,6 +710,7 @@ async function saveCaptionToGithub(file, caption) {
             body: JSON.stringify({
                 fileName: metaPath,
                 content: base64Content,
+                message: commitMessage, // Tambahkan commit message
             }),
         });
 
@@ -625,8 +734,13 @@ function displayGallery(files) {
 
     if (imageFiles.length === 0) {
         gallery.innerHTML = '<p>Tidak ada gambar untuk ditampilkan.</p>';
+        // Sembunyikan tombol hapus massal jika galeri kosong
+        document.getElementById('deleteContainer').classList.add('hidden');
         return;
     }
+
+    // Tampilkan tombol hapus massal jika ada foto di galeri
+    document.getElementById('deleteContainer').classList.remove('hidden');
 
     function formatDateTime(date, hours, minutes) {
         const year = date.getFullYear();
@@ -640,6 +754,24 @@ function displayGallery(files) {
         const container = document.createElement('div');
         container.className = 'gallery-item';
 
+        // Tambahkan checkbox untuk seleksi
+        const checkboxContainer = document.createElement('div');
+        checkboxContainer.className = 'checkbox-container';
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.className = 'photo-checkbox';
+        checkbox.dataset.filePath = file.path;
+        checkbox.addEventListener('change', () => {
+            if (checkbox.checked) {
+                selectedPhotos.add(file.path);
+            } else {
+                selectedPhotos.delete(file.path);
+            }
+            updateSelectedCount();
+        });
+        checkboxContainer.appendChild(checkbox);
+        container.appendChild(checkboxContainer);
+
         const img = document.createElement('img');
         img.src = file.download_url;
         img.alt = file.name;
@@ -649,6 +781,17 @@ function displayGallery(files) {
             img.classList.add('selected');
             mediaUrl.value = file.download_url;
         });
+
+        // Tambahkan tombol hapus langsung (tanda X)
+        const deleteDirectBtn = document.createElement('button');
+        deleteDirectBtn.className = 'delete-direct-btn';
+        deleteDirectBtn.textContent = '×';
+        deleteDirectBtn.addEventListener('click', async () => {
+            if (confirm(`Apakah Anda yakin ingin menghapus ${file.name}?`)) {
+                await deletePhoto(file.path);
+            }
+        });
+        container.appendChild(deleteDirectBtn);
 
         const name = document.createElement('p');
         name.textContent = file.name;
@@ -683,7 +826,14 @@ function displayGallery(files) {
                 saveSpinner.classList.remove('hidden');
                 saveBtn.disabled = true;
                 captions[file.path] = textarea.value;
-                const success = await saveCaptionToGithub(file, captions[file.path]);
+
+                // Selalu tambahkan [vercel-skip] untuk meta file di folder ig dan subfoldernya
+                const folderPath = file.path.substring(0, file.path.lastIndexOf('/'));
+                const metaCommitMessage = folderPath.startsWith('ig/') 
+                    ? `Update meta file for ${file.path} [vercel-skip]` 
+                    : `Update meta file for ${file.path}`;
+
+                const success = await saveCaptionToGithub(file, captions[file.path], metaCommitMessage);
                 if (success) {
                     captionText.textContent = captions[file.path] || 'Tidak ada caption';
                     editor.remove();
@@ -766,27 +916,7 @@ function displayGallery(files) {
                 showFloatingNotification(result.message || 'Berhasil dipublikasikan!');
 
                 if (isUploadedFile) {
-                    try {
-                        const deleteResponse = await fetch('/api/delete_from_github', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                path: file.path,
-                            }),
-                        });
-
-                        if (!deleteResponse.ok) {
-                            throw new Error(`HTTP error deleting file from GitHub! status: ${deleteResponse.status}`);
-                        }
-
-                        const deleteResult = await deleteResponse.json();
-                        showFloatingNotification(`${deleteResult.message}`);
-                        allMediaFiles = allMediaFiles.filter(f => f.path !== file.path);
-                        displayGallery(allMediaFiles);
-                    } catch (deleteError) {
-                        showFloatingNotification(`Gagal menghapus file dari GitHub: ${deleteError.message}`, true);
-                        console.error('Error deleting file from GitHub:', deleteError);
-                    }
+                    await deletePhoto(file.path);
                 }
             } catch (error) {
                 showFloatingNotification(`Error publishing: ${error.message}`, true);
@@ -818,6 +948,15 @@ function displayGallery(files) {
             scheduleTime.textContent = formatToLocaleString(convertToWIB(scheduledTimes[file.path]));
         }
     });
+
+    // Reset selected photos dan update count
+    selectedPhotos.clear();
+    updateSelectedCount();
+
+    // Tambahkan event listener untuk tombol hapus massal
+    const deleteSelectedPhotosBtn = document.getElementById('deleteSelectedPhotos');
+    deleteSelectedPhotosBtn.removeEventListener('click', deleteSelectedPhotos); // Hapus listener lama jika ada
+    deleteSelectedPhotosBtn.addEventListener('click', deleteSelectedPhotos);
 
     // Reset jadwal jika tanggal/jam awal dihapus
     startDateTime.addEventListener('input', () => {
