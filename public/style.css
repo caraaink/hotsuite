@@ -286,12 +286,11 @@ body.dark-mode .skip-day-option label {
 }
 
 .delete-btn {
-    padding: 8px 16px;
-    margin-right: 5px;
+    padding: 6px 12px;
     border: none;
     border-radius: 6px;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 500;
     background-color: #e74c3c;
     color: #fff;
@@ -379,7 +378,7 @@ body.dark-mode .skip-day-option label {
 /* Editor Spinner */
 .editor-spinner {
     display: inline-block;
-    border: 2px solid rgba(255, 255, 255, 0.3);
+    border: 2px solid rgba(255, 255, 0.3);
     border-left: 2px solid #fff;
     border-radius: 50%;
     width: 16px;
@@ -432,8 +431,8 @@ body.dark-mode .skip-day-option label {
 
 /* Styling untuk preview media di tabel */
 .schedule-media-preview {
-    width: 50px;
-    height: 50px;
+    width: 60px; /* Ukuran foto diperbesar */
+    height: 60px;
     object-fit: cover;
     border-radius: 4px;
 }
@@ -624,7 +623,7 @@ body.dark-mode .skip-day-option label {
     display: flex;
     flex-wrap: wrap;
     align-items: flex-start;
-    gap: 15px;
+    gap: 15 Wpx;
     margin-bottom: 15px;
 }
 
@@ -767,8 +766,8 @@ body.dark-mode .skip-day-option label {
     }
 
     .schedule-media-preview {
-        width: 40px;
-        height: 40px;
+        width: 60px;
+        height: 60px;
     }
 }
 
@@ -815,7 +814,7 @@ body.dark-mode .skip-day-option label {
         height: 80px;
     }
 
-    /* Ubah tabel menjadi card layout seperti daftar lagu */
+    /* Ubah tabel menjadi card layout */
     .table-wrapper {
         overflow-x: visible;
     }
@@ -837,7 +836,7 @@ body.dark-mode .skip-day-option label {
     .schedule-list tr {
         display: flex;
         flex-direction: row;
-        align-items: center;
+        align-items: flex-start;
         background: #3a3a3a;
         border-radius: 8px;
         margin-bottom: 10px;
@@ -852,10 +851,22 @@ body.dark-mode .skip-day-option label {
         font-size: 14px;
     }
 
-    /* Sembunyikan kolom yang tidak diperlukan */
+    /* Nomor dan Ceklis di sisi kiri foto */
     .schedule-list td[data-label="No"],
     .schedule-list td[data-label="Select"] {
-        display: none;
+        flex: 0 0 auto;
+        margin-right: 5px;
+    }
+
+    .schedule-list td[data-label="No"] {
+        font-size: 14px;
+        color: #e0e0e0;
+        font-weight: 600;
+    }
+
+    .schedule-list td[data-label="Select"] {
+        display: flex;
+        align-items: center;
     }
 
     /* Media (Gambar) */
@@ -865,21 +876,22 @@ body.dark-mode .skip-day-option label {
     }
 
     .schedule-media-preview {
-        width: 50px;
-        height: 50px;
+        width: 60px;
+        height: 60px;
         border-radius: 4px;
     }
 
-    /* Konten utama (Akun IG, Caption, Waktu Posting, Status) */
+    /* Konten utama (Akun IG, Caption, Waktu Posting, Status, Aksi) */
     .schedule-list td[data-label="Akun IG"],
     .schedule-list td[data-label="Caption"],
     .schedule-list td[data-label="Waktu Posting"],
-    .schedule-list td[data-label="Status"] {
+    .schedule-list td[data-label="Status"],
+    .schedule-list td[data-label="Aksi"] {
         flex: 1;
         display: block;
     }
 
-    /* Akun IG dan Caption sebagai teks utama */
+    /* Akun IG di sisi kanan atas foto */
     .schedule-list td[data-label="Akun IG"] {
         font-size: 16px;
         font-weight: 600;
@@ -887,28 +899,30 @@ body.dark-mode .skip-day-option label {
         margin-bottom: 4px;
     }
 
+    /* Caption di bawah Akun IG */
     .schedule-list td[data-label="Caption"] {
         font-size: 14px;
         color: #b0b0b0;
         margin-bottom: 4px;
     }
 
-    /* Waktu Posting dan Status sebagai teks sekunder */
-    .schedule-list td[data-label="Waktu Posting"],
-    .schedule-list td[data-label="Status"] {
+    /* Waktu Posting di bawah Caption */
+    .schedule-list td[data-label="Waktu Posting"] {
+        font-size: 12px;
+        color: #b0b0b0;
+        margin-bottom: 4px;
+    }
+
+    /* Status dan Aksi (Hapus) dalam satu baris di sisi kanan jadwal */
+    .schedule-list td[data-label="Status"],
+    .schedule-list td[data-label="Aksi"] {
+        display: inline-block;
         font-size: 12px;
         color: #b0b0b0;
     }
 
-    /* Aksi (Tombol Hapus) */
-    .schedule-list td[data-label="Aksi"] {
-        flex: 0 0 auto;
-        margin-left: 10px;
-    }
-
-    .delete-btn {
-        padding: 6px 12px;
-        font-size: 12px;
+    .schedule-list td[data-label="Status"] {
+        margin-right: 10px;
     }
 
     /* Pastikan pesan "Belum ada jadwal" terlihat */
