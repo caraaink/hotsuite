@@ -36,8 +36,35 @@ document.addEventListener('DOMContentLoaded', () => {
     let allSchedules = [];
     let displayedSchedules = 0;
     const ITEMS_PER_PAGE = 20;
+    let isLoadingSchedules = false; // Lock untuk mencegah race condition
 
-    // Fungsi debounce
+    // Fungsi untuk mengonversi waktu dari UTC ke WIB
+    function convertToWIB(utcTime) {
+        const date = new Date(utcTime);
+        const wibOffset = 7 * 60 * 60 * 1000; // 7 jam dalam milidetik
+        const wibTime = new Date(date.getTime() + wibOffset);
+        return wibTime;
+    }
+
+    // Fungsi untuk memformat waktu dalam WIB ke format datetime-local (YYYY-MM-DDThh:mm)
+    function formatToDatetimeLocal(wibTime) {
+        return wibTime.toISOString().slice(0, 16);
+    }
+
+    // Fungsi untuk memformat waktu dalam WIB ke format lokal (dd/mm/yyyy hh:mm)
+    function formatToLocaleString(wibTime) {
+        return wibTime.toLocaleString('id-ID', {
+            timeZone: 'Asia/Jakarta',
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+        }).replace(',', '');
+    }
+
+    // Fungsi debounce untuk mencegah klik berulang
     function debounce(func, wait) {
         let timeout;
         return function (...args) {
@@ -68,48 +95,23 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         });
     }
-    // Fungsi untuk mengonversi waktu dari UTC ke WIB
-    function convertToWIB(utcTime) {
-        const date = new Date(utcTime);
-        const wibOffset = 7 * 60 * 60 * 1000; // 7 jam dalam milidetik
-        const wibTime = new Date(date.getTime() + wibOffset);
-        return wibTime;
-    }
 
-    // Fungsi untuk memformat waktu dalam WIB ke format datetime-local (YYYY-MM-DDThh:mm)
-    function formatToDatetimeLocal(wibTime) {
-        return wibTime.toISOString().slice(0, 16);
+    // Function to show floating notification with customizable duration
+    function showFloatingNotification(message, isError = false, duration = 3000) {
+        status.textContent = message;
+        floatingNotification.classList.remove('hidden');
+        if (isError) {
+            floatingNotification.classList.add('error');
+        } else {
+            floatingNotification.classList.remove('error');
+        }
+        spinner.classList.add('hidden'); // Pastikan spinner disembunyikan
+        if (duration > 0) {
+            setTimeout(() => {
+                floatingNotification.classList.add('hidden');
+            }, duration);
+        }
     }
-
-    // Fungsi untuk memformat waktu dalam WIB ke format lokal (dd/mm/yyyy hh:mm)
-    function formatToLocaleString(wibTime) {
-        return wibTime.toLocaleString('id-ID', {
-            timeZone: 'Asia/Jakarta',
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false
-        }).replace(',', '');
-    }
-
-   // Function to show floating notification with customizable duration
-function showFloatingNotification(message, isError = false, duration = 3000) {
-    status.textContent = message;
-    floatingNotification.classList.remove('hidden');
-    if (isError) {
-        floatingNotification.classList.add('error');
-    } else {
-        floatingNotification.classList.remove('error');
-    }
-    spinner.classList.add('hidden'); // Pastikan spinner disembunyikan
-    if (duration > 0) {
-        setTimeout(() => {
-            floatingNotification.classList.add('hidden');
-        }, duration);
-    }
-}
 
     // Load dark mode preference from localStorage
     if (localStorage.getItem('theme') === 'dark') {
@@ -812,7 +814,8 @@ function showFloatingNotification(message, isError = false, duration = 3000) {
             deleteDirectBtn.className = 'delete-direct-btn';
             deleteDirectBtn.textContent = '×';
             deleteDirectBtn.addEventListener('click', async () => {
-                if (confirm(`Apakah Anda yakin ingin menghapus ${file.name}?`)) {
+                const confirmed = await showConfirmModal(`Apakah Anda yakin ingin menghapus ${file.name}?`);
+                if (confirmed) {
                     await deletePhoto(file.path);
                 }
             });
@@ -1152,195 +1155,194 @@ function showFloatingNotification(message, isError = false, duration = 3000) {
     loadGithubFolders();
 
     async function deleteSchedule(scheduleId) {
-    try {
-        showFloatingNotification('Menghapus jadwal...');
-        spinner.classList.remove('hidden');
-        const res = await fetch('/api/delete_schedule', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ scheduleId }),
-        });
-        if (!res.ok) {
-            throw new Error(`HTTP error! status: ${res.status}`);
+        try {
+            showFloatingNotification('Menghapus jadwal...');
+            spinner.classList.remove('hidden');
+            const res = await fetch('/api/delete_schedule', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ scheduleId }),
+            });
+            if (!res.ok) {
+                throw new Error(`HTTP error! status: ${res.status}`);
+            }
+            const result = await res.json();
+            showFloatingNotification(result.message || 'Jadwal berhasil dihapus!');
+            await loadSchedules();
+        } catch (error) {
+            showFloatingNotification(`Error deleting schedule: ${error.message}`, true);
+            console.error('Error deleting schedule:', error);
+        } finally {
+            spinner.classList.add('hidden');
         }
-        const result = await res.json();
-        showFloatingNotification(result.message || 'Jadwal berhasil dihapus!');
-        await loadSchedules();
-    } catch (error) {
-        showFloatingNotification(`Error deleting schedule: ${error.message}`, true);
-        console.error('Error deleting schedule:', error);
-    } finally {
-        spinner.classList.add('hidden');
     }
-}
 
     async function updateSchedule(scheduleId, updatedData) {
-    try {
-        const res = await fetch('/api/update_schedule', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ scheduleId, ...updatedData }),
-        });
-        if (!res.ok) {
-            throw new Error(`HTTP error updating schedule! status: ${res.status}`);
+        try {
+            const res = await fetch('/api/update_schedule', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ scheduleId, ...updatedData }),
+            });
+            if (!res.ok) {
+                throw new Error(`HTTP error updating schedule! status: ${res.status}`);
+            }
+            const result = await res.json();
+            showFloatingNotification(result.message || 'Jadwal berhasil diperbarui!');
+            await loadSchedules();
+        } catch (error) {
+            showFloatingNotification(`Error updating schedule: ${error.message}`, true);
+            console.error('Error updating schedule:', error);
         }
-        const result = await res.json();
-        showFloatingNotification(result.message || 'Jadwal berhasil diperbarui!');
-        await loadSchedules();
-    } catch (error) {
-        showFloatingNotification(`Error updating schedule: ${error.message}`, true);
-        console.error('Error updating schedule:', error);
     }
-}
 
     async function deleteSelectedSchedules() {
-    const checkboxes = document.querySelectorAll('.schedule-checkbox:checked');
-    if (checkboxes.length === 0) {
-        showFloatingNotification('Pilih setidaknya satu jadwal untuk dihapus.', true);
-        return;
-    }
-
-    const scheduleIds = Array.from(checkboxes).map(checkbox => checkbox.dataset.scheduleId);
-
-    try {
-        showFloatingNotification('Menghapus jadwal terpilih...');
-        spinner.classList.remove('hidden');
-        for (const scheduleId of scheduleIds) {
-            await deleteSchedule(scheduleId);
+        const checkboxes = document.querySelectorAll('.schedule-checkbox:checked');
+        if (checkboxes.length === 0) {
+            showFloatingNotification('Pilih setidaknya satu jadwal untuk dihapus.', true);
+            return;
         }
-        showFloatingNotification(`${scheduleIds.length} jadwal berhasil dihapus!`);
-    } catch (error) {
-        showFloatingNotification(`Error deleting schedules: ${error.message}`, true);
-        console.error('Error deleting schedules:', error);
-    } finally {
-        spinner.classList.add('hidden');
+
+        const scheduleIds = Array.from(checkboxes).map(checkbox => checkbox.dataset.scheduleId);
+
+        try {
+            showFloatingNotification('Menghapus jadwal terpilih...');
+            spinner.classList.remove('hidden');
+            for (const scheduleId of scheduleIds) {
+                await deleteSchedule(scheduleId);
+            }
+            showFloatingNotification(`${scheduleIds.length} jadwal berhasil dihapus!`);
+        } catch (error) {
+            showFloatingNotification(`Error deleting schedules: ${error.message}`, true);
+            console.error('Error deleting schedules:', error);
+        } finally {
+            spinner.classList.add('hidden');
+        }
     }
-}
 
     function renderSchedules(schedulesToRender, startIndex) {
-    schedulesToRender.forEach((schedule, idx) => {
-        const globalIndex = startIndex + idx;
-        const wibTime = convertToWIB(schedule.time);
-        const formattedWibTime = formatToDatetimeLocal(wibTime);
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${globalIndex + 1}</td>
-            <td><input type="checkbox" class="schedule-checkbox" data-schedule-id="${schedule.scheduleId}"></td>
-            <td>${schedule.username || 'Unknown'}</td>
-            <td><img src="${schedule.mediaUrl}" alt="Media" class="schedule-media-preview"></td>
-            <td class="editable-caption" contenteditable="true" data-schedule-id="${schedule.scheduleId}">${schedule.caption}</td>
-            <td class="editable-time" data-schedule-id="${schedule.scheduleId}">
-                <input type="datetime-local" class="time-input" value="${formattedWibTime}">
-            </td>
-            <td>${schedule.completed ? 'Selesai' : 'Menunggu'}</td>
-            <td>
-                <button class="delete-btn" data-schedule-id="${schedule.scheduleId}">Hapus</button>
-            </td>
-        `;
-        scheduleTableBody.appendChild(row);
-    });
-
-    document.querySelectorAll('.editable-caption').forEach(cell => {
-        cell.addEventListener('blur', async (e) => {
-            const scheduleId = e.target.dataset.scheduleId;
-            const newCaption = e.target.textContent.trim();
-            await updateSchedule(scheduleId, { caption: newCaption });
+        schedulesToRender.forEach((schedule, idx) => {
+            const globalIndex = startIndex + idx;
+            const wibTime = convertToWIB(schedule.time);
+            const formattedWibTime = formatToDatetimeLocal(wibTime);
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${globalIndex + 1}</td>
+                <td><input type="checkbox" class="schedule-checkbox" data-schedule-id="${schedule.scheduleId}"></td>
+                <td>${schedule.username || 'Unknown'}</td>
+                <td><img src="${schedule.mediaUrl}" alt="Media" class="schedule-media-preview"></td>
+                <td class="editable-caption" contenteditable="true" data-schedule-id="${schedule.scheduleId}">${schedule.caption}</td>
+                <td class="editable-time" data-schedule-id="${schedule.scheduleId}">
+                    <input type="datetime-local" class="time-input" value="${formattedWibTime}">
+                </td>
+                <td>${schedule.completed ? 'Selesai' : 'Menunggu'}</td>
+                <td>
+                    <button class="delete-btn" data-schedule-id="${schedule.scheduleId}">Hapus</button>
+                </td>
+            `;
+            scheduleTableBody.appendChild(row);
         });
-    });
 
-    document.querySelectorAll('.editable-time .time-input').forEach(input => {
-        input.addEventListener('change', async (e) => {
-            const scheduleId = e.target.parentElement.dataset.scheduleId;
-            const newTime = e.target.value;
-            await updateSchedule(scheduleId, { time: newTime });
+        document.querySelectorAll('.editable-caption').forEach(cell => {
+            cell.addEventListener('blur', async (e) => {
+                const scheduleId = e.target.dataset.scheduleId;
+                const newCaption = e.target.textContent.trim();
+                await updateSchedule(scheduleId, { caption: newCaption });
+            });
         });
-    });
 
-    document.querySelectorAll('.delete-btn').forEach(button => {
-        button.addEventListener('click', debounce(async (e) => {
-            const scheduleId = e.target.getAttribute('data-schedule-id');
-            const confirmed = await showConfirmModal('Apakah Anda yakin ingin menghapus jadwal ini?');
-            if (confirmed) {
-                deleteSchedule(scheduleId);
-            }
-        }, 300));
-    });
-}
+        document.querySelectorAll('.editable-time .time-input').forEach(input => {
+            input.addEventListener('change', async (e) => {
+                const scheduleId = e.target.parentElement.dataset.scheduleId;
+                const newTime = e.target.value;
+                await updateSchedule(scheduleId, { time: newTime });
+            });
+        });
+
+        document.querySelectorAll('.delete-btn').forEach(button => {
+            button.addEventListener('click', debounce(async (e) => {
+                const scheduleId = e.target.getAttribute('data-schedule-id');
+                const confirmed = await showConfirmModal('Apakah Anda yakin ingin menghapus jadwal ini?');
+                if (confirmed) {
+                    deleteSchedule(scheduleId);
+                }
+            }, 300));
+        });
+    }
 
     async function loadSchedules() {
-    if (isLoadingSchedules) {
-        console.log('loadSchedules already in progress, skipping...');
-        return;
-    }
-
-    isLoadingSchedules = true;
-    try {
-        scheduleTableBody.innerHTML = '<tr><td colspan="8">Memuat jadwal...</td></tr>';
-        const res = await fetch('/api/get_schedules');
-        if (!res.ok) {
-            throw new Error(`HTTP error fetching schedules! status: ${res.status}`);
-        }
-        const data = await res.json();
-        console.log('Schedules fetched:', data);
-
-        scheduleTableBody.innerHTML = '';
-        allSchedules = data.schedules || [];
-
-        let filteredSchedules = allSchedules;
-        if (selectedAccountNum) {
-            filteredSchedules = filteredSchedules.filter(schedule => schedule.accountNum === selectedAccountNum);
-        }
-        if (selectedAccountId) {
-            filteredSchedules = filteredSchedules.filter(schedule => schedule.accountId === selectedAccountId);
+        if (isLoadingSchedules) {
+            console.log('loadSchedules already in progress, skipping...');
+            return;
         }
 
-        displayedSchedules = 0;
+        isLoadingSchedules = true;
+        try {
+            scheduleTableBody.innerHTML = '<tr><td colspan="8">Memuat jadwal...</td></tr>';
+            const res = await fetch('/api/get_schedules');
+            if (!res.ok) {
+                throw new Error(`HTTP error fetching schedules! status: ${res.status}`);
+            }
+            const data = await res.json();
+            console.log('Schedules fetched:', data);
 
-        if (filteredSchedules.length > 0) {
-            const initialSchedules = filteredSchedules.slice(0, ITEMS_PER_PAGE);
-            renderSchedules(initialSchedules, 0);
-            displayedSchedules = initialSchedules.length;
+            scheduleTableBody.innerHTML = '';
+            allSchedules = data.schedules || [];
 
-            totalSchedules.textContent = `Total: ${filteredSchedules.length} jadwal`;
-
-            if (displayedSchedules < filteredSchedules.length) {
-                loadMoreBtn.classList.remove('hidden');
-            } else {
-                loadMoreBtn.classList.add('hidden');
+            let filteredSchedules = allSchedules;
+            if (selectedAccountNum) {
+                filteredSchedules = filteredSchedules.filter(schedule => schedule.accountNum === selectedAccountNum);
+            }
+            if (selectedAccountId) {
+                filteredSchedules = filteredSchedules.filter(schedule => schedule.accountId === selectedAccountId);
             }
 
-            loadMoreBtn.removeEventListener('click', loadMoreSchedules);
-            loadMoreBtn.addEventListener('click', loadMoreSchedules);
+            displayedSchedules = 0;
 
-            selectAll.addEventListener('change', () => {
-                const checkboxes = document.querySelectorAll('.schedule-checkbox');
-                checkboxes.forEach(checkbox => {
-                    checkbox.checked = selectAll.checked;
-                });
-            });
+            if (filteredSchedules.length > 0) {
+                const initialSchedules = filteredSchedules.slice(0, ITEMS_PER_PAGE);
+                renderSchedules(initialSchedules, 0);
+                displayedSchedules = initialSchedules.length;
 
-            deleteSelected.removeEventListener('click', deleteSelectedSchedules); // Hapus event listener lama
-            deleteSelected.addEventListener('click', async () => {
-                const confirmed = await showConfirmModal('Apakah Anda yakin ingin menghapus jadwal yang dipilih?');
-                if (confirmed) {
-                    deleteSelectedSchedules();
+                totalSchedules.textContent = `Total: ${filteredSchedules.length} jadwal`;
+
+                if (displayedSchedules < filteredSchedules.length) {
+                    loadMoreBtn.classList.remove('hidden');
+                } else {
+                    loadMoreBtn.classList.add('hidden');
                 }
-            });
-        } else {
-            scheduleTableBody.innerHTML = '<tr><td colspan="8">Belum ada jadwal untuk akun ini.</td></tr>';
+
+                loadMoreBtn.removeEventListener('click', loadMoreSchedules);
+                loadMoreBtn.addEventListener('click', loadMoreSchedules);
+
+                selectAll.addEventListener('change', () => {
+                    const checkboxes = document.querySelectorAll('.schedule-checkbox');
+                    checkboxes.forEach(checkbox => {
+                        checkbox.checked = selectAll.checked;
+                    });
+                });
+
+                deleteSelected.addEventListener('click', async () => {
+                    const confirmed = await showConfirmModal('Apakah Anda yakin ingin menghapus jadwal yang dipilih?');
+                    if (confirmed) {
+                        deleteSelectedSchedules();
+                    }
+                });
+            } else {
+                scheduleTableBody.innerHTML = '<tr><td colspan="8">Belum ada jadwal untuk akun ini.</td></tr>';
+                totalSchedules.textContent = 'Total: 0 jadwal';
+                loadMoreBtn.classList.add('hidden');
+            }
+        } catch (error) {
+            showFloatingNotification(`Error loading schedules: ${error.message}`, true);
+            console.error('Error fetching schedules:', error);
+            scheduleTableBody.innerHTML = '<tr><td colspan="8">Gagal memuat jadwal.</td></tr>';
             totalSchedules.textContent = 'Total: 0 jadwal';
             loadMoreBtn.classList.add('hidden');
+        } finally {
+            isLoadingSchedules = false;
         }
-    } catch (error) {
-        showFloatingNotification(`Error loading schedules: ${error.message}`, true);
-        console.error('Error fetching schedules:', error);
-        scheduleTableBody.innerHTML = '<tr><td colspan="8">Gagal memuat jadwal.</td></tr>';
-        totalSchedules.textContent = 'Total: 0 jadwal';
-        loadMoreBtn.classList.add('hidden');
-    } finally {
-        isLoadingSchedules = false;
     }
-}
 
     function loadMoreSchedules() {
         const filteredSchedules = allSchedules.filter(schedule => {
