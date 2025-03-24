@@ -159,7 +159,21 @@ body.dark-mode .gallery-item .caption-text {
 body.dark-mode .gallery-item .schedule-time {
     color: #b0b0b0;
 }
+/* Tombol Hapus Jadwal di Galeri */
+.gallery-item .btn.delete {
+    background-color: #e74c3c;
+    color: #fff;
+    margin-top: 5px;
+}
 
+.gallery-item .btn.delete:hover {
+    background-color: #c0392b;
+}
+
+.gallery-item .btn.delete:disabled {
+    background-color: #666;
+    cursor: not-allowed;
+}
 /* Upload Form */
 .upload-form {
     display: grid;
