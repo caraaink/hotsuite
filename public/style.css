@@ -852,3 +852,6 @@ body.dark-mode #totalSelected {
 .delete-selected-btn:hover {
     background-color: #c0392b;
 }
+#deleteContainer.hidden {
+    display: none !important;
+}
