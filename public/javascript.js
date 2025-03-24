@@ -1129,7 +1129,8 @@ document.addEventListener('DOMContentLoaded', () => {
         showFloatingNotification(`Waktu jadwal untuk semua foto disimpan sementara. Klik "Simpan Jadwal" untuk mengirimkan.`);
         window.history.pushState({}, document.title, window.location.pathname);
     });
-}
+
+
                 const cancelBtn = document.createElement('button');
                 cancelBtn.textContent = 'Batal';
                 cancelBtn.addEventListener('click', () => editor.remove());
