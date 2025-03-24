@@ -63,8 +63,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }).replace(',', '');
     }
 
-    // Function to show floating notification with auto-hide
-    function showFloatingNotification(message, isError = false) {
+    // Function to show floating notification with customizable duration
+    function showFloatingNotification(message, isError = false, duration = 5000) {
         status.textContent = message;
         floatingNotification.classList.remove('hidden');
         if (isError) {
@@ -72,10 +72,12 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             floatingNotification.classList.remove('error');
         }
-        // Auto-hide after 5 seconds
-        setTimeout(() => {
-            floatingNotification.classList.add('hidden');
-        }, 5000);
+        // Auto-hide setelah durasi tertentu
+        if (duration > 0) {
+            setTimeout(() => {
+                floatingNotification.classList.add('hidden');
+            }, duration);
+        }
     }
 
     // Load dark mode preference from localStorage
@@ -269,18 +271,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (totalFiles === 0) {
                 showFloatingNotification('Tidak ada file media yang didukung di folder ini.', true);
+                spinner.classList.add('hidden');
                 return allMediaFiles;
             }
 
             let loadedCount = 0;
             for (const item of mediaFiles) {
                 loadedCount++;
-                showFloatingNotification(`Memuat file ${loadedCount} dari ${totalFiles}...`);
+                // Tampilkan notifikasi progres tanpa auto-hide (duration = 0)
+                showFloatingNotification(`Memuat file ${loadedCount} dari ${totalFiles}...`, false, 0);
                 allMediaFiles.push({
                     name: item.name,
                     path: item.path,
                     download_url: item.download_url,
                 });
+                // Tambahkan delay kecil untuk memastikan notifikasi terlihat
+                await new Promise(resolve => setTimeout(resolve, 500));
             }
 
             allMediaFiles.sort(naturalSort);
@@ -293,6 +299,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             // Ambil semua metadata dalam satu permintaan
+            showFloatingNotification('Memuat metadata file...', false, 0);
             try {
                 const metaRes = await fetch(`/api/get_file_content?${metaPaths.map(path => `paths=${encodeURIComponent(path)}`).join('&')}`);
                 if (!metaRes.ok) {
@@ -313,14 +320,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
 
-            showFloatingNotification(`Berhasil memuat ${totalFiles} file.`);
+            // Tampilkan notifikasi sukses dan biarkan terlihat selama 3 detik
+            showFloatingNotification(`Berhasil memuat ${totalFiles} file.`, false, 3000);
             return allMediaFiles;
         } catch (error) {
             console.error(`Error fetching files for path ${path}:`, error);
             showFloatingNotification(`Error loading files: ${error.message}`, true);
             return [];
         } finally {
-            spinner.classList.add('hidden');
+            // Tunda penghapusan spinner agar notifikasi terakhir terlihat
+            setTimeout(() => {
+                spinner.classList.add('hidden');
+            }, 3000); // Sesuaikan waktu tunda jika perlu
         }
     }
 
