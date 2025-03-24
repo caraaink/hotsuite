@@ -1,3 +1,4 @@
+document.addEventListener('DOMContentLoaded', () => {
 const form = document.getElementById('scheduleForm');
 const status = document.getElementById('floatingStatus');
 const spinner = document.getElementById('floatingSpinner');
@@ -740,6 +741,7 @@ async function saveCaptionToGithub(file, caption, commitMessage) {
 }
 
 function displayGallery(files) {
+    console.log('displayGallery called with files:', files);
     gallery.innerHTML = '';
     const imageFiles = files.filter(file => file.name.endsWith('.jpg') || file.name.endsWith('.png'));
 
