@@ -446,8 +446,25 @@ uploadToGithub.addEventListener('click', async () => {
         return;
     }
 
+    let uploadFolderValue = uploadFolder.value.trim(); // Ambil nilai dari input teks dan hapus spasi
+    // Jika input kosong, gunakan default path 'ig/image'
+    if (!uploadFolderValue) {
+        uploadFolderValue = 'ig/image';
+    } else {
+        // Pastikan path folder dimulai dengan 'ig/' jika tidak kosong
+        if (!uploadFolderValue.startsWith('ig/')) {
+            uploadFolderValue = `ig/${uploadFolderValue}`;
+        }
+
+        // Validasi format path (opsional, tambahkan sesuai kebutuhan)
+        const invalidChars = /[<>:"|?*]/;
+        if (invalidChars.test(uploadFolderValue)) {
+            showFloatingNotification('Path folder tujuan mengandung karakter yang tidak diizinkan.', true);
+            return;
+        }
+    }
+
     const files = Array.from(uploadFile.files);
-    const uploadFolderValue = uploadFolder.value;
 
     // Validasi format file
     const validFiles = files.filter(file => 
