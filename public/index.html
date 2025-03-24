@@ -55,18 +55,24 @@
 
             <!-- Input untuk mengunggah file dari perangkat (opsional) -->
             <div class="upload-row">
-                <div class="upload-file-section">
-                    <label for="uploadFile">Unggah File (Opsional):</label>
-                    <input type="file" id="uploadFile" name="uploadFile" accept="image/jpeg,image/png,video/mp4" multiple>
-                </div>
-                <div class="upload-folder-section">
-                    <label for="uploadFolder">Folder Tujuan:</label>
-                    <input type="text" id="uploadFolder" name="uploadFolder" placeholder="Masukkan path folder (opsional)">
-                </div>
-                <button type="button" id="uploadToGithub" class="upload-btn">Unggah ke GitHub</button>
-            </div>
+    <div class="upload-file-section">
+        <label for="uploadFile">Unggah File (Opsional):</label>
+        <input type="file" id="uploadFile" name="uploadFile" accept="image/jpeg,image/png,video/mp4" multiple>
+    </div>
+    <div class="upload-folder-section">
+        <label for="uploadFolder">Folder Tujuan:</label>
+        <input type="text" id="uploadFolder" name="uploadFolder" placeholder="Masukkan path folder (opsional)">
+    </div>
+    <button type="button" id="uploadToGithub" class="upload-btn">Unggah ke GitHub</button>
+</div>
 
-            <div id="gallery" class="gallery"></div>
+<div id="gallery" class="gallery"></div>
+
+<!-- Tambahkan container untuk tombol hapus massal -->
+<div id="deleteContainer" class="delete-container hidden">
+    <span id="totalSelected">Terpilih: 0 foto</span>
+    <button type="button" id="deleteSelectedPhotos" class="delete-selected-btn">Hapus Terpilih</button>
+</div>
 
             <div class="schedule-all-container">
                 <label for="startDateTime">Tanggal dan Jam Awal:</label>
