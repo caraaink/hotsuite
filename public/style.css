@@ -779,3 +779,76 @@ body.dark-mode .skip-day-option label {
 .upload-btn:hover {
     background-color: #2980b9;
 }
+/* Tombol Hapus Langsung (Tanda X) */
+.delete-direct-btn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background-color: #e74c3c;
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+}
+
+.delete-direct-btn:hover {
+    background-color: #c0392b;
+}
+
+/* Checkbox untuk Seleksi Foto */
+.checkbox-container {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    z-index: 5;
+}
+
+.checkbox-container input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+/* Delete Container untuk Tombol Hapus Massal */
+.delete-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+    margin-top: 10px;
+}
+
+#totalSelected {
+    font-size: 14px;
+    color: #ccc;
+}
+
+body.dark-mode #totalSelected {
+    color: #b0b0b0;
+}
+
+.delete-selected-btn {
+    padding: 10px 20px;
+    background-color: #e74c3c;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 500;
+    transition: background-color 0.3s ease;
+    width: auto;
+    max-width: 200px;
+}
+
+.delete-selected-btn:hover {
+    background-color: #c0392b;
+}
