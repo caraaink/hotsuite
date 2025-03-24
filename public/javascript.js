@@ -38,7 +38,9 @@ const ITEMS_PER_PAGE = 20;
 let selectedPhotos = new Set();
 
 // Sembunyikan deleteContainer saat halaman dimuat
-document.getElementById('deleteContainer').classList.add('hidden');
+const deleteContainer = document.getElementById('deleteContainer');
+deleteContainer.classList.add('hidden');
+console.log('deleteContainer hidden on page load');
 
 // Fungsi untuk mengonversi waktu dari UTC ke WIB
 function convertToWIB(utcTime) {
@@ -322,6 +324,9 @@ githubFolder.addEventListener('change', async () => {
     scheduledTimes = {};
     gallery.innerHTML = '';
     mediaUrl.value = '';
+    // Sembunyikan deleteContainer saat folder diubah
+    deleteContainer.classList.add('hidden');
+    console.log('deleteContainer hidden on githubFolder change');
 
     if (!folderPath) {
         subfolderContainer.classList.remove('hidden');
@@ -391,6 +396,9 @@ githubSubfolder.addEventListener('change', async () => {
     scheduledTimes = {};
     gallery.innerHTML = '';
     mediaUrl.value = '';
+    // Sembunyikan deleteContainer saat subfolder diubah
+    deleteContainer.classList.add('hidden');
+    console.log('deleteContainer hidden on githubSubfolder change');
 
     if (!subfolderPath) {
         return;
@@ -738,12 +746,14 @@ function displayGallery(files) {
     if (imageFiles.length === 0) {
         gallery.innerHTML = '<p>Tidak ada gambar untuk ditampilkan.</p>';
         // Sembunyikan tombol hapus massal jika galeri kosong
-        document.getElementById('deleteContainer').classList.add('hidden');
+        deleteContainer.classList.add('hidden');
+        console.log('deleteContainer hidden in displayGallery (gallery empty)');
         return;
     }
 
     // Tampilkan tombol hapus massal jika ada foto di galeri
-    document.getElementById('deleteContainer').classList.remove('hidden');
+    deleteContainer.classList.remove('hidden');
+    console.log('deleteContainer shown in displayGallery (gallery has images)');
 
     function formatDateTime(date, hours, minutes) {
         const year = date.getFullYear();
