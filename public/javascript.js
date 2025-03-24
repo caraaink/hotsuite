@@ -23,7 +23,7 @@ const scheduleAll = document.getElementById('scheduleAll');
 const saveSchedules = document.getElementById('saveSchedules');
 const loadMoreBtn = document.getElementById('loadMore');
 const totalSchedules = document.getElementById('totalSchedules');
-const uploadFolder = document.getElementById('uploadFolder'); // Tambahan untuk folder tujuan
+const uploadFolder = document.getElementById('uploadFolder');
 let selectedToken = null;
 let selectedUsername = null;
 let selectedAccountNum = null;
@@ -35,7 +35,10 @@ let scheduledTimes = {};
 let allSchedules = [];
 let displayedSchedules = 0;
 const ITEMS_PER_PAGE = 20;
-let selectedPhotos = new Set(); // Untuk melacak foto yang dipilih untuk hapus massal
+let selectedPhotos = new Set();
+
+// Sembunyikan deleteContainer saat halaman dimuat
+document.getElementById('deleteContainer').classList.add('hidden');
 
 // Fungsi untuk mengonversi waktu dari UTC ke WIB
 function convertToWIB(utcTime) {
