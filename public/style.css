@@ -282,7 +282,6 @@ body.dark-mode .skip-day-option label {
     color: #fff;
 }
 
-
 /* Floating Notification */
 .floating-notification {
     position: fixed;
@@ -725,6 +724,7 @@ body.dark-mode .skip-day-option label {
     background: #333;
     color: #fff;
 }
+
 .upload-row {
     display: flex;
     align-items: center; /* Sejajarkan semua elemen di tengah secara vertikal */
@@ -779,6 +779,7 @@ body.dark-mode .skip-day-option label {
 .upload-btn:hover {
     background-color: #2980b9;
 }
+
 /* Tombol Hapus Langsung (Tanda X) */
 .delete-direct-btn {
     position: absolute;
@@ -801,57 +802,4 @@ body.dark-mode .skip-day-option label {
 
 .delete-direct-btn:hover {
     background-color: #c0392b;
-}
-
-/* Checkbox untuk Seleksi Foto */
-.checkbox-container {
-    position: absolute;
-    top: 5px;
-    left: 5px;
-    z-index: 5;
-}
-
-.checkbox-container input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-    cursor: pointer;
-}
-
-/* Delete Container untuk Tombol Hapus Massal */
-.delete-container {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 5px;
-    margin-top: 10px;
-}
-
-#totalSelected {
-    font-size: 14px;
-    color: #ccc;
-}
-
-body.dark-mode #totalSelected {
-    color: #b0b0b0;
-}
-
-.delete-selected-btn {
-    padding: 10px 20px;
-    background-color: #e74c3c;
-    color: #fff;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 16px;
-    font-weight: 500;
-    transition: background-color 0.3s ease;
-    width: auto;
-    max-width: 200px;
-}
-
-.delete-selected-btn:hover {
-    background-color: #c0392b;
-}
-#deleteContainer.hidden {
-    display: none !important;
 }
