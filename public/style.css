@@ -727,7 +727,7 @@ body.dark-mode .skip-day-option label {
 }
 .upload-row {
     display: flex;
-    align-items: flex-end; /* Sejajarkan elemen di bagian bawah */
+    align-items: center; /* Sejajarkan semua elemen di tengah secara vertikal */
     gap: 15px; /* Jarak antar elemen */
     margin-bottom: 15px;
 }
@@ -735,11 +735,14 @@ body.dark-mode .skip-day-option label {
 .upload-file-section, .upload-folder-section {
     display: flex;
     flex-direction: column;
+    flex: 1; /* Pastikan elemen mengambil ruang yang sama */
 }
 
 .upload-file-section label, .upload-folder-section label {
     margin-bottom: 5px;
     font-size: 14px;
+    font-weight: 500; /* Membuat label lebih tebal agar terlihat jelas */
+    color: #ddd; /* Sesuaikan dengan tema dark mode */
 }
 
 .upload-file-section input[type="file"], .upload-folder-section input[type="text"] {
@@ -747,6 +750,10 @@ body.dark-mode .skip-day-option label {
     border: 1px solid #ddd;
     border-radius: 6px;
     font-size: 14px;
+    height: 36px; /* Pastikan tinggi input sama */
+    box-sizing: border-box; /* Pastikan padding tidak memengaruhi tinggi */
+    background-color: #333; /* Sesuaikan dengan tema dark mode */
+    color: #ddd;
 }
 
 .upload-folder-section input[type="text"] {
@@ -754,7 +761,7 @@ body.dark-mode .skip-day-option label {
 }
 
 .upload-btn {
-    padding: 8px 20px; /* Sesuaikan padding agar tombol sejajar */
+    padding: 8px 20px;
     background-color: #3498db;
     color: white;
     border: none;
@@ -762,10 +769,11 @@ body.dark-mode .skip-day-option label {
     cursor: pointer;
     font-size: 14px;
     transition: background-color 0.3s;
-    height: 36px; /* Atur tinggi tombol agar sama dengan input */
+    height: 36px; /* Pastikan tinggi tombol sama dengan input */
     display: flex;
     align-items: center;
     justify-content: center;
+    margin-top: 23px; /* Sesuaikan posisi tombol agar sejajar dengan input */
 }
 
 .upload-btn:hover {
