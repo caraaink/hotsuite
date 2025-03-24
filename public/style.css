@@ -6,7 +6,7 @@
 }
 
 html, body {
-    height: 100%; /* Pastikan body mengisi tinggi layar */
+    height: 100%;
     margin: 0;
     padding: 0;
 }
@@ -16,20 +16,20 @@ body {
     background-color: #f7f9fc;
     color: #333;
     line-height: 1.6;
-    min-height: 100vh; /* Pastikan body minimal setinggi layar */
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
 }
 
 .container {
-    width: 100%; /* Pastikan container mengisi lebar penuh */
+    width: 100%;
     max-width: 1200px;
-    margin: 0 auto; /* Hapus margin atas/bawah untuk mengisi layar */
+    margin: 0 auto;
     padding: 15px;
     background: #fff;
-    border-radius: 0; /* Hapus border-radius untuk tampilan penuh */
-    box-shadow: none; /* Hapus shadow untuk tampilan penuh */
-    flex: 1; /* Pastikan container mengisi ruang yang tersedia */
+    border-radius: 0;
+    box-shadow: none;
+    flex: 1;
 }
 
 /* Header */
@@ -404,7 +404,7 @@ body.dark-mode .skip-day-option label {
     background: #fff;
     border-radius: 8px;
     overflow: hidden;
-    display: table; /* Pastikan tabel selalu menggunakan display: table */
+    display: table;
 }
 
 .schedule-list th,
@@ -815,59 +815,95 @@ body.dark-mode .skip-day-option label {
         height: 80px;
     }
 
-    /* Ubah tabel menjadi card layout pada layar kecil */
+    /* Ubah tabel menjadi card layout seperti daftar lagu */
     .table-wrapper {
         overflow-x: visible;
     }
 
     .schedule-list table {
         display: block;
+        background: transparent;
+        border: none;
     }
 
     .schedule-list thead {
         display: none;
     }
 
-    .schedule-list tbody,
-    .schedule-list tr {
+    .schedule-list tbody {
         display: block;
     }
 
     .schedule-list tr {
-        margin-bottom: 15px;
-        border: 1px solid #4a4a4a;
-        border-radius: 8px;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
         background: #3a3a3a;
+        border-radius: 8px;
+        margin-bottom: 10px;
         padding: 10px;
+        border-bottom: 1px solid #4a4a4a;
     }
 
     .schedule-list td {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 8px 10px;
+        display: block;
+        border: none;
+        padding: 0;
         font-size: 14px;
-        border-bottom: none;
     }
 
-    .schedule-list td:before {
-        content: attr(data-label);
-        font-weight: 600;
-        color: #e0e0e0;
-        flex: 1;
+    /* Sembunyikan kolom yang tidak diperlukan */
+    .schedule-list td[data-label="No"],
+    .schedule-list td[data-label="Select"] {
+        display: none;
     }
 
-    .schedule-list td:nth-child(1) {
-        display: none; /* Sembunyikan kolom "No" */
-    }
-
-    .schedule-list td:nth-child(2) {
-        display: none; /* Sembunyikan kolom checkbox */
+    /* Media (Gambar) */
+    .schedule-list td[data-label="Media"] {
+        flex: 0 0 auto;
+        margin-right: 10px;
     }
 
     .schedule-media-preview {
-        width: 60px;
-        height: 60px;
+        width: 50px;
+        height: 50px;
+        border-radius: 4px;
+    }
+
+    /* Konten utama (Akun IG, Caption, Waktu Posting, Status) */
+    .schedule-list td[data-label="Akun IG"],
+    .schedule-list td[data-label="Caption"],
+    .schedule-list td[data-label="Waktu Posting"],
+    .schedule-list td[data-label="Status"] {
+        flex: 1;
+        display: block;
+    }
+
+    /* Akun IG dan Caption sebagai teks utama */
+    .schedule-list td[data-label="Akun IG"] {
+        font-size: 16px;
+        font-weight: 600;
+        color: #e0e0e0;
+        margin-bottom: 4px;
+    }
+
+    .schedule-list td[data-label="Caption"] {
+        font-size: 14px;
+        color: #b0b0b0;
+        margin-bottom: 4px;
+    }
+
+    /* Waktu Posting dan Status sebagai teks sekunder */
+    .schedule-list td[data-label="Waktu Posting"],
+    .schedule-list td[data-label="Status"] {
+        font-size: 12px;
+        color: #b0b0b0;
+    }
+
+    /* Aksi (Tombol Hapus) */
+    .schedule-list td[data-label="Aksi"] {
+        flex: 0 0 auto;
+        margin-left: 10px;
     }
 
     .delete-btn {
