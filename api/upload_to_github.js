@@ -1,62 +1,45 @@
-const { Octokit } = require('@octokit/rest');
+const { Octokit } = require("@octokit/rest");
 
 module.exports = async (req, res) => {
-    const { fileName, content } = req.body;
+    const { fileName, content, message } = req.body;
 
     if (!fileName || !content) {
-        return res.status(400).json({ error: 'Missing required fields: fileName and content' });
+        return res.status(400).json({ error: "Missing fileName or content" });
     }
 
-    // Validasi format file (jika bukan meta JSON)
-    if (!fileName.endsWith('.meta.json')) {
-        const allowedExtensions = ['.jpg', '.png', '.jpeg', '.mp4'];
-        const fileExtension = fileName.slice(fileName.lastIndexOf('.')).toLowerCase();
-        if (!allowedExtensions.includes(fileExtension)) {
-            return res.status(400).json({ error: 'File must be JPG, PNG, or MP4' });
-        }
-    }
+    const octokit = new Octokit({
+        auth: process.env.GITHUB_TOKEN,
+    });
 
     try {
-        const octokit = new Octokit({
-            auth: process.env.GITHUB_TOKEN,
-        });
-
-        const owner = 'caraaink';
-        const repo = 'hotsuite';
-        const path = fileName; // Gunakan path langsung dari fileName
-        const message = fileName.endsWith('.meta.json') 
-            ? `Update meta file for ${fileName}` 
-            : `Upload file ${fileName} to ${path.split('/').slice(0, -1).join('/')}`;
-
-        // Cek apakah file sudah ada
-        let sha = null;
+        // Cek apakah file sudah ada untuk mendapatkan SHA (jika diperlukan untuk update)
+        let sha;
         try {
             const { data } = await octokit.repos.getContent({
-                owner,
-                repo,
-                path,
+                owner: "caraaink", // Ganti dengan owner repository kamu
+                repo: "hotsuite", // Ganti dengan nama repository kamu
+                path: fileName,
             });
             sha = data.sha;
         } catch (error) {
-            if (error.status !== 404) {
-                throw error;
-            }
+            if (error.status !== 404) throw error;
         }
 
-        // Upload atau update file ke GitHub
+        // Upload file ke GitHub
         const response = await octokit.repos.createOrUpdateFileContents({
-            owner,
-            repo,
-            path,
-            message,
-            content,
-            sha,
+            owner: "caraaink", // Ganti dengan owner repository kamu
+            repo: "hotsuite", // Ganti dengan nama repository kamu
+            path: fileName,
+            message: message || `Upload ${fileName}`, // Gunakan message dari request, atau default
+            content: content,
+            sha: sha, // Sertakan SHA jika file sudah ada (untuk update)
         });
 
-        const download_url = `https://raw.githubusercontent.com/${owner}/${repo}/main/${path}`;
-        res.status(200).json({ message: `File ${fileName} berhasil diunggah ke GitHub!`, download_url });
+        res.status(200).json({
+            download_url: response.data.content.download_url,
+        });
     } catch (error) {
-        console.error('Error uploading to GitHub:', error.message);
-        res.status(500).json({ error: 'Failed to upload to GitHub', details: error.message });
+        console.error("Error uploading to GitHub:", error);
+        res.status(error.status || 500).json({ error: error.message });
     }
 };
