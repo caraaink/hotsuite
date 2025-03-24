@@ -12,34 +12,36 @@ module.exports = async (req, res) => {
     });
 
     try {
-        // Cek apakah file sudah ada untuk mendapatkan SHA (jika diperlukan untuk update)
         let sha;
         try {
             const { data } = await octokit.repos.getContent({
-                owner: "caraaink", // Ganti dengan owner repository kamu
-                repo: "hotsuite", // Ganti dengan nama repository kamu
+                owner: "caraaink",
+                repo: "hotsuite",
                 path: fileName,
             });
             sha = data.sha;
+            console.log(`File ${fileName} already exists, SHA: ${sha}`);
         } catch (error) {
             if (error.status !== 404) throw error;
+            console.log(`File ${fileName} does not exist yet`);
         }
 
-        // Upload file ke GitHub
+        console.log(`Uploading to GitHub: ${fileName}`);
         const response = await octokit.repos.createOrUpdateFileContents({
-            owner: "caraaink", // Ganti dengan owner repository kamu
-            repo: "hotsuite", // Ganti dengan nama repository kamu
+            owner: "caraaink",
+            repo: "hotsuite",
             path: fileName,
-            message: message || `Upload ${fileName}`, // Gunakan message dari request, atau default
+            message: message || `Upload ${fileName}`,
             content: content,
-            sha: sha, // Sertakan SHA jika file sudah ada (untuk update)
+            sha: sha,
         });
 
+        console.log(`Successfully uploaded ${fileName}`);
         res.status(200).json({
             download_url: response.data.content.download_url,
         });
     } catch (error) {
-        console.error("Error uploading to GitHub:", error);
+        console.error("Error uploading to GitHub:", error.message, error.status);
         res.status(error.status || 500).json({ error: error.message });
     }
 };
