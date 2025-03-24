@@ -1,4 +1,3 @@
-document.addEventListener('DOMContentLoaded', () => {
 const form = document.getElementById('scheduleForm');
 const status = document.getElementById('floatingStatus');
 const spinner = document.getElementById('floatingSpinner');
