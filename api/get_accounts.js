@@ -7,7 +7,7 @@ module.exports = async (req, res) => {
     return res.status(400).json({ error: 'Missing account_key parameter' });
   }
 
-  const accountNum = account_key.split(' ')[1]; // Ambil nomor akun (misalnya "10" dari "Akun 10")
+  const accountNum = account_key.split(' ')[1];
   const token = process.env[`TOKEN_${accountNum}`];
 
   if (!token) {
@@ -15,20 +15,22 @@ module.exports = async (req, res) => {
   }
 
   try {
-    // Ambil daftar akun Instagram yang terkait dengan token
     const response = await axios.get('https://graph.facebook.com/v19.0/me/accounts', {
       params: {
         access_token: token,
         fields: 'id,name,instagram_business_account',
+        limit: 200 // Maksimum 200, tapi bisa kurang
       },
     });
 
-    const pages = response.data.data;
+    const partners = response.data.data; // Jumlah data tergantung pada yang tersedia
     const igAccounts = [];
+    let count = 0;
+    const MAX_LIMIT = 200;
 
-    for (const page of pages) {
-      if (page.instagram_business_account) {
-        const igResponse = await axios.get(`https://graph.facebook.com/v19.0/${page.instagram_business_account.id}`, {
+    for (const partner of partners) {
+      if (partner.instagram_business_account && count < MAX_LIMIT) {
+        const igResponse = await axios.get(`https://graph.facebook.com/v19.0/${partner.instagram_business_account.id}`, {
           params: {
             access_token: token,
             fields: 'username',
@@ -36,10 +38,12 @@ module.exports = async (req, res) => {
         });
         igAccounts.push({
           type: 'ig',
-          id: page.instagram_business_account.id,
+          id: partner.instagram_business_account.id,
           username: igResponse.data.username,
         });
+        count++;
       }
+      if (count >= MAX_LIMIT) break;
     }
 
     const accounts = {
