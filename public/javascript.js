@@ -474,77 +474,98 @@ uploadToGithub.addEventListener('click', async () => {
     );
 
     if (validFiles.length !== files.length) {
-        showFloatingNotification('Semua file harus berupa JPG, PNG, atau MP4.', true);
+        showFloatingNotification('Semua file harus berupa JPG, PNG, JPEG, atau MP4.', true);
         return;
     }
 
-    showFloatingNotification(`Mengunggah ${validFiles.length} file ke GitHub...`);
+    // Tambahkan indikator progres
+    let uploadedCount = 0;
+    const totalFiles = validFiles.length;
+    showFloatingNotification(`Mengunggah file 1 dari ${totalFiles}...`);
     spinner.classList.remove('hidden');
 
     try {
         // Upload files one by one to avoid race conditions
-for (const file of validFiles) {
-    const reader = new FileReader();
-    const result = await new Promise((resolve, reject) => {
-        reader.readAsDataURL(file);
-        reader.onload = async () => {
-            try {
-                const base64Content = reader.result.split(',')[1];
-                const randomNum = Math.floor(10000 + Math.random() * 90000);
-                const extension = file.name.split('.').pop();
-                const newFileName = `${randomNum}.${extension}`;
-                const filePath = `${uploadFolderValue}/${newFileName}`;
+        for (const file of validFiles) {
+            const reader = new FileReader();
+            const result = await new Promise((resolve, reject) => {
+                reader.readAsDataURL(file);
+                reader.onload = async () => {
+                    try {
+                        const base64Content = reader.result.split(',')[1];
+                        let newFileName;
 
-                // Upload file utama
-                const fileResponse = await fetch('/api/upload_to_github', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        fileName: filePath,
-                        content: base64Content,
-                    }),
-                });
+                        // Cek apakah input Folder Tujuan diisi
+                        if (uploadFolderValue && uploadFolderValue !== 'ig/image') {
+                            // Gunakan nama file asli jika Folder Tujuan diisi
+                            newFileName = file.name;
+                        } else {
+                            // Gunakan nama random jika Folder Tujuan kosong atau default ig/image
+                            const randomNum = Math.floor(10000 + Math.random() * 90000);
+                            const extension = file.name.split('.').pop();
+                            newFileName = `${randomNum}.${extension}`;
+                        }
 
-                if (!fileResponse.ok) {
-                    throw new Error(`HTTP error uploading file ${newFileName}! status: ${fileResponse.status}`);
-                }
+                        const filePath = `${uploadFolderValue}/${newFileName}`;
 
-                const fileResult = await fileResponse.json();
-                const newFile = {
-                    name: newFileName,
-                    path: filePath,
-                    download_url: fileResult.download_url,
+                        // Upload file utama
+                        const fileResponse = await fetch('/api/upload_to_github', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                fileName: filePath,
+                                content: base64Content,
+                            }),
+                        });
+
+                        if (!fileResponse.ok) {
+                            throw new Error(`HTTP error uploading file ${newFileName}! status: ${fileResponse.status}`);
+                        }
+
+                        const fileResult = await fileResponse.json();
+                        const newFile = {
+                            name: newFileName,
+                            path: filePath,
+                            download_url: fileResult.download_url,
+                        };
+
+                        // Buat dan upload meta JSON
+                        const metaFileName = `${uploadFolderValue}/${newFileName}.meta.json`;
+                        const metaContent = JSON.stringify({ caption: '' }, null, 2);
+                        const metaBase64Content = btoa(unescape(encodeURIComponent(metaContent)));
+
+                        const metaResponse = await fetch('/api/upload_to_github', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                fileName: metaFileName,
+                                content: metaBase64Content,
+                            }),
+                        });
+
+                        if (!metaResponse.ok) {
+                            throw new Error(`HTTP error uploading meta for ${newFileName}! status: ${metaResponse.status}`);
+                        }
+
+                        const metaResult = await metaResponse.json();
+                        allMediaFiles.push(newFile);
+                        captions[newFile.path] = '';
+
+                        // Update indikator progres
+                        uploadedCount++;
+                        if (uploadedCount < totalFiles) {
+                            showFloatingNotification(`Mengunggah file ${uploadedCount + 1} dari ${totalFiles}...`);
+                        }
+
+                        resolve(newFile);
+                    } catch (error) {
+                        reject(error);
+                    }
                 };
+                reader.onerror = () => reject(new Error(`Error reading file ${file.name}`));
+            });
+        }
 
-                // Buat dan upload meta JSON
-                const metaFileName = `${uploadFolderValue}/${newFileName}.meta.json`;
-                const metaContent = JSON.stringify({ caption: '' }, null, 2);
-                const metaBase64Content = btoa(unescape(encodeURIComponent(metaContent)));
-
-                const metaResponse = await fetch('/api/upload_to_github', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        fileName: metaFileName,
-                        content: metaBase64Content,
-                    }),
-                });
-
-                if (!metaResponse.ok) {
-                    throw new Error(`HTTP error uploading meta for ${newFileName}! status: ${metaResponse.status}`);
-                }
-
-                const metaResult = await metaResponse.json();
-                allMediaFiles.push(newFile);
-                captions[newFile.path] = '';
-                resolve(newFile);
-            } catch (error) {
-                reject(error);
-            }
-        };
-        reader.onerror = () => reject(new Error(`Error reading file ${file.name}`));
-    });
-}
         showFloatingNotification(`${validFiles.length} file berhasil diunggah ke GitHub!`);
         displayGallery(allMediaFiles);
     } catch (error) {
