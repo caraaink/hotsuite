@@ -803,14 +803,14 @@ body.dark-mode .skip-day-option label {
 .delete-direct-btn:hover {
     background-color: #c0392b;
 }
-/* Gaya untuk modal konfirmasi */
+/* Modal untuk konfirmasi hapus */
 .modal {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.8); /* Latar belakang lebih gelap untuk kontras */
     display: flex;
     justify-content: center;
     align-items: center;
@@ -822,32 +822,69 @@ body.dark-mode .skip-day-option label {
 }
 
 .modal-content {
-    background: white;
-    padding: 20px;
-    border-radius: 5px;
+    background: #ffffff; /* Latar belakang putih untuk kontras dengan dark mode */
+    padding: 25px;
+    border-radius: 8px;
     text-align: center;
-    max-width: 400px;
-    width: 100%;
+    max-width: 450px;
+    width: 90%; /* Lebar responsif */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3); /* Bayangan untuk efek menonjol */
+    border: 1px solid #444; /* Border untuk kontras tambahan */
+}
+
+.modal-content p {
+    font-size: 1.1rem; /* Ukuran teks lebih besar */
+    color: #333; /* Warna teks gelap untuk kontras */
+    margin-bottom: 20px;
 }
 
 .modal-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 15px; /* Jarak antar tombol */
     margin-top: 20px;
 }
 
 .modal-buttons button {
-    padding: 10px 20px;
-    margin: 0 10px;
+    padding: 10px 25px;
+    font-size: 1rem;
     border: none;
     border-radius: 5px;
     cursor: pointer;
+    transition: background-color 0.2s ease; /* Efek transisi saat hover */
 }
 
 .modal-buttons #confirmOk {
-    background: #007bff;
+    background: #007bff; /* Warna biru untuk tombol OK */
     color: white;
 }
 
+.modal-buttons #confirmOk:hover {
+    background: #0056b3; /* Warna biru lebih gelap saat hover */
+}
+
 .modal-buttons #confirmCancel {
-    background: #dc3545;
+    background: #dc3545; /* Warna merah untuk tombol Batal */
     color: white;
+}
+
+.modal-buttons #confirmCancel:hover {
+    background: #b02a37; /* Warna merah lebih gelap saat hover */
+}
+
+/* Responsif untuk layar kecil */
+@media (max-width: 600px) {
+    .modal-content {
+        padding: 20px;
+        max-width: 90%;
+    }
+
+    .modal-content p {
+        font-size: 1rem;
+    }
+
+    .modal-buttons button {
+        padding: 8px 20px;
+        font-size: 0.9rem;
+    }
 }
