@@ -106,7 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let allIgAccounts = []; // Menyimpan semua akun IG
     let nextCursor = null; // Cursor untuk pagination
     const MAX_IG_LIMIT = 200; // Batas maksimum 200 akun IG
-    const PER_PAGE = 50; // Ambil 50 akun per request
+    const PER_PAGE = 20; // Ambil 20 akun per request
 
     async function fetchIgAccounts(accountKey) {
         try {
