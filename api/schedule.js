@@ -1,5 +1,6 @@
 const axios = require('axios');
 const { kv } = require('@vercel/kv');
+const { v4: uuidv4 } = require('uuid'); // Tambahkan dependensi uuid
 
 const SCHEDULE_KEY = 'schedules';
 
@@ -119,9 +120,20 @@ module.exports = async (req, res) => {
     }
 
     let schedules = (await kv.get(SCHEDULE_KEY)) || [];
-    schedules.push({ accountId, username, mediaUrl, caption, time, userToken, accountNum, completed: completed || false });
+    const newSchedule = {
+      scheduleId: uuidv4(), // Tambahkan scheduleId unik
+      accountId,
+      username,
+      mediaUrl,
+      caption,
+      time,
+      userToken,
+      accountNum,
+      completed: completed || false,
+    };
+    schedules.push(newSchedule);
     await kv.set(SCHEDULE_KEY, schedules);
-    return res.status(200).json({ message: 'Post scheduled successfully' });
+    return res.status(200).json({ message: 'Post scheduled successfully', scheduleId: newSchedule.scheduleId });
   }
 
   if (req.method === 'GET') {
