@@ -103,119 +103,112 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Load Instagram usernames when an account is selected with pagination
-let allIgAccounts = [];
-let nextCursor = null;
-const MAX_IG_LIMIT = 200; // Batas maksimum 200 akun IG
-const PER_PAGE = 20; // Ambil 20 akun per request (disesuaikan agar lebih cepat)
+    let allIgAccounts = [];
+    let nextCursor = null;
+    const MAX_IG_LIMIT = 200; // Batas maksimum 200 akun IG
+    const PER_PAGE = 20; // Ambil 20 akun per request (disesuaikan agar lebih cepat)
 
-async function fetchIgAccounts(accountKey) {
-    try {
-        spinner.classList.remove('hidden');
-        showFloatingNotification('Memuat akun Instagram...');
-        const url = nextCursor
-            ? `/api/get_accounts?account_key=${accountKey}&limit=${PER_PAGE}&after=${nextCursor}`
-            : `/api/get_accounts?account_key=${accountKey}&limit=${PER_PAGE}`;
-        
-        const accountsRes = await fetch(url);
-        if (!accountsRes.ok) {
-            throw new Error(`HTTP error fetching accounts! status: ${accountsRes.status}`);
+    async function fetchIgAccounts(accountKey) {
+        try {
+            spinner.classList.remove('hidden');
+            showFloatingNotification('Memuat akun Instagram...');
+            const url = nextCursor
+                ? `/api/get_accounts?account_key=${accountKey}&limit=${PER_PAGE}&after=${nextCursor}`
+                : `/api/get_accounts?account_key=${accountKey}&limit=${PER_PAGE}`;
+            
+            const accountsRes = await fetch(url);
+            if (!accountsRes.ok) {
+                throw new Error(`HTTP error fetching accounts! status: ${accountsRes.status}`);
+            }
+            const accountsData = await accountsRes.json();
+            console.log('Accounts fetched:', accountsData);
+
+            if (!accountsData.accounts || !accountsData.accounts[accountKey] || !Array.isArray(accountsData.accounts[accountKey].accounts)) {
+                throw new Error('Invalid accounts data structure');
+            }
+
+            const igAccounts = accountsData.accounts[accountKey].accounts;
+            const validIgAccounts = igAccounts.filter(acc => acc && acc.type === 'ig' && acc.id && acc.username);
+            allIgAccounts = allIgAccounts.concat(validIgAccounts);
+            nextCursor = accountsData.next;
+
+            updateAccountIdDropdown();
+
+            if (allIgAccounts.length < MAX_IG_LIMIT && nextCursor) {
+                await fetchIgAccounts(accountKey);
+            } else if (allIgAccounts.length >= MAX_IG_LIMIT) {
+                showFloatingNotification(`Mencapai batas maksimum ${MAX_IG_LIMIT} akun.`, false, 3000);
+            } else {
+                showFloatingNotification(`Berhasil memuat ${allIgAccounts.length} akun Instagram.`, false, 3000);
+            }
+        } catch (error) {
+            showFloatingNotification(`Error fetching accounts: ${error.message}`, true);
+            console.error('Error fetching accounts:', error);
+            accountId.innerHTML = '<option value="">-- Gagal Memuat --</option>';
+        } finally {
+            spinner.classList.add('hidden');
         }
-        const accountsData = await accountsRes.json();
-        console.log('Accounts fetched:', accountsData);
-
-        // Pengecekan apakah data accounts ada dan valid
-        if (!accountsData.accounts || !accountsData.accounts[accountKey] || !Array.isArray(accountsData.accounts[accountKey].accounts)) {
-            throw new Error('Invalid accounts data structure');
-        }
-
-        const igAccounts = accountsData.accounts[accountKey].accounts;
-        // Filter hanya akun yang valid (memiliki id dan username)
-        const validIgAccounts = igAccounts.filter(acc => acc && acc.type === 'ig' && acc.id && acc.username);
-        allIgAccounts = allIgAccounts.concat(validIgAccounts);
-        nextCursor = accountsData.next;
-
-        // Perbarui dropdown
-        updateAccountIdDropdown();
-
-        // Lanjutkan fetch jika belum mencapai 200 dan ada cursor berikutnya
-        if (allIgAccounts.length < MAX_IG_LIMIT && nextCursor) {
-            await fetchIgAccounts(accountKey);
-        } else if (allIgAccounts.length >= MAX_IG_LIMIT) {
-            showFloatingNotification(`Mencapai batas maksimum ${MAX_IG_LIMIT} akun.`, false, 3000);
-        } else {
-            showFloatingNotification(`Berhasil memuat ${allIgAccounts.length} akun Instagram.`, false, 3000);
-        }
-    } catch (error) {
-        showFloatingNotification(`Error fetching accounts: ${error.message}`, true);
-        console.error('Error fetching accounts:', error);
-        accountId.innerHTML = '<option value="">-- Gagal Memuat --</option>';
-    } finally {
-        spinner.classList.add('hidden');
-    }
-}
-
-function updateAccountIdDropdown() {
-    accountId.innerHTML = '<option value="">-- Pilih Username --</option>';
-    if (allIgAccounts.length === 0) {
-        accountId.innerHTML = '<option value="">-- Tidak Ada Akun Tersedia --</option>';
-        return;
     }
 
-    allIgAccounts.forEach(acc => {
-        // Pastikan acc tidak undefined dan memiliki properti yang diperlukan
-        if (acc && acc.type === 'ig' && acc.id && acc.username) {
-            const option = document.createElement('option');
-            option.value = acc.id;
-            option.textContent = acc.username;
-            option.dataset.username = acc.username;
-            accountId.appendChild(option);
+    function updateAccountIdDropdown() {
+        accountId.innerHTML = '<option value="">-- Pilih Username --</option>';
+        if (allIgAccounts.length === 0) {
+            accountId.innerHTML = '<option value="">-- Tidak Ada Akun Tersedia --</option>';
+            return;
+        }
+
+        allIgAccounts.forEach(acc => {
+            if (acc && acc.type === 'ig' && acc.id && acc.username) {
+                const option = document.createElement('option');
+                option.value = acc.id;
+                option.textContent = acc.username;
+                option.dataset.username = acc.username;
+                accountId.appendChild(option);
+            }
+        });
+    }
+
+    userAccount.addEventListener('change', async () => {
+        const accountNum = userAccount.value;
+        selectedAccountNum = accountNum;
+        console.log('Selected account number:', accountNum);
+
+        if (!accountNum) {
+            accountId.innerHTML = '<option value="">-- Pilih Username --</option>';
+            selectedToken = null;
+            selectedUsername = null;
+            selectedAccountNum = null;
+            selectedAccountId = null;
+            allIgAccounts = [];
+            nextCursor = null;
+            await loadSchedules();
+            return;
+        }
+
+        try {
+            const tokenRes = await fetch(`/api/refresh-token?accountNum=${accountNum}`);
+            if (!tokenRes.ok) {
+                throw new Error(`HTTP error fetching token! status: ${tokenRes.status}`);
+            }
+            const tokenData = await tokenRes.json();
+            console.log('Token fetched:', tokenData);
+            selectedToken = tokenData.token;
+            if (!selectedToken) {
+                throw new Error('No token found for this account');
+            }
+
+            allIgAccounts = [];
+            nextCursor = null;
+            accountId.innerHTML = '<option value="">-- Memuat Username --</option>';
+
+            await fetchIgAccounts(`Akun ${accountNum}`);
+            await loadSchedules();
+        } catch (error) {
+            showFloatingNotification(`Error fetching accounts: ${error.message}`, true);
+            console.error('Error fetching accounts:', error);
+            accountId.innerHTML = '<option value="">-- Gagal Memuat --</option>';
         }
     });
-}
-
-userAccount.addEventListener('change', async () => {
-    const accountNum = userAccount.value;
-    selectedAccountNum = accountNum;
-    console.log('Selected account number:', accountNum);
-
-    if (!accountNum) {
-        accountId.innerHTML = '<option value="">-- Pilih Username --</option>';
-        selectedToken = null;
-        selectedUsername = null;
-        selectedAccountNum = null;
-        selectedAccountId = null;
-        allIgAccounts = [];
-        nextCursor = null;
-        await loadSchedules();
-        return;
-    }
-
-    try {
-        const tokenRes = await fetch(`/api/refresh-token?accountNum=${accountNum}`);
-        if (!tokenRes.ok) {
-            throw new Error(`HTTP error fetching token! status: ${tokenRes.status}`);
-        }
-        const tokenData = await tokenRes.json();
-        console.log('Token fetched:', tokenData);
-        selectedToken = tokenData.token;
-        if (!selectedToken) {
-            throw new Error('No token found for this account');
-        }
-
-        // Reset data sebelum fetch baru
-        allIgAccounts = [];
-        nextCursor = null;
-        accountId.innerHTML = '<option value="">-- Memuat Username --</option>';
-
-        // Mulai fetch akun IG dengan pagination
-        await fetchIgAccounts(`Akun ${accountNum}`);
-        await loadSchedules();
-    } catch (error) {
-        showFloatingNotification(`Error fetching accounts: ${error.message}`, true);
-        console.error('Error fetching accounts:', error);
-        accountId.innerHTML = '<option value="">-- Gagal Memuat --</option>';
-    }
-});
 
     accountId.addEventListener('change', async () => {
         const selectedOption = accountId.options[accountId.selectedIndex];
@@ -519,6 +512,7 @@ userAccount.addEventListener('change', async () => {
         }
 
         const files = Array.from(uploadFile.files);
+        // Validasi hanya untuk file dari input pengguna (JPG, PNG, MP4)
         const validFiles = files.filter(file => 
             file.type.match('image/jpeg') || 
             file.type.match('image/png') || 
@@ -526,7 +520,7 @@ userAccount.addEventListener('change', async () => {
         );
 
         if (validFiles.length !== files.length) {
-            showFloatingNotification('Semua file harus berupa JPG, PNG, JPEG, atau MP4.', true);
+            showFloatingNotification('Semua file yang diunggah harus berupa JPG, PNG, atau MP4.', true);
             return;
         }
 
@@ -558,6 +552,7 @@ userAccount.addEventListener('change', async () => {
                                 ? `Upload ${newFileName} to ${uploadFolderValue} [vercel-skip]` 
                                 : `Upload ${newFileName} to ${uploadFolderValue}`;
 
+                            // Upload file media
                             const fileResponse = await fetch('/api/upload_to_github', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
@@ -569,7 +564,8 @@ userAccount.addEventListener('change', async () => {
                             });
 
                             if (!fileResponse.ok) {
-                                throw new Error(`HTTP error uploading file ${newFileName}! status: ${fileResponse.status}`);
+                                const errorData = await fileResponse.json();
+                                throw new Error(`HTTP error uploading file ${newFileName}! status: ${fileResponse.status}, details: ${errorData.error}`);
                             }
 
                             const fileResult = await fileResponse.json();
@@ -579,6 +575,7 @@ userAccount.addEventListener('change', async () => {
                                 download_url: fileResult.download_url,
                             };
 
+                            // Upload file meta JSON
                             const metaFileName = `${uploadFolderValue}/${newFileName}.meta.json`;
                             const metaContent = JSON.stringify({ caption: '' }, null, 2);
                             const metaBase64Content = btoa(unescape(encodeURIComponent(metaContent)));
@@ -597,7 +594,8 @@ userAccount.addEventListener('change', async () => {
                             });
 
                             if (!metaResponse.ok) {
-                                throw new Error(`HTTP error uploading meta for ${newFileName}! status: ${metaResponse.status}`);
+                                const errorData = await metaResponse.json();
+                                throw new Error(`HTTP error uploading meta for ${newFileName}! status: ${metaResponse.status}, details: ${errorData.error}`);
                             }
 
                             allMediaFiles.push(newFile);
