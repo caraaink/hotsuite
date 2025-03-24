@@ -576,7 +576,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             download_url: fileResult.download_url,
                         };
 
-                        // Upload file meta JSON
+                        // Upload file meta JSON tanpa memicu validasi input file
                         const metaFileName = `${uploadFolderValue}/${newFileName}.meta.json`;
                         const metaContent = JSON.stringify({ caption: '' }, null, 2);
                         const metaBase64Content = btoa(unescape(encodeURIComponent(metaContent)));
@@ -598,10 +598,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
                         const metaResponseData = await metaResponse.json();
                         if (!metaResponse.ok) {
-                            throw new Error(`HTTP error uploading meta for ${newFileName}! status: ${metaResponse.status}, details: ${metaResponseData.error}`);
+                            console.error(`Meta upload failed: ${metaResponseData.error}`);
+                            showFloatingNotification(`Gagal mengunggah meta untuk ${newFileName}: ${metaResponseData.error}`, true);
+                        } else {
+                            console.log(`Meta file uploaded successfully: ${metaFileName}`);
                         }
-
-                        console.log(`Meta file uploaded successfully: ${metaFileName}`);
 
                         allMediaFiles.push(newFile);
                         captions[newFile.path] = '';
