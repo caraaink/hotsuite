@@ -20,6 +20,9 @@
         </div>
 
         <form id="scheduleForm" class="upload-form">
+    <!-- Baris untuk Pilih Akun, Pilih Username IG, dan Pilih Folder di GitHub -->
+    <div class="select-row">
+        <div class="select-group">
             <label for="userAccount">Pilih Akun:</label>
             <select id="userAccount" name="userAccount" required>
                 <option value="">-- Pilih Akun --</option>
@@ -36,52 +39,59 @@
                 <option value="11">Akun 11</option>
                 <option value="12">Akun 12</option>
             </select>
+        </div>
 
+        <div class="select-group hidden" id="accountIdContainer">
             <label for="accountId">Pilih Username IG:</label>
             <select id="accountId" name="accountId" required>
                 <option value="">-- Pilih Username --</option>
             </select>
+        </div>
 
+        <div class="select-group">
             <label for="githubFolder">Pilih Folder di GitHub:</label>
             <select id="githubFolder" name="githubFolder">
                 <option value="ig">-- Pilih Folder --</option>
             </select>
+        </div>
+    </div>
 
-            <div id="subfolderContainer">
-                <label for="githubSubfolder">Pilih Subfolder:</label>
-                <select id="githubSubfolder" name="githubSubfolder">
-                    <option value="">-- Pilih Subfolder --</option>
-                </select>
-            </div>
+    <div id="subfolderContainer">
+        <label for="githubSubfolder">Pilih Subfolder:</label>
+        <select id="githubSubfolder" name="githubSubfolder">
+            <option value="">-- Pilih Subfolder --</option>
+        </select>
+    </div>
 
-            <!-- Input untuk mengunggah file dari perangkat (opsional) -->
-            <div class="upload-row">
-                <div class="upload-file-section">
-                    <label for="uploadFile">Unggah File Media dan Meta JSON (Opsional):</label>
-                    <input type="file" id="uploadFile" name="uploadFile" accept=".jpg,.jpeg,.png,.mp4,.json" multiple>
-                </div>
-                <div class="upload-folder-section">
-                    <label for="uploadFolder">Folder Tujuan:</label>
-                    <input type="text" id="uploadFolder" name="uploadFolder" placeholder="Masukkan path folder (opsional)">
-                </div>
-                <button type="button" id="uploadToGithub" class="upload-btn">Unggah ke GitHub</button>
-            </div>
+    <!-- Input untuk mengunggah file dari perangkat (opsional) -->
+    <div class="upload-row">
+        <div class="upload-file-section">
+            <label for="uploadFile">Unggah File Media dan Meta JSON (Opsional):</label>
+            <input type="file" id="uploadFile" name="uploadFile" accept=".jpg,.jpeg,.png,.mp4,.json" multiple>
+        </div>
+        <div class="upload-folder-section">
+            <label for="uploadFolder">Folder Tujuan:</label>
+            <input type="text" id="uploadFolder" name="uploadFolder" placeholder="Masukkan path folder (opsional)">
+        </div>
+        <button type="button" id="uploadToGithub" class="upload-btn">Unggah ke GitHub</button>
+    </div>
 
-            <div id="gallery" class="gallery"></div>
+    <!-- Sisanya tetap sama -->
+    <div id="gallery" class="gallery"></div>
 
-            <div class="schedule-all-container">
-                <label for="startDateTime">Tanggal dan Jam Awal:</label>
-                <input type="datetime-local" id="startDateTime" name="startDateTime">
-                <div class="skip-day-option">
-                    <input type="checkbox" id="skipDay" name="skipDay">
-                    <label for="skipDay">Lompat Satu Hari</label>
-                </div>
-                <button type="button" id="scheduleAll" class="schedule-all-btn">Jadwalkan Semua</button>
-                <button type="button" id="saveSchedules" class="save-schedules-btn">Simpan Jadwal</button>
-            </div>
+    <div class="schedule-all-container">
+        <label for="startDateTime">Tanggal dan Jam Awal:</label>
+        <input type="datetime-local" id="startDateTime" name="startDateTime">
+        <div class="skip-day-option">
+            <input type="checkbox" id="skipDay" name="skipDay">
+            <label for="skipDay">Lompat Satu Hari</label>
+        </div>
+        <button type="button" id="scheduleAll" class="schedule-all-btn">Jadwalkan Semua</button>
+        <button type="button" id="saveSchedules" class="save-schedules-btn">Simpan Jadwal</button>
+    </div>
 
-            <input type="text" id="mediaUrl" name="mediaUrl" class="hidden" readonly>
-        </form>
+    <input type="text" id="mediaUrl" name="mediaUrl" class="hidden" readonly>
+</form>
 
         <h2>Daftar Jadwal Posting</h2>
         <div id="scheduleList" class="schedule-list">
