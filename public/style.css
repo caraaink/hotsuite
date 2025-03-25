@@ -428,22 +428,22 @@ body.dark-mode .skip-day-option label {
 }
 
 #totalSchedules {
-    font-size: 12px; /* Kecilkan ukuran teks "Total: 3 jadwal" */
+    font-size: 14px;
     color: #ccc;
 }
 
 .delete-selected-btn {
-    padding: 8px 16px; /* Kecilkan padding tombol */
+    padding: 10px 20px;
     background-color: #e74c3c;
     color: #fff;
     border: none;
     border-radius: 6px;
     cursor: pointer;
-    font-size: 14px; /* Kecilkan ukuran font tombol */
+    font-size: 16px;
     font-weight: 500;
     transition: background-color 0.3s ease;
     width: auto;
-    max-width: 150px; /* Kecilkan max-width tombol */
+    max-width: 200px;
 }
 
 .delete-selected-btn:hover {
@@ -708,6 +708,29 @@ body.dark-mode .caption-editor .editor-buttons button:first-child:hover {
         color: #e0e0e0;
     }
 
+    /* Atur lebar kolom Waktu Posting dan Caption */
+    .schedule-list td:nth-child(5):before { /* Waktu Posting */
+        flex: 0 0 40%; /* Kurangi lebar label Waktu Posting */
+    }
+
+    .schedule-list td:nth-child(5) { /* Waktu Posting */
+        flex-wrap: wrap; /* Izinkan wrap jika terlalu panjang */
+    }
+
+    .schedule-list td:nth-child(4):before { /* Caption */
+        flex: 0 0 30%; /* Kurangi lebar label Caption */
+    }
+
+    .schedule-list td:nth-child(4) { /* Caption */
+        flex-wrap: wrap; /* Izinkan wrap untuk caption yang panjang */
+    }
+
+    /* Sinkronisasi teks Status */
+    .schedule-list td:nth-child(6) { /* Status */
+        font-size: 12px; /* Sesuaikan ukuran font */
+        padding: 6px 10px; /* Kurangi padding agar seragam */
+    }
+
     .schedule-list td:last-child {
         border-bottom: 2px solid #ddd; /* Border lebih tebal untuk pemisah antar baris */
     }
@@ -737,22 +760,17 @@ body.dark-mode .caption-editor .editor-buttons button:first-child:hover {
         width: 100%;
     }
 
-    /* Perbaikan untuk kolom Waktu Posting dan Caption */
-    .schedule-list td[data-label="Waktu Posting"] {
-        flex: 0 0 40%; /* Kurangi lebar kolom Waktu Posting */
+    /* Perbaikan untuk teks Total dan tombol Hapus Terpilih */
+    #totalSchedules {
+        font-size: 12px; /* Kecilkan ukuran font */
+        color: #ccc;
+        margin-bottom: 5px;
     }
 
-    .schedule-list td[data-label="Caption"] {
-        flex: 0 0 60%; /* Perbesar lebar kolom Caption */
-        white-space: normal; /* Izinkan teks membungkus */
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    /* Sinkronisasi teks Status */
-    .schedule-list td[data-label="Status"] {
-        font-size: 14px; /* Pastikan ukuran font sama dengan kolom lain */
-        color: #e0e0e0; /* Sesuaikan warna dengan tema dark mode */
+    .delete-selected-btn {
+        padding: 6px 12px; /* Kecilkan padding */
+        font-size: 12px; /* Kecilkan ukuran font */
+        max-width: 150px; /* Kurangi lebar maksimum */
     }
 }
 
@@ -788,15 +806,6 @@ body.dark-mode .caption-editor .editor-buttons button:first-child:hover {
     .schedule-media-preview {
         width: 30px;
         height: 30px;
-    }
-
-    /* Perbaikan untuk kolom Waktu Posting dan Caption di layar lebih kecil */
-    .schedule-list td[data-label="Waktu Posting"] {
-        flex: 0 0 45%; /* Sesuaikan lebar */
-    }
-
-    .schedule-list td[data-label="Caption"] {
-        flex: 0 0 55%; /* Sesuaikan lebar */
     }
 }
 
