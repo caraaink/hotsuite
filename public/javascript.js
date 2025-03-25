@@ -973,7 +973,7 @@ document.addEventListener('DOMContentLoaded', () => {
             buttonGroup.className = 'button-group';
 
             const editBtn = document.createElement('button');
-            editBtn.className = 'btn edit';
+            editBtn.className = 'btn-save';
             editBtn.textContent = 'Edit';
             editBtn.addEventListener('click', () => {
                 const editor = document.createElement('div');
