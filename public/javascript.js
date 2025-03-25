@@ -843,13 +843,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Jangan urutkan withSchedule berdasarkan scheduledTimes, pertahankan urutan awal
-    // withSchedule.sort((a, b) => {
-    //     const timeA = scheduledTimes[a.path];
-    //     const timeB = scheduledTimes[b.path];
-    //     return new Date(timeB) - new Date(timeA);
-    // });
-
     // Gabungkan kembali: foto dengan scheduledTimes di depan, tanpa scheduledTimes di belakang
     const sortedImageFiles = [...withSchedule, ...withoutSchedule];
 
@@ -900,7 +893,7 @@ document.addEventListener('DOMContentLoaded', () => {
         scheduleTime.className = 'schedule-time';
         if (scheduledTimes[file.path]) {
             const date = new Date(scheduledTimes[file.path]);
-            scheduleTime.textContent = date.toLocaleString('id-ID', {
+            const formattedTime = date.toLocaleString('id-ID', {
                 day: '2-digit',
                 month: '2-digit',
                 year: 'numeric',
@@ -908,8 +901,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 minute: '2-digit',
                 hour12: false
             }).replace(',', '');
+            scheduleTime.textContent = formattedTime;
+
+            // Tambahkan kelas highlight-date untuk tanggal "27/03/2025 10:46"
+            if (formattedTime === '27/03/2025 10:46') {
+                scheduleTime.classList.add('highlight-date');
+            }
         } else {
             scheduleTime.textContent = 'Belum dijadwalkan';
+            scheduleTime.classList.add('unscheduled'); // Tambahkan kelas untuk mencoret
         }
 
         const existingSchedule = schedules.schedules.find(schedule => schedule.mediaUrl === file.download_url);
@@ -985,7 +985,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 scheduledTimes[file.path] = datetimeInput.value;
                 const date = new Date(scheduledTimes[file.path]);
-                scheduleTime.textContent = date.toLocaleString('id-ID', {
+                const formattedTime = date.toLocaleString('id-ID', {
                     day: '2-digit',
                     month: '2-digit',
                     year: 'numeric',
@@ -993,6 +993,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     minute: '2-digit',
                     hour12: false
                 }).replace(',', '');
+                scheduleTime.textContent = formattedTime;
+
+                // Tambahkan kelas highlight-date jika tanggalnya "27/03/2025 10:46"
+                if (formattedTime === '27/03/2025 10:46') {
+                    scheduleTime.classList.add('highlight-date');
+                }
+                scheduleTime.classList.remove('unscheduled'); // Hapus kelas unscheduled jika ada
+
                 editor.remove();
                 showFloatingNotification(`Waktu jadwal untuk ${file.name} disimpan sementara. Klik "Simpan Jadwal" untuk mengirimkan.`);
             });
@@ -1002,6 +1010,8 @@ document.addEventListener('DOMContentLoaded', () => {
             cancelBtn.addEventListener('click', () => {
                 delete scheduledTimes[file.path];
                 scheduleTime.textContent = 'Belum dijadwalkan';
+                scheduleTime.classList.add('unscheduled'); // Tambahkan kembali kelas unscheduled
+                scheduleTime.classList.remove('highlight-date'); // Hapus highlight jika ada
                 editor.remove();
                 displayGallery(files); // Muat ulang galeri, foto ini akan berada di posisi terakhir karena scheduledTimes menjadi null
             });
@@ -1027,6 +1037,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 await deleteSchedule(scheduleId);
                 deleteScheduleBtn.disabled = true;
                 scheduleTime.textContent = 'Belum dijadwalkan';
+                scheduleTime.classList.add('unscheduled'); // Tambahkan kelas unscheduled
+                scheduleTime.classList.remove('highlight-date'); // Hapus highlight jika ada
                 showFloatingNotification(`Jadwal untuk ${file.name} berhasil dihapus.`);
             }
         });
@@ -1097,6 +1109,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const scheduleTimeElement = container.querySelector('.schedule-time');
                 if (scheduleTimeElement) {
                     scheduleTimeElement.textContent = 'Belum dijadwalkan';
+                    scheduleTimeElement.classList.add('unscheduled'); // Tambahkan kelas unscheduled
+                    scheduleTimeElement.classList.remove('highlight-date'); // Hapus highlight jika ada
                 }
             });
             showFloatingNotification('Jadwal untuk semua foto telah direset.');
@@ -1117,7 +1131,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const scheduleTimeElement = gallery.children[index]?.querySelector('.schedule-time');
             if (scheduleTimeElement) {
                 const date = new Date(scheduledTimes[file.path]);
-                scheduleTimeElement.textContent = date.toLocaleString('id-ID', {
+                const formattedTime = date.toLocaleString('id-ID', {
                     day: '2-digit',
                     month: '2-digit',
                     year: 'numeric',
@@ -1125,6 +1139,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     minute: '2-digit',
                     hour12: false
                 }).replace(',', '');
+                scheduleTimeElement.textContent = formattedTime;
+
+                // Tambahkan kelas highlight-date jika tanggalnya "27/03/2025 10:46"
+                if (formattedTime === '27/03/2025 10:46') {
+                    scheduleTimeElement.classList.add('highlight-date');
+                }
+                scheduleTimeElement.classList.remove('unscheduled'); // Hapus kelas unscheduled jika ada
             }
         });
     });
@@ -1143,7 +1164,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const scheduleTimeElement = gallery.children[index]?.querySelector('.schedule-time');
             if (scheduleTimeElement) {
                 const date = new Date(scheduledTimes[file.path]);
-                scheduleTimeElement.textContent = date.toLocaleString('id-ID', {
+                const formattedTime = date.toLocaleString('id-ID', {
                     day: '2-digit',
                     month: '2-digit',
                     year: 'numeric',
@@ -1151,6 +1172,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     minute: '2-digit',
                     hour12: false
                 }).replace(',', '');
+                scheduleTimeElement.textContent = formattedTime;
+
+                // Tambahkan kelas highlight-date jika tanggalnya "27/03/2025 10:46"
+                if (formattedTime === '27/03/2025 10:46') {
+                    scheduleTimeElement.classList.add('highlight-date');
+                }
+                scheduleTimeElement.classList.remove('unscheduled'); // Hapus kelas unscheduled jika ada
             }
         });
     });
@@ -1178,7 +1206,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const scheduleTimeElement = gallery.children[index]?.querySelector('.schedule-time');
             if (scheduleTimeElement) {
                 const date = new Date(scheduledTimes[file.path]);
-                scheduleTimeElement.textContent = date.toLocaleString('id-ID', {
+                const formattedTime = date.toLocaleString('id-ID', {
                     day: '2-digit',
                     month: '2-digit',
                     year: 'numeric',
@@ -1186,6 +1214,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     minute: '2-digit',
                     hour12: false
                 }).replace(',', '');
+                scheduleTimeElement.textContent = formattedTime;
+
+                // Tambahkan kelas highlight-date jika tanggalnya "27/03/2025 10:46"
+                if (formattedTime === '27/03/2025 10:46') {
+                    scheduleTimeElement.classList.add('highlight-date');
+                }
+                scheduleTimeElement.classList.remove('unscheduled'); // Hapus kelas unscheduled jika ada
             }
             console.log(`File ${file.name} scheduled at: ${scheduledTimes[file.path]}`);
         });
