@@ -370,7 +370,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return `${folderPath}/${metaFileName}`;
         });
 
-        showFloatingNotification(`Memuat metadata untuk ${totalFiles} file...`, false, 0); // Info metadata
+        showFloatingNotification(`Memuat metadata untuk ${totalFiles} file...`, false, 0); // Info awal
         try {
             const metaRes = await fetch(`/api/get_file_content?${metaPaths.map(path => `paths=${encodeURIComponent(path)}`).join('&')}`);
             if (!metaRes.ok) {
@@ -384,7 +384,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const metaPath = `${folderPath}/${file.name}.meta.json`;
                 captions[file.path] = metaData[metaPath]?.caption || '';
                 metaLoadedCount++;
-                showFloatingNotification(`Memuat metadata ${metaLoadedCount}/${totalFiles}...`, false, 0); // Progres metadata
+                showFloatingNotification(`Memuat metadata ${metaLoadedCount}/${totalFiles}...`, false, 0); // Progres dengan format X/total
             });
             showFloatingNotification(`Berhasil memuat metadata untuk ${totalFiles} file.`, false, 3000);
         } catch (error) {
