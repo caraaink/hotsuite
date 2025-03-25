@@ -19,8 +19,8 @@
             </div>
         </div>
 
-        <form id="scheduleForm" class="upload-form">
-    <!-- Baris untuk Pilih Akun, Pilih Username IG, dan Pilih Folder di GitHub -->
+       <form id="scheduleForm" class="upload-form">
+    <!-- Baris untuk Pilih Akun, Pilih Username IG, Pilih Folder di GitHub, dan Pilih Subfolder -->
     <div class="select-row">
         <div class="select-group">
             <label for="userAccount">Pilih Akun:</label>
@@ -54,13 +54,13 @@
                 <option value="ig">-- Pilih Folder --</option>
             </select>
         </div>
-    </div>
 
-    <div id="subfolderContainer">
-        <label for="githubSubfolder">Pilih Subfolder:</label>
-        <select id="githubSubfolder" name="githubSubfolder">
-            <option value="">-- Pilih Subfolder --</option>
-        </select>
+        <div class="select-group hidden" id="subfolderContainer">
+            <label for="githubSubfolder">Pilih Subfolder:</label>
+            <select id="githubSubfolder" name="githubSubfolder">
+                <option value="">-- Pilih Subfolder --</option>
+            </select>
+        </div>
     </div>
 
     <!-- Input untuk mengunggah file dari perangkat (opsional) -->
@@ -92,7 +92,6 @@
 
     <input type="text" id="mediaUrl" name="mediaUrl" class="hidden" readonly>
 </form>
-
         <h2>Daftar Jadwal Posting</h2>
         <div id="scheduleList" class="schedule-list">
             <table>
