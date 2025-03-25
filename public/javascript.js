@@ -1035,26 +1035,6 @@ document.addEventListener('DOMContentLoaded', () => {
         container.appendChild(deleteScheduleBtn);
         container.appendChild(publishBtn);
         gallery.appendChild(container);
-
-        // Atur jadwal otomatis jika startDateTime ada
-        if (startDateTime.value && !scheduledTimes[file.path]) {
-            const start = new Date(startDateTime.value);
-            const hours = start.getHours();
-            const minutes = start.getMinutes();
-            const dayIncrement = skipDay.checked ? 2 : 1;
-            const newDate = new Date(start);
-            newDate.setDate(start.getDate() + (index * dayIncrement));
-            scheduledTimes[file.path] = formatDateTime(newDate, hours, minutes);
-            const date = new Date(scheduledTimes[file.path]);
-            scheduleTime.textContent = date.toLocaleString('id-ID', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: false
-            }).replace(',', '');
-        }
     });
 
     // Event listener untuk startDateTime.input
@@ -1084,16 +1064,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const newDate = new Date(start);
             newDate.setDate(start.getDate() + (index * dayIncrement));
             scheduledTimes[file.path] = formatDateTime(newDate, hours, minutes);
-            const scheduleTimeElement = gallery.children[index].querySelector('.schedule-time');
-            const date = new Date(scheduledTimes[file.path]);
-            scheduleTimeElement.textContent = date.toLocaleString('id-ID', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: false
-            }).replace(',', '');
+            const scheduleTimeElement = gallery.children[index]?.querySelector('.schedule-time');
+            if (scheduleTimeElement) {
+                const date = new Date(scheduledTimes[file.path]);
+                scheduleTimeElement.textContent = date.toLocaleString('id-ID', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                }).replace(',', '');
+            }
         });
     });
 
@@ -1108,16 +1090,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const newDate = new Date(start);
             newDate.setDate(start.getDate() + (index * dayIncrement));
             scheduledTimes[file.path] = formatDateTime(newDate, hours, minutes);
-            const scheduleTimeElement = gallery.children[index].querySelector('.schedule-time');
-            const date = new Date(scheduledTimes[file.path]);
-            scheduleTimeElement.textContent = date.toLocaleString('id-ID', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: false
-            }).replace(',', '');
+            const scheduleTimeElement = gallery.children[index]?.querySelector('.schedule-time');
+            if (scheduleTimeElement) {
+                const date = new Date(scheduledTimes[file.path]);
+                scheduleTimeElement.textContent = date.toLocaleString('id-ID', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                }).replace(',', '');
+            }
         });
     });
 
@@ -1141,16 +1125,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const newDate = new Date(start);
             newDate.setDate(start.getDate() + (index * dayIncrement));
             scheduledTimes[file.path] = formatDateTime(newDate, hours, minutes);
-            const scheduleTimeElement = gallery.children[index].querySelector('.schedule-time');
-            const date = new Date(scheduledTimes[file.path]);
-            scheduleTimeElement.textContent = date.toLocaleString('id-ID', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: false
-            }).replace(',', '');
+            const scheduleTimeElement = gallery.children[index]?.querySelector('.schedule-time');
+            if (scheduleTimeElement) {
+                const date = new Date(scheduledTimes[file.path]);
+                scheduleTimeElement.textContent = date.toLocaleString('id-ID', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                }).replace(',', '');
+            }
             console.log(`File ${file.name} scheduled at: ${scheduledTimes[file.path]}`);
         });
 
