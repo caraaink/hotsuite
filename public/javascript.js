@@ -781,10 +781,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function displayGallery(files) {
     gallery.innerHTML = '';
-    
-    // Filter file gambar dan hapus duplikat berdasarkan file.path
-    const uniqueFiles = Array.from(new Map(files.map(file => [file.path, file])).values());
-    const imageFiles = uniqueFiles.filter(file => file.name.endsWith('.jpg') || file.name.endsWith('.png'));
+    const imageFiles = files.filter(file => file.name.endsWith('.jpg') || file.name.endsWith('.png'));
 
     if (imageFiles.length === 0) {
         gallery.innerHTML = '<p>Tidak ada gambar untuk ditampilkan.</p>';
@@ -865,7 +862,6 @@ document.addEventListener('DOMContentLoaded', () => {
             scheduleTime.textContent = 'Belum dijadwalkan';
         }
 
-        // Cari jadwal yang sesuai dengan mediaUrl
         const existingSchedule = schedules.schedules.find(schedule => schedule.mediaUrl === file.download_url);
         const scheduleId = existingSchedule ? existingSchedule.scheduleId : null;
 
@@ -949,21 +945,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }).replace(',', '');
                 editor.remove();
                 showFloatingNotification(`Waktu jadwal untuk ${file.name} disimpan sementara. Klik "Simpan Jadwal" untuk mengirimkan.`);
-
-                // Urutkan ulang imageFiles berdasarkan scheduledTimes
-                imageFiles.sort((a, b) => {
-                    const timeA = scheduledTimes[a.path];
-                    const timeB = scheduledTimes[b.path];
-
-                    if (!timeA && !timeB) {
-                        return naturalSort(a, b);
-                    }
-                    if (!timeA) return 1;
-                    if (!timeB) return -1;
-                    return new Date(timeB) - new Date(timeA);
-                });
-
-                displayGallery(files);
             });
 
             const cancelBtn = document.createElement('button');
@@ -972,21 +953,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 delete scheduledTimes[file.path];
                 scheduleTime.textContent = 'Belum dijadwalkan';
                 editor.remove();
-
-                // Urutkan ulang imageFiles berdasarkan scheduledTimes
-                imageFiles.sort((a, b) => {
-                    const timeA = scheduledTimes[a.path];
-                    const timeB = scheduledTimes[b.path];
-
-                    if (!timeA && !timeB) {
-                        return naturalSort(a, b);
-                    }
-                    if (!timeA) return 1;
-                    if (!timeB) return -1;
-                    return new Date(timeB) - new Date(timeA);
-                });
-
-                displayGallery(files);
+                displayGallery(files); // Muat ulang galeri, foto ini akan berada di posisi terakhir karena scheduledTimes menjadi null
             });
 
             editor.appendChild(datetimeInput);
@@ -1011,21 +978,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 deleteScheduleBtn.disabled = true;
                 scheduleTime.textContent = 'Belum dijadwalkan';
                 showFloatingNotification(`Jadwal untuk ${file.name} berhasil dihapus.`);
-
-                // Urutkan ulang imageFiles berdasarkan scheduledTimes
-                imageFiles.sort((a, b) => {
-                    const timeA = scheduledTimes[a.path];
-                    const timeB = scheduledTimes[b.path];
-
-                    if (!timeA && !timeB) {
-                        return naturalSort(a, b);
-                    }
-                    if (!timeA) return 1;
-                    if (!timeB) return -1;
-                    return new Date(timeB) - new Date(timeA);
-                });
-
-                displayGallery(files);
             }
         });
 
@@ -1083,6 +1035,26 @@ document.addEventListener('DOMContentLoaded', () => {
         container.appendChild(deleteScheduleBtn);
         container.appendChild(publishBtn);
         gallery.appendChild(container);
+
+        // Atur jadwal otomatis jika startDateTime ada
+        if (startDateTime.value && !scheduledTimes[file.path]) {
+            const start = new Date(startDateTime.value);
+            const hours = start.getHours();
+            const minutes = start.getMinutes();
+            const dayIncrement = skipDay.checked ? 2 : 1;
+            const newDate = new Date(start);
+            newDate.setDate(start.getDate() + (index * dayIncrement));
+            scheduledTimes[file.path] = formatDateTime(newDate, hours, minutes);
+            const date = new Date(scheduledTimes[file.path]);
+            scheduleTime.textContent = date.toLocaleString('id-ID', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            }).replace(',', '');
+        }
     });
 
     // Event listener untuk startDateTime.input
@@ -1091,87 +1063,62 @@ document.addEventListener('DOMContentLoaded', () => {
             Object.keys(scheduledTimes).forEach(filePath => {
                 delete scheduledTimes[filePath];
             });
-            showFloatingNotification('Jadwal untuk semua foto telah direset.');
-
-            // Urutkan ulang imageFiles berdasarkan scheduledTimes
-            imageFiles.sort((a, b) => {
-                const timeA = scheduledTimes[a.path];
-                const timeB = scheduledTimes[b.path];
-
-                if (!timeA && !timeB) {
-                    return naturalSort(a, b);
+            Array.from(gallery.children).forEach(container => {
+                const scheduleTimeElement = container.querySelector('.schedule-time');
+                if (scheduleTimeElement) {
+                    scheduleTimeElement.textContent = 'Belum dijadwalkan';
                 }
-                if (!timeA) return 1;
-                if (!timeB) return -1;
-                return new Date(timeB) - new Date(timeA);
             });
-
-            displayGallery(files);
+            showFloatingNotification('Jadwal untuk semua foto telah direset.');
         }
     });
 
     // Event listener untuk startDateTime.change
     startDateTime.addEventListener('change', () => {
         if (!startDateTime.value) return;
-
         const start = new Date(startDateTime.value);
         const hours = start.getHours();
         const minutes = start.getMinutes();
         const dayIncrement = skipDay.checked ? 2 : 1;
-
-        // Perbarui scheduledTimes untuk semua file
         imageFiles.forEach((file, index) => {
             const newDate = new Date(start);
             newDate.setDate(start.getDate() + (index * dayIncrement));
             scheduledTimes[file.path] = formatDateTime(newDate, hours, minutes);
+            const scheduleTimeElement = gallery.children[index].querySelector('.schedule-time');
+            const date = new Date(scheduledTimes[file.path]);
+            scheduleTimeElement.textContent = date.toLocaleString('id-ID', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            }).replace(',', '');
         });
-
-        // Urutkan ulang imageFiles berdasarkan scheduledTimes
-        imageFiles.sort((a, b) => {
-            const timeA = scheduledTimes[a.path];
-            const timeB = scheduledTimes[b.path];
-
-            if (!timeA && !timeB) {
-                return naturalSort(a, b);
-            }
-            if (!timeA) return 1;
-            if (!timeB) return -1;
-            return new Date(timeB) - new Date(timeA);
-        });
-
-        displayGallery(files);
     });
 
     // Event listener untuk skipDay.change
     skipDay.addEventListener('change', () => {
         if (!startDateTime.value) return;
-
         const start = new Date(startDateTime.value);
         const hours = start.getHours();
         const minutes = start.getMinutes();
         const dayIncrement = skipDay.checked ? 2 : 1;
-
-        // Perbarui scheduledTimes untuk semua file
         imageFiles.forEach((file, index) => {
             const newDate = new Date(start);
             newDate.setDate(start.getDate() + (index * dayIncrement));
             scheduledTimes[file.path] = formatDateTime(newDate, hours, minutes);
+            const scheduleTimeElement = gallery.children[index].querySelector('.schedule-time');
+            const date = new Date(scheduledTimes[file.path]);
+            scheduleTimeElement.textContent = date.toLocaleString('id-ID', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            }).replace(',', '');
         });
-
-        // Urutkan ulang imageFiles berdasarkan scheduledTimes
-        imageFiles.sort((a, b) => {
-            const timeA = scheduledTimes[a.path];
-            const timeB = scheduledTimes[b.path];
-
-            if (!timeA && !timeB) {
-                return naturalSort(a, b);
-            }
-            if (!timeA) return 1;
-            if (!timeB) return -1;
-            return new Date(timeB) - new Date(timeA);
-        });
-
-        displayGallery(files);
     });
 
     // Event listener untuk scheduleAll.click
@@ -1194,26 +1141,21 @@ document.addEventListener('DOMContentLoaded', () => {
             const newDate = new Date(start);
             newDate.setDate(start.getDate() + (index * dayIncrement));
             scheduledTimes[file.path] = formatDateTime(newDate, hours, minutes);
+            const scheduleTimeElement = gallery.children[index].querySelector('.schedule-time');
+            const date = new Date(scheduledTimes[file.path]);
+            scheduleTimeElement.textContent = date.toLocaleString('id-ID', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            }).replace(',', '');
             console.log(`File ${file.name} scheduled at: ${scheduledTimes[file.path]}`);
         });
 
         showFloatingNotification(`Waktu jadwal untuk semua foto disimpan sementara. Klik "Simpan Jadwal" untuk mengirimkan.`);
         window.history.pushState({}, document.title, window.location.pathname);
-
-        // Urutkan ulang imageFiles berdasarkan scheduledTimes
-        imageFiles.sort((a, b) => {
-            const timeA = scheduledTimes[a.path];
-            const timeB = scheduledTimes[b.path];
-
-            if (!timeA && !timeB) {
-                return naturalSort(a, b);
-            }
-            if (!timeA) return 1;
-            if (!timeB) return -1;
-            return new Date(timeB) - new Date(timeA);
-        });
-
-        displayGallery(files);
     });
 }
 
