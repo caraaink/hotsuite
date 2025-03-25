@@ -793,18 +793,28 @@ document.addEventListener('DOMContentLoaded', () => {
     const schedules = await schedulesResponse.json();
     console.log('Schedules for gallery:', schedules);
 
-    // Urutkan imageFiles berdasarkan scheduledTimes, dari terbaru ke terlama, dan yang null di bawah
-    imageFiles.sort((a, b) => {
+    // Pisahkan imageFiles menjadi dua kelompok: dengan scheduledTimes dan tanpa scheduledTimes
+    const withSchedule = [];
+    const withoutSchedule = [];
+
+    // Pertahankan urutan awal berdasarkan files
+    imageFiles.forEach(file => {
+        if (scheduledTimes[file.path]) {
+            withSchedule.push(file);
+        } else {
+            withoutSchedule.push(file);
+        }
+    });
+
+    // Urutkan withSchedule berdasarkan scheduledTimes (dari terbaru ke terlama)
+    withSchedule.sort((a, b) => {
         const timeA = scheduledTimes[a.path];
         const timeB = scheduledTimes[b.path];
-
-        if (!timeA && !timeB) {
-            return naturalSort(a, b);
-        }
-        if (!timeA) return 1;
-        if (!timeB) return -1;
         return new Date(timeB) - new Date(timeA);
     });
+
+    // Gabungkan kembali: foto dengan scheduledTimes di depan, tanpa scheduledTimes di belakang
+    const sortedImageFiles = [...withSchedule, ...withoutSchedule];
 
     function formatDateTime(date, hours, minutes) {
         const year = date.getFullYear();
@@ -814,7 +824,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return formatted;
     }
 
-    imageFiles.forEach((file, index) => {
+    sortedImageFiles.forEach((file, index) => {
         const container = document.createElement('div');
         container.className = 'gallery-item';
 
@@ -916,7 +926,8 @@ document.addEventListener('DOMContentLoaded', () => {
             container.appendChild(editor);
         });
 
-        const scheduleBtn = document.createElement('button');
+        const scheduleBtn = document.c
+reateElement('button');
         scheduleBtn.className = 'btn schedule';
         scheduleBtn.textContent = 'Jadwalkan';
         scheduleBtn.addEventListener('click', () => {
