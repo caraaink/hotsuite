@@ -908,7 +908,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 editor.className = 'schedule-editor';
                 const datetimeInput = document.createElement('input');
                 datetimeInput.type = 'datetime-local';
-                datetimeInput.value = scheduledTimes[file.path] || '';
+                datetimeInput.value = scheduledTimes[file.path] || ''; // Nilai default jika belum ada jadwal
                 const saveBtn = document.createElement('button');
                 saveBtn.textContent = 'Jadwalkan';
                 saveBtn.addEventListener('click', () => {
@@ -932,7 +932,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 const cancelBtn = document.createElement('button');
                 cancelBtn.textContent = 'Batal';
-                cancelBtn.addEventListener('click', () => editor.remove());
+                cancelBtn.addEventListener('click', () => {
+                    // Reset jadwal untuk file ini
+                    delete scheduledTimes[file.path];
+                    scheduleTime.textContent = 'Belum dijadwalkan';
+                    editor.remove();
+                });
                 editor.appendChild(datetimeInput);
                 editor.appendChild(saveBtn);
                 editor.appendChild(cancelBtn);
@@ -1347,7 +1352,11 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const scheduledFiles = allMediaFiles.filter(file => scheduledTimes[file.path]);
+        const scheduledFiles = allMediaFiles.filter(file => {
+            const scheduledTime = scheduledTimes[file.path];
+            // Hanya sertakan file yang memiliki jadwal valid (tidak null, undefined, atau string kosong)
+            return scheduledTime && typeof scheduledTime === 'string' && scheduledTime.trim() !== '';
+        });
         if (scheduledFiles.length === 0) {
             showFloatingNotification('Tidak ada foto yang dijadwalkan.', true);
             return;
