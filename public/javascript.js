@@ -934,6 +934,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
 
+                // Perbarui scheduledTimes untuk file ini
                 scheduledTimes[file.path] = datetimeInput.value;
                 const date = new Date(scheduledTimes[file.path]);
                 scheduleTime.textContent = date.toLocaleString('id-ID', {
@@ -946,7 +947,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 }).replace(',', '');
                 editor.remove();
                 showFloatingNotification(`Waktu jadwal untuk ${file.name} disimpan sementara. Klik "Simpan Jadwal" untuk mengirimkan.`);
-                displayGallery(files); // Perbarui galeri setelah jadwal diubah
+
+                // Urutkan ulang imageFiles berdasarkan scheduledTimes sebelum render ulang
+                imageFiles.sort((a, b) => {
+                    const timeA = scheduledTimes[a.path];
+                    const timeB = scheduledTimes[b.path];
+
+                    if (!timeA && !timeB) {
+                        return naturalSort(a, b);
+                    }
+                    if (!timeA) return 1;
+                    if (!timeB) return -1;
+                    return new Date(timeB) - new Date(timeA);
+                });
+
+                // Perbarui galeri setelah jadwal diubah
+                displayGallery(files);
             }); // Penutup untuk saveBtn.addEventListener
 
             const cancelBtn = document.createElement('button');
@@ -955,7 +971,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 delete scheduledTimes[file.path];
                 scheduleTime.textContent = 'Belum dijadwalkan';
                 editor.remove();
-                displayGallery(files); // Perbarui galeri setelah jadwal dihapus
+
+                // Urutkan ulang imageFiles berdasarkan scheduledTimes sebelum render ulang
+                imageFiles.sort((a, b) => {
+                    const timeA = scheduledTimes[a.path];
+                    const timeB = scheduledTimes[b.path];
+
+                    if (!timeA && !timeB) {
+                        return naturalSort(a, b);
+                    }
+                    if (!timeA) return 1;
+                    if (!timeB) return -1;
+                    return new Date(timeB) - new Date(timeA);
+                });
+
+                // Perbarui galeri setelah jadwal dihapus
+                displayGallery(files);
             }); // Penutup untuk cancelBtn.addEventListener
 
             editor.appendChild(datetimeInput);
@@ -980,6 +1011,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 deleteScheduleBtn.disabled = true;
                 scheduleTime.textContent = 'Belum dijadwalkan';
                 showFloatingNotification(`Jadwal untuk ${file.name} berhasil dihapus.`);
+
+                // Urutkan ulang imageFiles berdasarkan scheduledTimes sebelum render ulang
+                imageFiles.sort((a, b) => {
+                    const timeA = scheduledTimes[a.path];
+                    const timeB = scheduledTimes[b.path];
+
+                    if (!timeA && !timeB) {
+                        return naturalSort(a, b);
+                    }
+                    if (!timeA) return 1;
+                    if (!timeB) return -1;
+                    return new Date(timeB) - new Date(timeA);
+                });
+
+                // Perbarui galeri setelah jadwal dihapus
+                displayGallery(files);
             }
         }); // Penutup untuk deleteScheduleBtn.addEventListener
 
@@ -1046,7 +1093,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 delete scheduledTimes[filePath];
             });
             showFloatingNotification('Jadwal untuk semua foto telah direset.');
-            displayGallery(files); // Perbarui galeri setelah reset jadwal
+
+            // Urutkan ulang imageFiles berdasarkan scheduledTimes sebelum render ulang
+            imageFiles.sort((a, b) => {
+                const timeA = scheduledTimes[a.path];
+                const timeB = scheduledTimes[b.path];
+
+                if (!timeA && !timeB) {
+                    return naturalSort(a, b);
+                }
+                if (!timeA) return 1;
+                if (!timeB) return -1;
+                return new Date(timeB) - new Date(timeA);
+            });
+
+            // Perbarui galeri setelah reset jadwal
+            displayGallery(files);
         }
     }); // Penutup untuk startDateTime.addEventListener('input')
 
@@ -1065,6 +1127,19 @@ document.addEventListener('DOMContentLoaded', () => {
             newDate.setDate(start.getDate() + (index * dayIncrement));
             scheduledTimes[file.path] = formatDateTime(newDate, hours, minutes);
         }); // Penutup untuk imageFiles.forEach
+
+        // Urutkan ulang imageFiles berdasarkan scheduledTimes sebelum render ulang
+        imageFiles.sort((a, b) => {
+            const timeA = scheduledTimes[a.path];
+            const timeB = scheduledTimes[b.path];
+
+            if (!timeA && !timeB) {
+                return naturalSort(a, b);
+            }
+            if (!timeA) return 1;
+            if (!timeB) return -1;
+            return new Date(timeB) - new Date(timeA);
+        });
 
         // Perbarui galeri setelah semua scheduledTimes diperbarui
         displayGallery(files);
@@ -1085,6 +1160,19 @@ document.addEventListener('DOMContentLoaded', () => {
             newDate.setDate(start.getDate() + (index * dayIncrement));
             scheduledTimes[file.path] = formatDateTime(newDate, hours, minutes);
         }); // Penutup untuk imageFiles.forEach
+
+        // Urutkan ulang imageFiles berdasarkan scheduledTimes sebelum render ulang
+        imageFiles.sort((a, b) => {
+            const timeA = scheduledTimes[a.path];
+            const timeB = scheduledTimes[b.path];
+
+            if (!timeA && !timeB) {
+                return naturalSort(a, b);
+            }
+            if (!timeA) return 1;
+            if (!timeB) return -1;
+            return new Date(timeB) - new Date(timeA);
+        });
 
         // Perbarui galeri setelah semua scheduledTimes diperbarui
         displayGallery(files);
@@ -1115,6 +1203,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
         showFloatingNotification(`Waktu jadwal untuk semua foto disimpan sementara. Klik "Simpan Jadwal" untuk mengirimkan.`);
         window.history.pushState({}, document.title, window.location.pathname);
+
+        // Urutkan ulang imageFiles berdasarkan scheduledTimes sebelum render ulang
+        imageFiles.sort((a, b) => {
+            const timeA = scheduledTimes[a.path];
+            const timeB = scheduledTimes[b.path];
+
+            if (!timeA && !timeB) {
+                return naturalSort(a, b);
+            }
+            if (!timeA) return 1;
+            if (!timeB) return -1;
+            return new Date(timeB) - new Date(timeA);
+        });
+
         // Perbarui galeri setelah semua scheduledTimes diperbarui
         displayGallery(files);
     }); // Penutup untuk scheduleAll.addEventListener
