@@ -921,5 +921,5 @@ body.dark-mode .gallery-item .schedule-time.scheduled {
 /* Styling untuk teks "Belum dijadwalkan" di galeri */
 body.dark-mode .gallery-item .schedule-time.unscheduled {
     text-decoration: line-through; /* Mencoret teks */
-    color: #A9A9A9 !important; /* Abu-abu terang untuk coretan di dark mode */
+    color: #852121 !important; /* Abu-abu terang untuk coretan di dark mode */
 }
