@@ -954,6 +954,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         const existingScheduleIndex = allSchedules.findIndex(s => s.mediaUrl === file.download_url);
                         if (existingScheduleIndex !== -1) {
                             allSchedules[existingScheduleIndex].scheduleTime = utcTime.toISOString();
+                            allSchedules[existingScheduleIndex].status = 'scheduled';
                         } else {
                             allSchedules.push({
                                 accountNum: selectedAccountNum,
@@ -965,6 +966,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 status: 'scheduled'
                             });
                         }
+                        allSchedules.sort((a, b) => new Date(a.scheduleTime) - new Date(b.scheduleTime));
                         displaySchedules(allSchedules.slice(0, displayedSchedules));
                     } catch (error) {
                         showFloatingNotification(`Gagal menyimpan jadwal: ${error.message}`, true);
@@ -983,6 +985,44 @@ document.addEventListener('DOMContentLoaded', () => {
                 editor.appendChild(editorButtons);
                 item.appendChild(editor);
                 input.focus();
+            });
+
+            // Tombol Hapus Jadwal (Batalkan Jadwal)
+            const cancelScheduleBtn = document.createElement('button');
+            cancelScheduleBtn.classList.add('btn', 'delete');
+            cancelScheduleBtn.textContent = 'Hapus Jadwal';
+            cancelScheduleBtn.style.backgroundColor = '#e74c3c'; // Warna merah
+            cancelScheduleBtn.disabled = !scheduledTimes[file.path]; // Nonaktifkan jika belum ada jadwal
+            cancelScheduleBtn.addEventListener('click', async () => {
+                const confirmed = await showConfirmModal(`Apakah Anda yakin ingin membatalkan jadwal untuk ${file.name}?`);
+                if (!confirmed) return;
+
+                showFloatingNotification('Membatalkan jadwal...');
+                spinner.classList.remove('hidden');
+
+                try {
+                    // Hapus jadwal dari scheduledTimes
+                    delete scheduledTimes[file.path];
+                    scheduleTime.textContent = 'Belum dijadwalkan';
+                    scheduleTime.classList.remove('scheduled');
+                    scheduleTime.classList.add('unscheduled');
+                    cancelScheduleBtn.disabled = true;
+
+                    // Hapus dari allSchedules
+                    const scheduleIndex = allSchedules.findIndex(s => s.mediaUrl === file.download_url);
+                    if (scheduleIndex !== -1) {
+                        allSchedules.splice(scheduleIndex, 1);
+                        displaySchedules(allSchedules.slice(0, displayedSchedules));
+                        updateTotalSchedules();
+                    }
+
+                    showFloatingNotification('Jadwal berhasil dibatalkan!');
+                } catch (error) {
+                    showFloatingNotification(`Gagal membatalkan jadwal: ${error.message}`, true);
+                    console.error('Error cancelling schedule:', error);
+                } finally {
+                    spinner.classList.add('hidden');
+                }
             });
 
             const publishBtn = document.createElement('button');
@@ -1034,31 +1074,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            const deleteBtn = document.createElement('button');
-            deleteBtn.classList.add('btn', 'delete');
-            deleteBtn.textContent = 'Hapus';
-            deleteBtn.disabled = scheduledTimes[file.path] && allSchedules.some(s => s.mediaUrl === file.download_url && s.status === 'scheduled');
-            deleteBtn.addEventListener('click', async () => {
-                const confirmed = await showConfirmModal(`Apakah Anda yakin ingin menghapus ${file.name} dari GitHub?`);
-                if (!confirmed) return;
-
-                await deletePhoto(file.path);
-
-                const metaPath = `${file.path.substring(0, file.path.lastIndexOf('/'))}/${file.name}.meta.json`;
-                await deletePhoto(metaPath);
-
-                const scheduleIndex = allSchedules.findIndex(s => s.mediaUrl === file.download_url);
-                if (scheduleIndex !== -1) {
-                    allSchedules.splice(scheduleIndex, 1);
-                    displaySchedules(allSchedules.slice(0, displayedSchedules));
-                }
-            });
-
             buttonGroup.appendChild(editBtn);
             buttonGroup.appendChild(scheduleBtn);
             item.appendChild(buttonGroup);
             item.appendChild(publishBtn);
-            item.appendChild(deleteBtn);
+            item.appendChild(cancelScheduleBtn);
 
             const deleteDirectBtn = document.createElement('button');
             deleteDirectBtn.classList.add('delete-direct-btn');
@@ -1076,6 +1096,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (scheduleIndex !== -1) {
                     allSchedules.splice(scheduleIndex, 1);
                     displaySchedules(allSchedules.slice(0, displayedSchedules));
+                    updateTotalSchedules();
                 }
             });
             item.appendChild(deleteDirectBtn);
@@ -1262,7 +1283,6 @@ document.addEventListener('DOMContentLoaded', () => {
             row.appendChild(timeCell);
 
             const statusCell = document.createElement('td');
-            // Perbaikan error: pastikan schedule.status ada, jika tidak gunakan default 'scheduled'
             statusCell.textContent = schedule.status ? schedule.status.toLowerCase() : 'scheduled';
             row.appendChild(statusCell);
 
@@ -1296,9 +1316,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     const file = allMediaFiles.find(f => f.download_url === schedule.mediaUrl);
                     if (file) {
                         delete scheduledTimes[file.path];
+                        const galleryItem = gallery.querySelector(`img[data-path="${file.path}"]`);
+                        if (galleryItem) {
+                            const scheduleTime = galleryItem.parentElement.querySelector('.schedule-time');
+                            scheduleTime.textContent = 'Belum dijadwalkan';
+                            scheduleTime.classList.remove('scheduled');
+                            scheduleTime.classList.add('unscheduled');
+                            const cancelScheduleBtn = galleryItem.parentElement.querySelector('.btn.delete');
+                            cancelScheduleBtn.disabled = true;
+                        }
                     }
                     displaySchedules(allSchedules.slice(0, displayedSchedules));
-                    displayGallery(allMediaFiles);
                     showFloatingNotification('Jadwal berhasil dihapus!');
                     updateTotalSchedules();
                 } catch (error) {
@@ -1362,6 +1390,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 const file = allMediaFiles.find(f => f.download_url === mediaUrl);
                 if (file) {
                     delete scheduledTimes[file.path];
+                    const galleryItem = gallery.querySelector(`img[data-path="${file.path}"]`);
+                    if (galleryItem) {
+                        const scheduleTime = galleryItem.parentElement.querySelector('.schedule-time');
+                        scheduleTime.textContent = 'Belum dijadwalkan';
+                        scheduleTime.classList.remove('scheduled');
+                        scheduleTime.classList.add('unscheduled');
+                        const cancelScheduleBtn = galleryItem.parentElement.querySelector('.btn.delete');
+                        cancelScheduleBtn.disabled = true;
+                    }
                 }
             });
 
@@ -1376,7 +1413,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 loadMoreBtn.classList.add('hidden');
             }
 
-            displayGallery(allMediaFiles);
             showFloatingNotification(`${mediaUrls.length} jadwal berhasil dihapus!`);
             updateTotalSchedules();
         } catch (error) {
@@ -1417,6 +1453,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const existingScheduleIndex = allSchedules.findIndex(s => s.mediaUrl === file.download_url);
                 if (existingScheduleIndex !== -1) {
                     allSchedules[existingScheduleIndex].scheduleTime = currentTime.toISOString();
+                    allSchedules[existingScheduleIndex].status = 'scheduled';
                 } else {
                     allSchedules.push({
                         accountNum: selectedAccountNum,
@@ -1427,6 +1464,17 @@ document.addEventListener('DOMContentLoaded', () => {
                         scheduleTime: currentTime.toISOString(),
                         status: 'scheduled'
                     });
+                }
+
+                // Perbarui tampilan di galeri
+                const galleryItem = gallery.querySelector(`img[data-path="${file.path}"]`);
+                if (galleryItem) {
+                    const scheduleTime = galleryItem.parentElement.querySelector('.schedule-time');
+                    scheduleTime.textContent = formatToLocaleString(wibTime);
+                    scheduleTime.classList.remove('unscheduled');
+                    scheduleTime.classList.add('scheduled');
+                    const cancelScheduleBtn = galleryItem.parentElement.querySelector('.btn.delete');
+                    cancelScheduleBtn.disabled = false;
                 }
 
                 if (skip) {
@@ -1448,7 +1496,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 loadMoreBtn.classList.add('hidden');
             }
 
-            displayGallery(allMediaFiles);
             showFloatingNotification('Semua file berhasil dijadwalkan!');
             updateTotalSchedules();
         } catch (error) {
