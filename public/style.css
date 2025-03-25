@@ -902,3 +902,14 @@ body.dark-mode .skip-day-option label {
         font-size: 0.9rem;
     }
 }
+/* Warna khusus untuk tanggal 27/03/2025 10:46 di galeri */
+.gallery-item .schedule-time.highlight-date {
+    color: #00CED1; /* Cyan tua untuk kontras */
+    font-weight: bold; /* Membuat teks lebih tebal agar menonjol */
+}
+
+/* Styling untuk teks "Belum dijadwalkan" di galeri */
+.gallery-item .schedule-time.unscheduled {
+    text-decoration: line-through; /* Mencoret teks */
+    color: #A9A9A9; /* Abu-abu terang untuk coretan di dark mode */
+}
