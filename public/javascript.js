@@ -254,6 +254,35 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Fungsi untuk memperbarui visibilitas elemen berdasarkan jumlah jadwal
+    function updateScheduleVisibility(schedules) {
+        const deleteContainer = document.getElementById('deleteContainer');
+        const noScheduleMessage = document.getElementById('noScheduleMessage');
+        const scheduleTableBody = document.getElementById('scheduleTableBody');
+
+        // Jika tidak ada jadwal
+        if (!schedules || schedules.length === 0) {
+            deleteContainer.style.display = 'none';
+            noScheduleMessage.classList.remove('hidden');
+            scheduleTableBody.innerHTML = ''; // Kosongkan tabel
+            totalSchedules.textContent = 'Total: 0 jadwal';
+            loadMoreBtn.classList.add('hidden');
+        } else {
+            deleteContainer.style.display = 'flex';
+            noScheduleMessage.classList.add('hidden');
+            // Isi tabel dengan jadwal
+            renderSchedules(schedules, 0);
+            totalSchedules.textContent = `Total: ${schedules.length} jadwal`;
+            displayedSchedules = schedules.length;
+
+            if (displayedSchedules < schedules.length) {
+                loadMoreBtn.classList.remove('hidden');
+            } else {
+                loadMoreBtn.classList.add('hidden');
+            }
+        }
+    }
+
     accountId.addEventListener('change', async () => {
         const selectedOption = accountId.options[accountId.selectedIndex];
         selectedUsername = selectedOption ? selectedOption.dataset.username : null;
@@ -1384,7 +1413,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await res.json();
             console.log('Schedules fetched:', data);
 
-            scheduleTableBody.innerHTML = '';
             allSchedules = data.schedules || [];
 
             // Urutkan jadwal berdasarkan tanggal (time) secara ascending
@@ -1400,19 +1428,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             displayedSchedules = 0;
 
+            // Perbarui visibilitas elemen berdasarkan filteredSchedules
+            updateScheduleVisibility(filteredSchedules);
+
             if (filteredSchedules.length > 0) {
-                const initialSchedules = filteredSchedules.slice(0, ITEMS_PER_PAGE);
-                renderSchedules(initialSchedules, 0);
-                displayedSchedules = initialSchedules.length;
-
-                totalSchedules.textContent = `Total: ${filteredSchedules.length} jadwal`;
-
-                if (displayedSchedules < filteredSchedules.length) {
-                    loadMoreBtn.classList.remove('hidden');
-                } else {
-                    loadMoreBtn.classList.add('hidden');
-                }
-
                 loadMoreBtn.removeEventListener('click', loadMoreSchedules);
                 loadMoreBtn.addEventListener('click', loadMoreSchedules);
 
@@ -1429,10 +1448,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         deleteSelectedSchedules();
                     }
                 });
-            } else {
-                scheduleTableBody.innerHTML = '<tr><td colspan="8">Belum ada jadwal untuk akun ini.</td></tr>';
-                totalSchedules.textContent = 'Total: 0 jadwal';
-                loadMoreBtn.classList.add('hidden');
             }
         } catch (error) {
             showFloatingNotification(`Error loading schedules: ${error.message}`, true);
@@ -1440,6 +1455,7 @@ document.addEventListener('DOMContentLoaded', () => {
             scheduleTableBody.innerHTML = '<tr><td colspan="8">Gagal memuat jadwal.</td></tr>';
             totalSchedules.textContent = 'Total: 0 jadwal';
             loadMoreBtn.classList.add('hidden');
+            updateScheduleVisibility([]); // Pastikan elemen disembunyikan jika gagal
         } finally {
             isLoadingSchedules = false;
         }

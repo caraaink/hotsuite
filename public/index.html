@@ -114,16 +114,18 @@
                     </tr>
                 </thead>
                 <tbody id="scheduleTableBody"></tbody>
-            </table>
-            <div class="load-more-container">
-                <button id="loadMore" class="load-more-btn hidden">Load More</button>
-            </div>
-            <div class="delete-container">
-                <span id="totalSchedules"></span>
-                <button id="deleteSelected" class="delete-selected-btn">Hapus Terpilih</button>
-            </div>
-        </div>
+    </table>
+    <div id="noScheduleMessage" class="no-schedule-message hidden">
+        Tidak ada konten terjadwal untuk akun ini.
     </div>
+    <div class="load-more-container">
+        <button id="loadMore" class="load-more-btn hidden">Load More</button>
+    </div>
+    <div class="delete-container" id="deleteContainer" style="display: none;">
+        <span id="totalSchedules"></span>
+        <button id="deleteSelected" class="delete-selected-btn">Hapus Terpilih</button>
+    </div>
+</div>
 
     <!-- Modal untuk konfirmasi hapus -->
     <div id="confirmModal" class="modal hidden">

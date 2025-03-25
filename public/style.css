@@ -989,3 +989,27 @@ body.dark-mode .select-group select {
         min-width: 100%;
     }
 }
+/* Notifikasi Tidak Ada Jadwal */
+.no-schedule-message {
+    text-align: center;
+    padding: 20px;
+    font-size: 16px;
+    color: #777;
+    background: #f9f9f9;
+    border-radius: 8px;
+    margin-top: 10px;
+}
+
+body.dark-mode .no-schedule-message {
+    color: #b0b0b0;
+    background: #3a3a3a;
+}
+
+/* Pastikan delete-container dapat disembunyikan */
+.delete-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+    margin-top: 10px;
+}
