@@ -159,6 +159,7 @@ body.dark-mode .gallery-item .caption-text {
 body.dark-mode .gallery-item .schedule-time {
     color: #b0b0b0;
 }
+
 /* Tombol Hapus Jadwal di Galeri */
 .gallery-item .btn.delete {
     background-color: #e74c3c;
@@ -174,6 +175,7 @@ body.dark-mode .gallery-item .schedule-time {
     background-color: #666;
     cursor: not-allowed;
 }
+
 /* Upload Form */
 .upload-form {
     display: grid;
@@ -210,18 +212,159 @@ body.dark-mode .gallery-item .schedule-time {
     height: 120px;
 }
 
+/* Baris untuk Pilih Akun, Pilih Username IG, Pilih Folder di GitHub, dan Pilih Subfolder */
+.select-row {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+
+.select-group {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 200px;
+}
+
+.select-group label {
+    margin-bottom: 5px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #2c3e50;
+}
+
+body.dark-mode .select-group label {
+    color: #e0e0e0;
+}
+
+.select-group select {
+    padding: 8px;
+    font-size: 14px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: #f9f9f9;
+    transition: border-color 0.3s ease;
+}
+
+body.dark-mode .select-group select {
+    background: #3a3a3a;
+    color: #e0e0e0;
+    border: 1px solid #4a4a4a;
+}
+
+.select-group select:focus {
+    border-color: #3498db;
+    outline: none;
+}
+
+/* Upload Row */
+.upload-row {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+
+.upload-file-section,
+.upload-folder-section {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.upload-file-section label,
+.upload-folder-section label {
+    margin-bottom: 5px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #ddd;
+}
+
+.upload-file-section input[type="file"],
+.upload-folder-section input[type="text"] {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    height: 36px;
+    box-sizing: border-box;
+    background-color: #333;
+    color: #ddd;
+}
+
+.upload-folder-section input[type="text"] {
+    width: 300px;
+}
+
+.upload-btn {
+    padding: 8px 20px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 23px;
+}
+
+.upload-btn:hover {
+    background-color: #2980b9;
+}
+
 /* Schedule All Container */
 .schedule-all-container {
     display: flex;
     align-items: center;
     gap: 15px;
     margin-top: 20px;
+    flex-wrap: wrap;
+}
+
+.schedule-all-group {
+    display: flex;
+    flex-direction: column;
+    min-width: 200px;
+}
+
+.schedule-all-container label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #2c3e50;
+    margin-bottom: 5px;
+}
+
+body.dark-mode .schedule-all-container label {
+    color: #e0e0e0;
+}
+
+.schedule-all-container input[type="datetime-local"] {
+    padding: 8px;
+    font-size: 14px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: #f9f9f9;
+    height: 36px;
+}
+
+body.dark-mode .schedule-all-container input[type="datetime-local"] {
+    background: #3a3a3a;
+    color: #e0e0e0;
+    border: 1px solid #4a4a4a;
 }
 
 .skip-day-option {
     display: flex;
     align-items: center;
     gap: 5px;
+    min-width: 150px;
 }
 
 .skip-day-option label {
@@ -233,16 +376,24 @@ body.dark-mode .skip-day-option label {
     color: #e0e0e0;
 }
 
-.schedule-all-btn {
-    padding: 10px 20px;
-    background-color: #f39c12;
-    color: #fff;
+.schedule-all-btn,
+.save-schedules-btn {
+    padding: 8px 20px;
     border: none;
     border-radius: 6px;
     cursor: pointer;
-    font-size: 16px;
-    font-weight: 500;
+    font-size: 14px;
     transition: background-color 0.3s ease;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 23px;
+}
+
+.schedule-all-btn {
+    background-color: #f39c12;
+    color: #fff;
 }
 
 .schedule-all-btn:hover {
@@ -250,15 +401,8 @@ body.dark-mode .skip-day-option label {
 }
 
 .save-schedules-btn {
-    padding: 10px 20px;
     background-color: #2ecc71;
     color: #fff;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 16px;
-    font-weight: 500;
-    transition: background-color 0.3s ease;
 }
 
 .save-schedules-btn:hover {
@@ -266,7 +410,6 @@ body.dark-mode .skip-day-option label {
 }
 
 /* Buttons */
-.upload-btn,
 .btn {
     padding: 10px 20px;
     background-color: #3498db;
@@ -279,7 +422,6 @@ body.dark-mode .skip-day-option label {
     transition: background-color 0.3s ease;
 }
 
-.upload-btn:hover,
 .btn:hover {
     background-color: #2980b9;
 }
@@ -294,6 +436,30 @@ body.dark-mode .skip-day-option label {
     font-weight: 500;
     background-color: #e74c3c;
     color: #fff;
+}
+
+/* Tombol Hapus Langsung (Tanda X) */
+.delete-direct-btn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background-color: #e74c3c;
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+}
+
+.delete-direct-btn:hover {
+    background-color: #c0392b;
 }
 
 /* Floating Notification */
@@ -353,21 +519,6 @@ body.dark-mode .skip-day-option label {
     width: 24px;
     height: 24px;
     animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-.spinner {
-    border: 4px solid rgba(0, 0, 0, 0.1);
-    border-left: 4px solid #3498db;
-    border-radius: 50%;
-    width: 30px;
-    height: 30px;
-    animation: spin 1s linear infinite;
-    margin: 0 auto;
 }
 
 @keyframes spin {
@@ -445,8 +596,12 @@ body.dark-mode .skip-day-option label {
     color: #ccc;
 }
 
+body.dark-mode #totalSchedules {
+    color: #e0e0e0;
+}
+
 .delete-selected-btn {
-    padding: 10px 20px; /* Padding tetap sama */
+    padding: 10px 20px;
     background-color: #e74c3c;
     color: #fff;
     border: none;
@@ -455,8 +610,8 @@ body.dark-mode .skip-day-option label {
     font-size: 16px;
     font-weight: 500;
     transition: background-color 0.3s ease;
-    width: auto; /* Ubah dari width: 100% menjadi width: auto agar tombol menyesuaikan konten */
-    max-width: 200px; /* Batasi lebar maksimum tombol agar tidak terlalu panjang */
+    width: auto;
+    max-width: 200px;
 }
 
 .delete-selected-btn:hover {
@@ -483,7 +638,8 @@ body.dark-mode .skip-day-option label {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-.gallery-item img {
+.gallery-item img,
+.gallery-item video {
     width: 100%;
     height: 120px;
     object-fit: cover;
@@ -494,7 +650,9 @@ body.dark-mode .skip-day-option label {
 }
 
 .gallery-item img:hover,
-.gallery-item img.selected {
+.gallery-item img.selected,
+.gallery-item video:hover,
+.gallery-item video.selected {
     border: 2px solid #3498db;
 }
 
@@ -522,7 +680,7 @@ body.dark-mode .skip-day-option label {
     display: flex;
     gap: 10px;
     margin-top: 10px;
-    margin-left: -10px; /* Geser ke kiri agar sejajar dengan elemen label */
+    margin-left: -10px;
 }
 
 .button-group .btn {
@@ -607,6 +765,96 @@ body.dark-mode .skip-day-option label {
     color: #fff;
 }
 
+/* Modal untuk konfirmasi hapus */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal.hidden {
+    display: none;
+}
+
+.modal-content {
+    background: #ffffff;
+    padding: 25px;
+    border-radius: 8px;
+    text-align: center;
+    max-width: 450px;
+    width: 90%;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    border: 1px solid #444;
+}
+
+body.dark-mode .modal-content {
+    background: #3a3a3a;
+    color: #e0e0e0;
+}
+
+.modal-content p {
+    font-size: 1.1rem;
+    color: #333;
+    margin-bottom: 20px;
+}
+
+body.dark-mode .modal-content p {
+    color: #e0e0e0;
+}
+
+.modal-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.modal-buttons button {
+    padding: 10px 25px;
+    font-size: 1rem;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.modal-buttons #confirmOk {
+    background: #007bff;
+    color: white;
+}
+
+.modal-buttons #confirmOk:hover {
+    background: #0056b3;
+}
+
+.modal-buttons #confirmCancel {
+    background: #dc3545;
+    color: white;
+}
+
+.modal-buttons #confirmCancel:hover {
+    background: #b02a37;
+}
+
+/* Warna untuk semua konten yang memiliki jadwal di galeri */
+body.dark-mode .gallery-item .schedule-time.scheduled {
+    color: #00CED1 !important;
+    font-weight: bold;
+}
+
+/* Styling untuk teks "Belum dijadwalkan" di galeri */
+body.dark-mode .gallery-item .schedule-time.unscheduled {
+    text-decoration: line-through;
+    color: #e86a54 !important;
+}
+
 /* Hidden Class */
 .hidden {
     display: none;
@@ -634,11 +882,59 @@ body.dark-mode .skip-day-option label {
         padding: 8px;
     }
 
+    .select-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .select-group {
+        min-width: 100%;
+    }
+
+    .upload-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .upload-file-section,
+    .upload-folder-section {
+        min-width: 100%;
+    }
+
+    .upload-folder-section input[type="text"] {
+        width: 100%;
+    }
+
+    .upload-btn {
+        margin-top: 10px;
+        width: 100%;
+    }
+
+    .schedule-all-container {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .schedule-all-group {
+        min-width: 100%;
+    }
+
+    .skip-day-option {
+        min-width: 100%;
+    }
+
+    .schedule-all-btn,
+    .save-schedules-btn {
+        margin-top: 10px;
+        width: 100%;
+    }
+
     .gallery {
         grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     }
 
-    .gallery-item img {
+    .gallery-item img,
+    .gallery-item video {
         height: 100px;
     }
 
@@ -652,19 +948,25 @@ body.dark-mode .skip-day-option label {
         font-size: 14px;
     }
 
-    .schedule-all-container {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .schedule-all-btn,
-    .save-schedules-btn {
-        width: 100%;
-    }
-
     .schedule-media-preview {
         width: 40px;
         height: 40px;
+    }
+}
+
+@media (max-width: 600px) {
+    .modal-content {
+        padding: 20px;
+        max-width: 90%;
+    }
+
+    .modal-content p {
+        font-size: 1rem;
+    }
+
+    .modal-buttons button {
+        padding: 8px 20px;
+        font-size: 0.9rem;
     }
 }
 
@@ -688,7 +990,8 @@ body.dark-mode .skip-day-option label {
         grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
     }
 
-    .gallery-item img {
+    .gallery-item img,
+    .gallery-item video {
         height: 80px;
     }
 
@@ -727,7 +1030,8 @@ body.dark-mode .skip-day-option label {
     padding: 5px;
 }
 
-.editable-caption:hover, .editable-caption:focus {
+.editable-caption:hover,
+.editable-caption:focus {
     border: 1px solid #ccc;
     outline: none;
 }
@@ -737,247 +1041,4 @@ body.dark-mode .skip-day-option label {
     padding: 5px;
     background: #333;
     color: #fff;
-}
-
-.upload-row {
-    display: flex;
-    align-items: center; /* Sejajarkan semua elemen di tengah secara vertikal */
-    gap: 15px; /* Jarak antar elemen */
-    margin-bottom: 15px;
-}
-
-.upload-file-section, .upload-folder-section {
-    display: flex;
-    flex-direction: column;
-    flex: 1; /* Pastikan elemen mengambil ruang yang sama */
-}
-
-.upload-file-section label, .upload-folder-section label {
-    margin-bottom: 5px;
-    font-size: 14px;
-    font-weight: 500; /* Membuat label lebih tebal agar terlihat jelas */
-    color: #ddd; /* Sesuaikan dengan tema dark mode */
-}
-
-.upload-file-section input[type="file"], .upload-folder-section input[type="text"] {
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    font-size: 14px;
-    height: 36px; /* Pastikan tinggi input sama */
-    box-sizing: border-box; /* Pastikan padding tidak memengaruhi tinggi */
-    background-color: #333; /* Sesuaikan dengan tema dark mode */
-    color: #ddd;
-}
-
-.upload-folder-section input[type="text"] {
-    width: 300px; /* Atur lebar input folder tujuan */
-}
-
-.upload-btn {
-    padding: 8px 20px;
-    background-color: #3498db;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 14px;
-    transition: background-color 0.3s;
-    height: 36px; /* Pastikan tinggi tombol sama dengan input */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-top: 23px; /* Sesuaikan posisi tombol agar sejajar dengan input */
-}
-
-.upload-btn:hover {
-    background-color: #2980b9;
-}
-
-/* Tombol Hapus Langsung (Tanda X) */
-.delete-direct-btn {
-    position: absolute;
-    top: 5px;
-    right: 5px;
-    background-color: #e74c3c;
-    color: #fff;
-    border: none;
-    border-radius: 50%;
-    width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: bold;
-    transition: background-color 0.3s ease;
-}
-
-.delete-direct-btn:hover {
-    background-color: #c0392b;
-}
-/* Modal untuk konfirmasi hapus */
-.modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.8); /* Latar belakang lebih gelap untuk kontras */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-}
-
-.modal.hidden {
-    display: none;
-}
-
-.modal-content {
-    background: #ffffff; /* Latar belakang putih untuk kontras dengan dark mode */
-    padding: 25px;
-    border-radius: 8px;
-    text-align: center;
-    max-width: 450px;
-    width: 90%; /* Lebar responsif */
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3); /* Bayangan untuk efek menonjol */
-    border: 1px solid #444; /* Border untuk kontras tambahan */
-}
-
-.modal-content p {
-    font-size: 1.1rem; /* Ukuran teks lebih besar */
-    color: #333; /* Warna teks gelap untuk kontras */
-    margin-bottom: 20px;
-}
-
-.modal-buttons {
-    display: flex;
-    justify-content: center;
-    gap: 15px; /* Jarak antar tombol */
-    margin-top: 20px;
-}
-
-.modal-buttons button {
-    padding: 10px 25px;
-    font-size: 1rem;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.2s ease; /* Efek transisi saat hover */
-}
-
-.modal-buttons #confirmOk {
-    background: #007bff; /* Warna biru untuk tombol OK */
-    color: white;
-}
-
-.modal-buttons #confirmOk:hover {
-    background: #0056b3; /* Warna biru lebih gelap saat hover */
-}
-
-.modal-buttons #confirmCancel {
-    background: #dc3545; /* Warna merah untuk tombol Batal */
-    color: white;
-}
-
-.modal-buttons #confirmCancel:hover {
-    background: #b02a37; /* Warna merah lebih gelap saat hover */
-}
-
-/* Responsif untuk layar kecil */
-@media (max-width: 600px) {
-    .modal-content {
-        padding: 20px;
-        max-width: 90%;
-    }
-
-    .modal-content p {
-        font-size: 1rem;
-    }
-
-    .modal-buttons button {
-        padding: 8px 20px;
-        font-size: 0.9rem;
-    }
-}
-/* Pastikan warna default untuk schedule-time dihapus atau dikurangi spesifisitasnya */
-.gallery-item .schedule-time {
-    color: #777; /* Warna default untuk light mode */
-}
-
-/* Pastikan warna default untuk dark mode tidak menimpa */
-body.dark-mode .gallery-item .schedule-time {
-    color: #b0b0b0;
-}
-
-/* Warna untuk semua konten yang memiliki jadwal di galeri */
-body.dark-mode .gallery-item .schedule-time.scheduled {
-    color: #00CED1 !important; /* Cyan tua untuk kontras */
-    font-weight: bold; /* Membuat teks lebih tebal agar menonjol */
-}
-
-/* Styling untuk teks "Belum dijadwalkan" di galeri */
-body.dark-mode .gallery-item .schedule-time.unscheduled {
-    text-decoration: line-through; /* Mencoret teks */
-    color: #e86a54 !important; /* Abu-abu terang untuk coretan di dark mode */
-}
-/* Baris untuk Pilih Akun, Pilih Username IG, Pilih Folder di GitHub, dan Pilih Subfolder */
-.select-row {
-    display: flex;
-    align-items: center; /* Sejajarkan elemen secara vertikal */
-    gap: 15px; /* Jarak antar elemen */
-    margin-bottom: 15px;
-    flex-wrap: wrap; /* Agar responsif di layar kecil */
-}
-
-.select-group {
-    display: flex;
-    flex-direction: column;
-    flex: 1; /* Pastikan elemen mengambil ruang yang sama */
-    min-width: 200px; /* Lebar minimum untuk mencegah elemen terlalu kecil */
-}
-
-.select-group label {
-    margin-bottom: 5px;
-    font-size: 14px;
-    font-weight: 500;
-    color: #2c3e50;
-}
-
-body.dark-mode .select-group label {
-    color: #e0e0e0;
-}
-
-.select-group select {
-    padding: 8px;
-    font-size: 14px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    background: #f9f9f9;
-    transition: border-color 0.3s ease;
-}
-
-body.dark-mode .select-group select {
-    background: #3a3a3a;
-    color: #e0e0e0;
-    border: 1px solid #4a4a4a;
-}
-
-.select-group select:focus {
-    border-color: #3498db;
-    outline: none;
-}
-
-/* Responsif untuk layar kecil */
-@media (max-width: 768px) {
-    .select-row {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .select-group {
-        min-width: 100%; /* Lebar penuh di layar kecil */
-    }
 }
