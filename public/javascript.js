@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const githubFolder = document.getElementById('githubFolder');
     const githubSubfolder = document.getElementById('githubSubfolder');
     const subfolderContainer = document.getElementById('subfolderContainer');
+    const accountIdContainer = document.getElementById('accountIdContainer');
     const uploadFile = document.getElementById('uploadFile');
     const uploadToGithub = document.getElementById('uploadToGithub');
     const gallery = document.getElementById('gallery');
@@ -18,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const toggleDarkMode = document.getElementById('toggleDarkMode');
     const selectAll = document.getElementById('selectAll');
     const deleteSelected = document.getElementById('deleteSelected');
+    const scheduleActions = document.getElementById('scheduleActions');
     const startDateTime = document.getElementById('startDateTime');
     const skipDay = document.getElementById('skipDay');
     const scheduleAll = document.getElementById('scheduleAll');
@@ -36,7 +38,12 @@ document.addEventListener('DOMContentLoaded', () => {
     let allSchedules = [];
     let displayedSchedules = 0;
     const ITEMS_PER_PAGE = 20;
-    let isLoadingSchedules = false; // Lock untuk mencegah race condition
+    let isLoadingSchedules = false;
+
+    // Inisialisasi: Sembunyikan elemen saat halaman dimuat
+    accountIdContainer.classList.add('hidden');
+    subfolderContainer.classList.add('hidden');
+    scheduleActions.classList.add('hidden');
 
     // Fungsi untuk mengonversi waktu dari UTC ke WIB
     function convertToWIB(utcTime) {
@@ -105,7 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             floatingNotification.classList.remove('error');
         }
-        spinner.classList.add('hidden'); // Pastikan spinner disembunyikan
+        spinner.classList.add('hidden');
         if (duration > 0) {
             setTimeout(() => {
                 floatingNotification.classList.add('hidden');
@@ -139,8 +146,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load Instagram usernames when an account is selected with pagination
     let allIgAccounts = [];
     let nextCursor = null;
-    const MAX_IG_LIMIT = 200; // Batas maksimum 200 akun IG
-    const PER_PAGE = 20; // Ambil 20 akun per request (disesuaikan agar lebih cepat)
+    const MAX_IG_LIMIT = 200;
+    const PER_PAGE = 20;
 
     async function fetchIgAccounts(accountKey) {
         try {
@@ -179,6 +186,7 @@ document.addEventListener('DOMContentLoaded', () => {
             showFloatingNotification(`Error fetching accounts: ${error.message}`, true);
             console.error('Error fetching accounts:', error);
             accountId.innerHTML = '<option value="">-- Gagal Memuat --</option>';
+            accountIdContainer.classList.add('hidden');
         } finally {
             spinner.classList.add('hidden');
         }
@@ -203,51 +211,49 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     userAccount.addEventListener('change', async () => {
-    const accountNum = userAccount.value;
-    selectedAccountNum = accountNum;
-    console.log('Selected account number:', accountNum);
+        const accountNum = userAccount.value;
+        selectedAccountNum = accountNum;
+        console.log('Selected account number:', accountNum);
 
-    const accountIdContainer = document.getElementById('accountIdContainer');
-
-    if (!accountNum) {
-        accountId.innerHTML = '<option value="">-- Pilih Username --</option>';
-        selectedToken = null;
-        selectedUsername = null;
-        selectedAccountNum = null;
-        selectedAccountId = null;
-        allIgAccounts = [];
-        nextCursor = null;
-        accountIdContainer.classList.add('hidden'); // Sembunyikan Pilih Username IG
-        await loadSchedules();
-        return;
-    }
-
-    try {
-        const tokenRes = await fetch(`/api/refresh-token?accountNum=${accountNum}`);
-        if (!tokenRes.ok) {
-            throw new Error(`HTTP error fetching token! status: ${tokenRes.status}`);
-        }
-        const tokenData = await tokenRes.json();
-        console.log('Token fetched:', tokenData);
-        selectedToken = tokenData.token;
-        if (!selectedToken) {
-            throw new Error('No token found for this account');
+        if (!accountNum) {
+            accountId.innerHTML = '<option value="">-- Pilih Username --</option>';
+            selectedToken = null;
+            selectedUsername = null;
+            selectedAccountNum = null;
+            selectedAccountId = null;
+            allIgAccounts = [];
+            nextCursor = null;
+            accountIdContainer.classList.add('hidden');
+            await loadSchedules();
+            return;
         }
 
-        allIgAccounts = [];
-        nextCursor = null;
-        accountId.innerHTML = '<option value="">-- Memuat Username --</option>';
-        accountIdContainer.classList.remove('hidden'); // Tampilkan Pilih Username IG
+        try {
+            const tokenRes = await fetch(`/api/refresh-token?accountNum=${accountNum}`);
+            if (!tokenRes.ok) {
+                throw new Error(`HTTP error fetching token! status: ${tokenRes.status}`);
+            }
+            const tokenData = await tokenRes.json();
+            console.log('Token fetched:', tokenData);
+            selectedToken = tokenData.token;
+            if (!selectedToken) {
+                throw new Error('No token found for this account');
+            }
 
-        await fetchIgAccounts(`Akun ${accountNum}`);
-        await loadSchedules();
-    } catch (error) {
-        showFloatingNotification(`Error fetching accounts: ${error.message}`, true);
-        console.error('Error fetching accounts:', error);
-        accountId.innerHTML = '<option value="">-- Gagal Memuat --</option>';
-        accountIdContainer.classList.add('hidden'); // Sembunyikan jika gagal
-    }
-});
+            allIgAccounts = [];
+            nextCursor = null;
+            accountId.innerHTML = '<option value="">-- Memuat Username --</option>';
+            accountIdContainer.classList.remove('hidden');
+
+            await fetchIgAccounts(`Akun ${accountNum}`);
+            await loadSchedules();
+        } catch (error) {
+            showFloatingNotification(`Error fetching accounts: ${error.message}`, true);
+            console.error('Error fetching accounts:', error);
+            accountId.innerHTML = '<option value="">-- Gagal Memuat --</option>';
+            accountIdContainer.classList.add('hidden');
+        }
+    });
 
     accountId.addEventListener('change', async () => {
         const selectedOption = accountId.options[accountId.selectedIndex];
@@ -294,6 +300,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             showFloatingNotification(`Error loading GitHub folders: ${error.message}`, true);
             console.error('Error fetching GitHub folders:', error);
+            subfolderContainer.classList.add('hidden');
         } finally {
             spinner.classList.add('hidden');
         }
@@ -325,6 +332,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error(`Error fetching subfolders for path ${path}:`, error);
             showFloatingNotification(`Error loading subfolders: ${error.message}`, true);
+            subfolderContainer.classList.add('hidden');
             return [];
         } finally {
             spinner.classList.add('hidden');
@@ -332,139 +340,54 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function fetchFilesInSubfolder(path) {
-    showFloatingNotification('Memuat daftar file...');
-    spinner.classList.remove('hidden');
-    try {
-        const res = await fetch(`/api/get_github_files?path=${path}`);
-        if (!res.ok) {
-            throw new Error(`HTTP error! status: ${res.status}`);
-        }
-        const data = await res.json();
-        console.log(`Files fetched for path ${path}:`, data);
-
-        allMediaFiles = [];
-        const mediaFiles = data.files.filter(item => 
-            item.type === 'file' && 
-            (item.name.endsWith('.jpg') || item.name.endsWith('.png') || item.name.endsWith('.mp4'))
-        );
-        const totalFiles = mediaFiles.length;
-
-        if (totalFiles === 0) {
-            showFloatingNotification('Tidak ada file media yang didukung di folder ini.', true);
-            spinner.classList.add('hidden');
-            return allMediaFiles;
-        }
-
-        let loadedCount = 0;
-        for (const item of mediaFiles) {
-            loadedCount++;
-            showFloatingNotification(`Memuat file ${loadedCount} dari ${totalFiles}...`, false, 0);
-            allMediaFiles.push({
-                name: item.name,
-                path: item.path,
-                download_url: item.download_url,
-            });
-            await new Promise(resolve => setTimeout(resolve, 500));
-        }
-
-        allMediaFiles.sort(naturalSort);
-
-        const metaPaths = allMediaFiles.map(file => {
-            const folderPath = file.path.substring(0, file.path.lastIndexOf('/'));
-            const metaFileName = `${file.name}.meta.json`;
-            return `${folderPath}/${metaFileName}`;
-        });
-
-        showFloatingNotification(`Memuat metadata untuk ${totalFiles} file...`, false, 0); // Info awal
-        let metaLoadedCount = 0;
-
-        // Coba muat metadata dari API
+        showFloatingNotification('Memuat file media...');
+        spinner.classList.remove('hidden');
         try {
-            const metaRes = await fetch(`/api/get_file_content?${metaPaths.map(path => `paths=${encodeURIComponent(path)}`).join('&')}`);
-            if (!metaRes.ok) {
-                throw new Error(`HTTP error fetching metadata! status: ${metaRes.status}`);
+            const res = await fetch(`/api/get_github_files?path=${path}`);
+            if (!res.ok) {
+                throw new Error(`HTTP error! status: ${res.status}`);
             }
-            const metaData = await metaRes.json();
-            console.log('Metadata fetched from API:', metaData);
+            const data = await res.json();
+            console.log(`Files fetched for path ${path}:`, data);
 
-            // Pastikan loop selalu berjalan, bahkan jika metadata kosong
-            allMediaFiles.forEach(file => {
-                const folderPath = file.path.substring(0, file.path.lastIndexOf('/'));
-                const metaPath = `${folderPath}/${file.name}.meta.json`;
-                // Cek apakah metadata ada dan valid
-                if (metaData && metaData[metaPath] && typeof metaData[metaPath].caption === 'string') {
-                    captions[file.path] = metaData[metaPath].caption;
-                } else {
-                    captions[file.path] = ''; // Fallback ke caption kosong
-                    console.log(`No valid metadata found for ${metaPath}, using empty caption.`);
-                }
-                metaLoadedCount++;
-                showFloatingNotification(`Memuat metadata ${metaLoadedCount}/${totalFiles}...`, false, 0); // Progres X/total
-            });
+            const files = data.files.filter(item =>
+                item.type === 'file' &&
+                (item.name.toLowerCase().endsWith('.jpg') ||
+                 item.name.toLowerCase().endsWith('.jpeg') ||
+                 item.name.toLowerCase().endsWith('.png') ||
+                 item.name.toLowerCase().endsWith('.mp4'))
+            );
 
-            // Notifikasi sukses dengan jumlah file yang berhasil dimuat
-            showFloatingNotification(`Berhasil memuat metadata untuk ${metaLoadedCount}/${totalFiles} file.`, false, 3000);
+            files.sort(naturalSort);
+            return files;
         } catch (error) {
-            console.error('Error fetching metadata:', error);
-            // Fallback: tetapkan caption kosong untuk semua file
-            allMediaFiles.forEach(file => {
-                captions[file.path] = '';
-                metaLoadedCount++;
-                showFloatingNotification(`Memuat metadata ${metaLoadedCount}/${totalFiles}...`, false, 0); // Progres X/total
-            });
-            showFloatingNotification('Gagal memuat metadata. Menggunakan caption kosong.', true);
-        }
-
-        showFloatingNotification(`Berhasil memuat ${totalFiles} file.`, false, 3000);
-        return allMediaFiles;
-    } catch (error) {
-        console.error(`Error fetching files for path ${path}:`, error);
-        showFloatingNotification(`Error loading files: ${error.message}`, true);
-        return [];
-    } finally {
-        setTimeout(() => {
+            console.error(`Error fetching files for path ${path}:`, error);
+            showFloatingNotification(`Error loading files: ${error.message}`, true);
+            return [];
+        } finally {
             spinner.classList.add('hidden');
-        }, 3000);
+        }
     }
-}
 
     githubFolder.addEventListener('change', async () => {
-    const folderPath = githubFolder.value;
-    allMediaFiles = [];
-    captions = {};
-    scheduledTimes = {};
-    gallery.innerHTML = '';
-    mediaUrl.value = '';
+        const folderPath = githubFolder.value;
+        allMediaFiles = [];
+        captions = {};
+        scheduledTimes = {};
+        gallery.innerHTML = '';
+        mediaUrl.value = '';
 
-    const subfolderContainer = document.getElementById('subfolderContainer');
+        if (!folderPath || folderPath === 'ig') {
+            subfolderContainer.classList.add('hidden');
+            githubSubfolder.innerHTML = '<option value="">-- Pilih Subfolder --</option>';
+            return;
+        }
 
-    if (!folderPath || folderPath === 'ig') {
-        subfolderContainer.classList.add('hidden'); // Sembunyikan Pilih Subfolder
-        githubSubfolder.innerHTML = '<option value="">-- Pilih Subfolder --</option>';
-        return;
-    }
-
-    try {
-        if (folderPath === 'ig/image') {
-            subfolderContainer.classList.add('hidden'); // Tetap sembunyikan jika folder adalah ig/image
-            const files = await fetchFilesInSubfolder(folderPath);
-            allMediaFiles = files;
-            displayGallery(files);
-
-            if (files.length === 0) {
-                showFloatingNotification('No supported media files found in this folder.', true);
-            } else {
-                showFloatingNotification('');
-            }
-        } else {
-            subfolderContainer.classList.remove('hidden'); // Tampilkan Pilih Subfolder
-            const subfolders = await fetchSubfolders(folderPath);
-            console.log('All subfolders found:', subfolders);
-
-            if (subfolders.length === 0) {
+        try {
+            if (folderPath === 'ig/image') {
+                subfolderContainer.classList.add('hidden');
                 const files = await fetchFilesInSubfolder(folderPath);
                 allMediaFiles = files;
-                githubSubfolder.innerHTML = '<option value="">-- Tidak Ada Subfolder --</option>';
                 displayGallery(files);
 
                 if (files.length === 0) {
@@ -473,27 +396,43 @@ document.addEventListener('DOMContentLoaded', () => {
                     showFloatingNotification('');
                 }
             } else {
-                githubSubfolder.innerHTML = '<option value="">-- Pilih Subfolder --</option>';
-                subfolders.forEach(subfolder => {
-                    const option = document.createElement('option');
-                    option.value = subfolder.path;
-                    option.textContent = subfolder.name;
-                    githubSubfolder.appendChild(option);
-                });
+                subfolderContainer.classList.remove('hidden');
+                const subfolders = await fetchSubfolders(folderPath);
+                console.log('All subfolders found:', subfolders);
 
-                if (githubSubfolder.options.length === 1) {
-                    showFloatingNotification('No subfolders found in this folder.', true);
+                if (subfolders.length === 0) {
+                    const files = await fetchFilesInSubfolder(folderPath);
+                    allMediaFiles = files;
+                    githubSubfolder.innerHTML = '<option value="">-- Tidak Ada Subfolder --</option>';
+                    displayGallery(files);
+
+                    if (files.length === 0) {
+                        showFloatingNotification('No supported media files found in this folder.', true);
+                    } else {
+                        showFloatingNotification('');
+                    }
                 } else {
-                    showFloatingNotification('');
+                    githubSubfolder.innerHTML = '<option value="">-- Pilih Subfolder --</option>';
+                    subfolders.forEach(subfolder => {
+                        const option = document.createElement('option');
+                        option.value = subfolder.path;
+                        option.textContent = subfolder.name;
+                        githubSubfolder.appendChild(option);
+                    });
+
+                    if (githubSubfolder.options.length === 1) {
+                        showFloatingNotification('No subfolders found in this folder.', true);
+                    } else {
+                        showFloatingNotification('');
+                    }
                 }
             }
+        } catch (error) {
+            showFloatingNotification(`Error loading subfolders: ${error.message}`, true);
+            console.error('Error fetching subfolders:', error);
+            subfolderContainer.classList.add('hidden');
         }
-    } catch (error) {
-        showFloatingNotification(`Error loading subfolders: ${error.message}`, true);
-        console.error('Error fetching subfolders:', error);
-        subfolderContainer.classList.add('hidden'); // Sembunyikan jika gagal
-    }
-});
+    });
 
     githubSubfolder.addEventListener('change', async () => {
         const subfolderPath = githubSubfolder.value;
@@ -509,9 +448,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const files = await fetchFilesInSubfolder(subfolderPath);
-            console.log('All media files found:', files);
             allMediaFiles = files;
-
             displayGallery(files);
 
             if (files.length === 0) {
@@ -525,975 +462,439 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    async function loadUploadFolders() {
+    async function fetchCaption(filename, path) {
         try {
-            const res = await fetch('/api/get_github_files?path=ig');
+            const metaPath = `${path}/${filename}.json`;
+            const res = await fetch(`/api/get_github_file?path=${metaPath}`);
             if (!res.ok) {
+                if (res.status === 404) {
+                    return '';
+                }
                 throw new Error(`HTTP error! status: ${res.status}`);
             }
             const data = await res.json();
-            const folders = data.files.filter(item => item.type === 'dir');
-            folders.sort(naturalSort);
-
-            uploadFolder.innerHTML = '<option value="ig/image">ig/image</option>';
-            folders.forEach(item => {
-                if (item.path !== 'ig/image') {
-                    const option = document.createElement('option');
-                    option.value = item.path;
-                    option.textContent = item.name;
-                    uploadFolder.appendChild(option);
-                }
-            });
+            return data.content || '';
         } catch (error) {
-            console.error('Error loading upload folders:', error);
-            showFloatingNotification(`Error loading upload folders: ${error.message}`, true);
-        }
-    }
-
-    loadUploadFolders();
-
-    uploadToGithub.addEventListener('click', async () => {
-        if (!uploadFile.files || uploadFile.files.length === 0) {
-            showFloatingNotification('Pilih file terlebih dahulu.', true);
-            return;
-        }
-
-        let uploadFolderValue = uploadFolder.value.trim();
-        if (!uploadFolderValue) {
-            uploadFolderValue = 'ig/image';
-        } else {
-            if (!uploadFolderValue.startsWith('ig/')) {
-                uploadFolderValue = `ig/${uploadFolderValue}`;
-            }
-
-            const invalidChars = /[<>:"|?*]/;
-            if (invalidChars.test(uploadFolderValue)) {
-                showFloatingNotification('Path folder tujuan mengandung karakter yang tidak diizinkan.', true);
-                return;
-            }
-        }
-
-        const files = Array.from(uploadFile.files);
-
-        // Pisahkan file media dan meta JSON
-        const mediaFiles = files.filter(file => {
-            const fileName = file.name.toLowerCase();
-            return fileName.endsWith('.jpg') || 
-                   fileName.endsWith('.jpeg') || 
-                   fileName.endsWith('.png') || 
-                   fileName.endsWith('.mp4');
-        });
-
-        const metaFiles = files.filter(file => {
-            const fileName = file.name.toLowerCase();
-            return fileName.endsWith('.json');
-        });
-
-        if (mediaFiles.length === 0) {
-            showFloatingNotification('Pilih setidaknya satu file media (JPG, JPEG, PNG, atau MP4).', true);
-            return;
-        }
-
-        // Buat mapping meta JSON berdasarkan nama file media (misalnya 1.jpg.meta.json untuk 1.jpg)
-        const metaFileMap = {};
-        metaFiles.forEach(metaFile => {
-            const baseName = metaFile.name.replace(/\.meta\.json$/i, '');
-            metaFileMap[baseName] = metaFile;
-        });
-
-        let uploadedCount = 0;
-        const totalFiles = mediaFiles.length;
-        showFloatingNotification(`Mengunggah file 1 dari ${totalFiles}...`);
-        spinner.classList.remove('hidden');
-
-        try {
-            for (const file of mediaFiles) {
-                const reader = new FileReader();
-                const result = await new Promise((resolve, reject) => {
-                    reader.readAsDataURL(file);
-                    reader.onload = async () => {
-                        try {
-                            const base64Content = reader.result.split(',')[1];
-                            let newFileName;
-
-                            if (uploadFolderValue && uploadFolderValue !== 'ig/image') {
-                                newFileName = file.name;
-                            } else {
-                                const randomNum = Math.floor(10000 + Math.random() * 90000);
-                                const extension = file.name.split('.').pop();
-                                newFileName = `${randomNum}.${extension}`;
-                            }
-
-                            const filePath = `${uploadFolderValue}/${newFileName}`;
-                            const commitMessage = uploadFolderValue.startsWith('ig/') 
-                                ? `Upload ${newFileName} to ${uploadFolderValue} [vercel-skip]` 
-                                : `Upload ${newFileName} to ${uploadFolderValue}`;
-
-                            console.log(`Uploading file: ${filePath}`);
-
-                            // Upload file media
-                            const fileResponse = await fetch('/api/upload_to_github', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    fileName: filePath,
-                                    content: base64Content,
-                                    message: commitMessage,
-                                }),
-                            });
-
-                            if (!fileResponse.ok) {
-                                const errorData = await fileResponse.json();
-                                throw new Error(`HTTP error uploading file ${newFileName}! status: ${fileResponse.status}, details: ${errorData.error}`);
-                            }
-
-                            const fileResult = await fileResponse.json();
-                            const newFile = {
-                                name: newFileName,
-                                path: filePath,
-                                download_url: fileResult.download_url,
-                            };
-
-                            // Cek apakah ada file meta JSON yang sesuai
-                            const originalFileName = file.name; // Nama file asli (misalnya 1.jpg)
-                            let metaContent = { caption: '' }; // Default jika tidak ada meta JSON
-                            let metaBase64Content;
-
-                            if (metaFileMap[originalFileName]) {
-                                const metaFile = metaFileMap[originalFileName];
-                                const metaReader = new FileReader();
-                                const metaResult = await new Promise((metaResolve, metaReject) => {
-                                    metaReader.readAsText(metaFile);
-                                    metaReader.onload = () => {
-                                        try {
-                                            const content = JSON.parse(metaReader.result);
-                                            if (content.caption) {
-                                                metaContent = { caption: content.caption };
-                                            }
-                                            metaResolve();
-                                        } catch (error) {
-                                            metaReject(new Error(`Error parsing meta JSON for ${metaFile.name}: ${error.message}`));
-                                        }
-                                    };
-                                    metaReader.onerror = () => metaReject(new Error(`Error reading meta file ${metaFile.name}`));
-                                });
-
-                                console.log(`Using provided meta JSON for ${originalFileName}:`, metaContent);
-                            } else {
-                                console.log(`No meta JSON provided for ${originalFileName}, creating default.`);
-                            }
-
-                            // Upload file meta JSON
-                            const metaFileName = `${uploadFolderValue}/${newFileName}.meta.json`;
-                            const metaContentString = JSON.stringify(metaContent, null, 2);
-                            metaBase64Content = btoa(unescape(encodeURIComponent(metaContentString)));
-                            const metaCommitMessage = uploadFolderValue.startsWith('ig/') 
-                                ? `Upload meta for ${newFileName} to ${uploadFolderValue} [vercel-skip]` 
-                                : `Upload meta for ${newFileName} to ${uploadFolderValue}`;
-
-                            console.log(`Uploading meta file: ${metaFileName}`);
-
-                            const metaResponse = await fetch('/api/upload_to_github', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    fileName: metaFileName,
-                                    content: metaBase64Content,
-                                    message: metaCommitMessage,
-                                }),
-                            });
-
-                            const metaResponseData = await metaResponse.json();
-                            if (!metaResponse.ok) {
-                                console.error(`Meta upload failed: ${metaResponseData.error}`);
-                                showFloatingNotification(`Gagal mengunggah meta untuk ${newFileName}: ${metaResponseData.error}`, true);
-                            } else {
-                                console.log(`Meta file uploaded successfully: ${metaFileName}`);
-                            }
-
-                            allMediaFiles.push(newFile);
-                            captions[newFile.path] = metaContent.caption || '';
-                            uploadedCount++;
-                            if (uploadedCount < totalFiles) {
-                                showFloatingNotification(`Mengunggah file ${uploadedCount + 1} dari ${totalFiles}...`);
-                            }
-
-                            resolve(newFile);
-                        } catch (error) {
-                            console.error(`Error in upload process for ${file.name}:`, error);
-                            reject(error);
-                        }
-                    };
-                    reader.onerror = () => reject(new Error(`Error reading file ${file.name}`));
-                });
-            }
-
-            showFloatingNotification(`${mediaFiles.length} file media berhasil diunggah ke GitHub!`);
-            displayGallery(allMediaFiles);
-        } catch (error) {
-            showFloatingNotification(`Error uploading to GitHub: ${error.message}`, true);
-            console.error('Error uploading to GitHub:', error);
-        } finally {
-            spinner.classList.add('hidden');
-        }
-    });
-
-    async function deletePhoto(filePath) {
-        showFloatingNotification(`Menghapus ${filePath}...`);
-        spinner.classList.remove('hidden');
-
-        try {
-            const folderPath = filePath.substring(0, filePath.lastIndexOf('/'));
-            const commitMessage = folderPath.startsWith('ig/') 
-                ? `Delete file ${filePath} [vercel-skip]` 
-                : `Delete file ${filePath}`;
-
-            const deleteResponse = await fetch('/api/delete_from_github', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    path: filePath,
-                    message: commitMessage,
-                }),
-            });
-
-            if (!deleteResponse.ok) {
-                throw new Error(`HTTP error deleting file from GitHub! status: ${deleteResponse.status}`);
-            }
-
-            const deleteResult = await deleteResponse.json();
-            showFloatingNotification(`${deleteResult.message}`);
-
-            allMediaFiles = allMediaFiles.filter(f => f.path !== filePath);
-            delete captions[filePath];
-            delete scheduledTimes[filePath];
-            displayGallery(allMediaFiles);
-        } catch (error) {
-            showFloatingNotification(`Gagal menghapus file dari GitHub: ${error.message}`, true);
-            console.error('Error deleting file from GitHub:', error);
-        } finally {
-            spinner.classList.add('hidden');
-        }
-    }
-
-    async function saveCaptionToGithub(file, caption, commitMessage) {
-        try {
-            const folderPath = file.path.substring(0, file.path.lastIndexOf('/'));
-            const metaFileName = `${file.name}.meta.json`;
-            const metaPath = `${folderPath}/${metaFileName}`;
-            const metaContent = JSON.stringify({ caption }, null, 2);
-            const base64Content = btoa(unescape(encodeURIComponent(metaContent)));
-
-            const response = await fetch('/api/upload_to_github', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    fileName: metaPath,
-                    content: base64Content,
-                    message: commitMessage,
-                }),
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error uploading meta to GitHub! status: ${response.status}`);
-            }
-
-            console.log(`Meta file ${metaPath} saved to GitHub`);
-            return true;
-        } catch (error) {
-            console.error(`Error saving meta file for ${file.name}:`, error);
-            showFloatingNotification(`Error saving meta file for ${file.name}: ${error.message}`, true);
-            return false;
+            console.error(`Error fetching caption for ${filename}:`, error);
+            return '';
         }
     }
 
     async function displayGallery(files) {
-    gallery.innerHTML = '';
+        gallery.innerHTML = '';
+        captions = {};
+        scheduledTimes = {};
 
-    // Log untuk memeriksa data files yang diterima
-    console.log('Files received by displayGallery:', files);
+        for (const file of files) {
+            const filename = file.name.split('.').slice(0, -1).join('.');
+            const caption = await fetchCaption(filename, file.path.replace(`/${file.name}`, ''));
+            captions[file.name] = caption;
 
-    const imageFiles = files.filter(file => file.name && (file.name.endsWith('.jpg') || file.name.endsWith('.png')));
+            const galleryItem = document.createElement('div');
+            galleryItem.classList.add('gallery-item');
 
-    // Log untuk memeriksa imageFiles setelah filter
-    console.log('Image files after filter:', imageFiles);
+            const mediaElement = file.name.toLowerCase().endsWith('.mp4') ?
+                document.createElement('video') :
+                document.createElement('img');
+            mediaElement.src = file.download_url;
+            if (mediaElement.tagName === 'VIDEO') {
+                mediaElement.controls = true;
+            }
+            mediaElement.alt = file.name;
+            mediaElement.classList.add('gallery-media');
 
-    if (imageFiles.length === 0) {
-        gallery.innerHTML = '<p>Tidak ada gambar untuk ditampilkan.</p>';
-        return;
+            const captionInput = document.createElement('textarea');
+            captionInput.classList.add('caption-input');
+            captionInput.placeholder = 'Masukkan caption...';
+            captionInput.value = caption;
+            captionInput.dataset.filename = file.name;
+
+            const scheduleInput = document.createElement('input');
+            scheduleInput.type = 'datetime-local';
+            scheduleInput.classList.add('schedule-input');
+            scheduleInput.dataset.filename = file.name;
+
+            captionInput.addEventListener('input', (e) => {
+                captions[e.target.dataset.filename] = e.target.value;
+            });
+
+            scheduleInput.addEventListener('input', (e) => {
+                scheduledTimes[e.target.dataset.filename] = e.target.value;
+            });
+
+            galleryItem.appendChild(mediaElement);
+            galleryItem.appendChild(captionInput);
+            galleryItem.appendChild(scheduleInput);
+            gallery.appendChild(galleryItem);
+        }
     }
 
-    // Ambil jadwal yang ada untuk mencocokkan dengan mediaUrl
-    let schedules = [];
-    try {
-        const schedulesResponse = await fetch('/api/get_schedules');
-        if (!schedulesResponse.ok) {
-            throw new Error(`Failed to fetch schedules: ${schedulesResponse.status}`);
-        }
-        schedules = await schedulesResponse.json();
-        console.log('Schedules for gallery:', schedules);
-    } catch (error) {
-        console.error('Error fetching schedules:', error);
-        showFloatingNotification('Gagal mengambil data jadwal. Galeri tetap ditampilkan tanpa jadwal.', true);
-        schedules = { schedules: [] }; // Fallback jika gagal mengambil jadwal
-    }
-
-    // Pisahkan imageFiles menjadi dua kelompok: dengan scheduledTimes dan tanpa scheduledTimes
-    const withSchedule = [];
-    const withoutSchedule = [];
-
-    // Pertahankan urutan awal berdasarkan files
-    imageFiles.forEach(file => {
-        if (scheduledTimes[file.path]) {
-            withSchedule.push(file);
-        } else {
-            withoutSchedule.push(file);
-        }
-    });
-
-    // Gabungkan kembali: foto dengan scheduledTimes di depan, tanpa scheduledTimes di belakang
-    const sortedImageFiles = [...withSchedule, ...withoutSchedule];
-
-    // Log untuk memeriksa urutan akhir
-    console.log('Sorted image files:', sortedImageFiles.map(file => file.name));
-
-    function formatDateTime(date, hours, minutes) {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        const formatted = `${year}-${month}-${day}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
-        return formatted;
-    }
-
-    sortedImageFiles.forEach((file, index) => {
-        const container = document.createElement('div');
-        container.className = 'gallery-item';
-
-        const img = document.createElement('img');
-        img.src = file.download_url;
-        img.alt = file.name;
-        img.dataset.fileData = JSON.stringify(file);
-        img.addEventListener('click', () => {
-            gallery.querySelectorAll('img').forEach(i => i.classList.remove('selected'));
-            img.classList.add('selected');
-            mediaUrl.value = file.download_url;
-        });
-
-        const deleteDirectBtn = document.createElement('button');
-        deleteDirectBtn.className = 'delete-direct-btn';
-        deleteDirectBtn.textContent = '×';
-        deleteDirectBtn.addEventListener('click', async () => {
-            const confirmed = await showConfirmModal(`Apakah Anda yakin ingin menghapus ${file.name}?`);
-            if (confirmed) {
-                await deletePhoto(file.path);
-            }
-        });
-        container.appendChild(deleteDirectBtn);
-
-        const name = document.createElement('p');
-        name.textContent = file.name;
-
-        const captionText = document.createElement('p');
-        captionText.className = 'caption-text';
-        captionText.textContent = captions[file.path] || 'Tidak ada caption';
-
-        const scheduleTime = document.createElement('p');
-        scheduleTime.className = 'schedule-time';
-        if (scheduledTimes[file.path]) {
-            const date = new Date(scheduledTimes[file.path]);
-            const formattedTime = date.toLocaleString('id-ID', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: false
-            }).replace(',', '').replace(/(\d{2}):(\d{2})/, '$1.$2'); // Ubah format dari HH:mm ke HH.mm
-            scheduleTime.textContent = formattedTime;
-            scheduleTime.classList.add('scheduled'); // Tambahkan kelas untuk konten yang memiliki jadwal
-        } else {
-            scheduleTime.textContent = 'Belum dijadwalkan';
-            scheduleTime.classList.add('unscheduled'); // Tambahkan kelas untuk mencoret
-        }
-
-        const existingSchedule = schedules.schedules.find(schedule => schedule.mediaUrl === file.download_url);
-        const scheduleId = existingSchedule ? existingSchedule.scheduleId : null;
-
-        const buttonGroup = document.createElement('div');
-        buttonGroup.className = 'button-group';
-
-        const editBtn = document.createElement('button');
-        editBtn.className = 'btn edit';
-        editBtn.textContent = 'Edit';
-        editBtn.addEventListener('click', () => {
-            const editor = document.createElement('div');
-            editor.className = 'caption-editor';
-            const textarea = document.createElement('textarea');
-            textarea.value = captions[file.path] || '';
-            const buttonContainer = document.createElement('div');
-            buttonContainer.className = 'editor-buttons';
-            const saveBtn = document.createElement('button');
-            saveBtn.textContent = 'Simpan';
-            const saveSpinner = document.createElement('span');
-            saveSpinner.className = 'editor-spinner hidden';
-            saveBtn.appendChild(saveSpinner);
-            saveBtn.addEventListener('click', async () => {
-                saveSpinner.classList.remove('hidden');
-                saveBtn.disabled = true;
-                captions[file.path] = textarea.value;
-
-                const folderPath = file.path.substring(0, file.path.lastIndexOf('/'));
-                const metaCommitMessage = folderPath.startsWith('ig/') 
-                    ? `Update meta file for ${file.path} [vercel-skip]` 
-                    : `Update meta file for ${file.path}`;
-
-                const success = await saveCaptionToGithub(file, captions[file.path], metaCommitMessage);
-                if (success) {
-                    captionText.textContent = captions[file.path] || 'Tidak ada caption';
-                    editor.remove();
-                    showFloatingNotification(`Caption untuk ${file.name} berhasil disimpan.`);
-                }
-                saveSpinner.classList.add('hidden');
-                saveBtn.disabled = false;
-            });
-
-            const cancelBtn = document.createElement('button');
-            cancelBtn.textContent = 'Batal';
-            cancelBtn.addEventListener('click', () => {
-                editor.remove();
-            });
-
-            buttonContainer.appendChild(saveBtn);
-            buttonContainer.appendChild(cancelBtn);
-            editor.appendChild(textarea);
-            editor.appendChild(buttonContainer);
-            container.appendChild(editor);
-        });
-
-        const scheduleBtn = document.createElement('button');
-        scheduleBtn.className = 'btn schedule';
-        scheduleBtn.textContent = 'Jadwalkan';
-        scheduleBtn.addEventListener('click', () => {
-            const editor = document.createElement('div');
-            editor.className = 'schedule-editor';
-            const datetimeInput = document.createElement('input');
-            datetimeInput.type = 'datetime-local';
-            datetimeInput.value = scheduledTimes[file.path] || '';
-            const saveBtn = document.createElement('button');
-            saveBtn.textContent = 'Jadwalkan';
-            saveBtn.addEventListener('click', () => {
-                if (!datetimeInput.value) {
-                    showFloatingNotification('Pilih waktu terlebih dahulu.', true);
-                    return;
-                }
-
-                scheduledTimes[file.path] = datetimeInput.value;
-                const date = new Date(scheduledTimes[file.path]);
-                const formattedTime = date.toLocaleString('id-ID', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: false
-                }).replace(',', '').replace(/(\d{2}):(\d{2})/, '$1.$2'); // Ubah format dari HH:mm ke HH.mm
-                scheduleTime.textContent = formattedTime;
-                scheduleTime.classList.add('scheduled'); // Tambahkan kelas untuk konten yang memiliki jadwal
-                scheduleTime.classList.remove('unscheduled'); // Hapus kelas unscheduled jika ada
-
-                editor.remove();
-                showFloatingNotification(`Waktu jadwal untuk ${file.name} disimpan sementara. Klik "Simpan Jadwal" untuk mengirimkan.`);
-            });
-
-            const cancelBtn = document.createElement('button');
-            cancelBtn.textContent = 'Batal';
-            cancelBtn.addEventListener('click', () => {
-                delete scheduledTimes[file.path];
-                scheduleTime.textContent = 'Belum dijadwalkan';
-                scheduleTime.classList.add('unscheduled'); // Tambahkan kembali kelas unscheduled
-                scheduleTime.classList.remove('scheduled'); // Hapus kelas scheduled jika ada
-                editor.remove();
-                displayGallery(files); // Muat ulang galeri, foto ini akan berada di posisi terakhir karena scheduledTimes menjadi null
-            });
-
-            editor.appendChild(datetimeInput);
-            editor.appendChild(saveBtn);
-            editor.appendChild(cancelBtn);
-            container.appendChild(editor);
-        });
-
-        const deleteScheduleBtn = document.createElement('button');
-        deleteScheduleBtn.className = 'btn delete';
-        deleteScheduleBtn.textContent = 'Hapus Jadwal';
-        deleteScheduleBtn.disabled = !scheduleId;
-        deleteScheduleBtn.addEventListener('click', async () => {
-            if (!scheduleId) {
-                showFloatingNotification('File ini belum memiliki jadwal.', true);
-                return;
-            }
-
-            const confirmed = await showConfirmModal(`Apakah Anda yakin ingin menghapus jadwal untuk ${file.name}?`);
-            if (confirmed) {
-                await deleteSchedule(scheduleId);
-                deleteScheduleBtn.disabled = true;
-                scheduleTime.textContent = 'Belum dijadwalkan';
-                scheduleTime.classList.add('unscheduled'); // Tambahkan kelas unscheduled
-                scheduleTime.classList.remove('scheduled'); // Hapus kelas scheduled jika ada
-                showFloatingNotification(`Jadwal untuk ${file.name} berhasil dihapus.`);
-            }
-        });
-
-        const publishBtn = document.createElement('button');
-        publishBtn.className = 'btn publish';
-        publishBtn.textContent = 'Publish';
-        publishBtn.addEventListener('click', async () => {
-            if (!selectedToken || !accountId.value) {
-                showFloatingNotification('Pilih akun dan username terlebih dahulu.', true);
-                return;
-            }
-
-            showFloatingNotification('Mempublikasikan...', false, 0);
-            spinner.classList.remove('hidden');
-            let isUploadedFile = file.path.startsWith('ig/image/');
-
-            try {
-                const response = await fetch('/api/publish', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        accountId: accountId.value,
-                        mediaUrl: file.download_url,
-                        caption: captions[file.path] || '',
-                        userToken: selectedToken,
-                    }),
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error publishing post! status: ${response.status}`);
-                }
-
-                const result = await response.json();
-                showFloatingNotification(result.message || 'Berhasil dipublikasikan ke Instagram!', false, 3000); // Pastikan notifikasi muncul
-
-                if (isUploadedFile) {
-                    await deletePhoto(file.path);
-                }
-            } catch (error) {
-                showFloatingNotification(`Error publishing: ${error.message}`, true);
-                console.error('Error publishing post:', error);
-            } finally {
-                spinner.classList.add('hidden');
-            }
-        });
-
-        buttonGroup.appendChild(editBtn);
-        buttonGroup.appendChild(scheduleBtn);
-
-        container.appendChild(img);
-        container.appendChild(name);
-        container.appendChild(captionText);
-        container.appendChild(scheduleTime);
-        container.appendChild(buttonGroup);
-        container.appendChild(deleteScheduleBtn);
-        container.appendChild(publishBtn);
-        gallery.appendChild(container);
-    });
-
-    // Event listener untuk startDateTime.input
-    startDateTime.addEventListener('input', () => {
-        if (!startDateTime.value) {
-            Object.keys(scheduledTimes).forEach(filePath => {
-                delete scheduledTimes[filePath];
-            });
-            Array.from(gallery.children).forEach(container => {
-                const scheduleTimeElement = container.querySelector('.schedule-time');
-                if (scheduleTimeElement) {
-                    scheduleTimeElement.textContent = 'Belum dijadwalkan';
-                    scheduleTimeElement.classList.add('unscheduled'); // Tambahkan kelas unscheduled
-                    scheduleTimeElement.classList.remove('scheduled'); // Hapus kelas scheduled jika ada
-                }
-            });
-            showFloatingNotification('Jadwal untuk semua foto telah direset.');
-        }
-    });
-
-    // Event listener untuk startDateTime.change
-    startDateTime.addEventListener('change', () => {
-        if (!startDateTime.value) return;
-        const start = new Date(startDateTime.value);
-        const hours = start.getHours();
-        const minutes = start.getMinutes();
-        const dayIncrement = skipDay.checked ? 2 : 1;
-        imageFiles.forEach((file, index) => {
-            const newDate = new Date(start);
-            newDate.setDate(start.getDate() + (index * dayIncrement));
-            scheduledTimes[file.path] = formatDateTime(newDate, hours, minutes);
-            const scheduleTimeElement = gallery.children[index]?.querySelector('.schedule-time');
-            if (scheduleTimeElement) {
-                const date = new Date(scheduledTimes[file.path]);
-                const formattedTime = date.toLocaleString('id-ID', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: false
-                }).replace(',', '').replace(/(\d{2}):(\d{2})/, '$1.$2'); // Ubah format dari HH:mm ke HH.mm
-                scheduleTimeElement.textContent = formattedTime;
-                scheduleTimeElement.classList.add('scheduled'); // Tambahkan kelas untuk konten yang memiliki jadwal
-                scheduleTimeElement.classList.remove('unscheduled'); // Hapus kelas unscheduled jika ada
-            }
-        });
-    });
-
-    // Event listener untuk skipDay.change
-    skipDay.addEventListener('change', () => {
-        if (!startDateTime.value) return;
-        const start = new Date(startDateTime.value);
-        const hours = start.getHours();
-        const minutes = start.getMinutes();
-        const dayIncrement = skipDay.checked ? 2 : 1;
-        imageFiles.forEach((file, index) => {
-            const newDate = new Date(start);
-            newDate.setDate(start.getDate() + (index * dayIncrement));
-            scheduledTimes[file.path] = formatDateTime(newDate, hours, minutes);
-            const scheduleTimeElement = gallery.children[index]?.querySelector('.schedule-time');
-            if (scheduleTimeElement) {
-                const date = new Date(scheduledTimes[file.path]);
-                const formattedTime = date.toLocaleString('id-ID', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: false
-                }).replace(',', '').replace(/(\d{2}):(\d{2})/, '$1.$2'); // Ubah format dari HH:mm ke HH.mm
-                scheduleTimeElement.textContent = formattedTime;
-                scheduleTimeElement.classList.add('scheduled'); // Tambahkan kelas untuk konten yang memiliki jadwal
-                scheduleTimeElement.classList.remove('unscheduled'); // Hapus kelas unscheduled jika ada
-            }
-        });
-    });
-
-    // Event listener untuk scheduleAll.click
-    scheduleAll.addEventListener('click', () => {
-        if (!startDateTime.value) {
-            showFloatingNotification('Pilih tanggal dan jam awal terlebih dahulu.', true);
+    uploadToGithub.addEventListener('click', async () => {
+        const files = uploadFile.files;
+        if (files.length === 0) {
+            showFloatingNotification('Pilih setidaknya satu file untuk diunggah.', true);
             return;
         }
 
-        const start = new Date(startDateTime.value);
-        const hours = start.getHours();
-        const minutes = start.getMinutes();
-        const dayIncrement = skipDay.checked ? 2 : 1;
+        const folderPath = uploadFolder.value.trim();
+        if (!folderPath) {
+            showFloatingNotification('Masukkan path folder tujuan.', true);
+            return;
+        }
 
-        console.log('Start time selected:', startDateTime.value);
-        console.log('Hours:', hours, 'Minutes:', minutes);
+        const formData = new FormData();
+        for (const file of files) {
+            formData.append('files', file);
+        }
+        formData.append('folderPath', folderPath);
 
-        // Perbarui scheduledTimes untuk semua file
-        imageFiles.forEach((file, index) => {
-            const newDate = new Date(start);
-            newDate.setDate(start.getDate() + (index * dayIncrement));
-            scheduledTimes[file.path] = formatDateTime(newDate, hours, minutes);
-            const scheduleTimeElement = gallery.children[index]?.querySelector('.schedule-time');
-            if (scheduleTimeElement) {
-                const date = new Date(scheduledTimes[file.path]);
-                const formattedTime = date.toLocaleString('id-ID', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: false
-                }).replace(',', '').replace(/(\d{2}):(\d{2})/, '$1.$2'); // Ubah format dari HH:mm ke HH.mm
-                scheduleTimeElement.textContent = formattedTime;
-                scheduleTimeElement.classList.add('scheduled'); // Tambahkan kelas untuk konten yang memiliki jadwal
-                scheduleTimeElement.classList.remove('unscheduled'); // Hapus kelas unscheduled jika ada
-            }
-            console.log(`File ${file.name} scheduled at: ${scheduledTimes[file.path]}`);
-        });
-
-        showFloatingNotification(`Waktu jadwal untuk semua foto disimpan sementara. Klik "Simpan Jadwal" untuk mengirimkan.`);
-        window.history.pushState({}, document.title, window.location.pathname);
-    });
-}
-    loadGithubFolders();
-
-    async function deleteSchedule(scheduleId) {
         try {
-            showFloatingNotification('Menghapus jadwal...');
+            showFloatingNotification('Mengunggah file ke GitHub...');
             spinner.classList.remove('hidden');
-            const res = await fetch('/api/delete_schedule', {
+            const res = await fetch('/api/upload_to_github', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ scheduleId }),
+                body: formData,
             });
+
             if (!res.ok) {
                 throw new Error(`HTTP error! status: ${res.status}`);
             }
-            const result = await res.json();
-            showFloatingNotification(result.message || 'Jadwal berhasil dihapus!');
-            await loadSchedules();
+
+            const data = await res.json();
+            console.log('Upload response:', data);
+
+            if (data.success) {
+                showFloatingNotification('File berhasil diunggah ke GitHub.');
+                uploadFile.value = '';
+                uploadFolder.value = '';
+                await loadGithubFolders();
+            } else {
+                throw new Error(data.message || 'Gagal mengunggah file.');
+            }
         } catch (error) {
-            showFloatingNotification(`Error deleting schedule: ${error.message}`, true);
-            console.error('Error deleting schedule:', error);
+            showFloatingNotification(`Error uploading files: ${error.message}`, true);
+            console.error('Error uploading files:', error);
+        } finally {
+            spinner.classList.add('hidden');
+        }
+    });
+
+    async function loadSchedules() {
+        if (!selectedAccountNum || !selectedAccountId) {
+            scheduleTableBody.innerHTML = '';
+            allSchedules = [];
+            displayedSchedules = 0;
+            totalSchedules.textContent = 'Total: 0 jadwal';
+            scheduleActions.classList.add('hidden');
+            loadMoreBtn.classList.add('hidden');
+            return;
+        }
+
+        try {
+            showFloatingNotification('Memuat jadwal...');
+            spinner.classList.remove('hidden');
+            const res = await fetch(`/api/get_schedules?accountNum=${selectedAccountNum}&accountId=${selectedAccountId}`);
+            if (!res.ok) {
+                throw new Error(`HTTP error! status: ${res.status}`);
+            }
+            const data = await res.json();
+            console.log('Schedules fetched:', data);
+
+            allSchedules = data.schedules || [];
+            allSchedules.sort((a, b) => new Date(a.scheduled_time) - new Date(b.scheduled_time));
+
+            displayedSchedules = 0;
+            scheduleTableBody.innerHTML = '';
+
+            if (allSchedules.length === 0) {
+                scheduleTableBody.innerHTML = '<tr><td colspan="6">Tidak ada jadwal ditemukan.</td></tr>';
+                totalSchedules.textContent = 'Total: 0 jadwal';
+                scheduleActions.classList.add('hidden');
+                loadMoreBtn.classList.add('hidden');
+                showFloatingNotification('');
+                return;
+            }
+
+            displaySchedules();
+            totalSchedules.textContent = `Total: ${allSchedules.length} jadwal`;
+            scheduleActions.classList.remove('hidden');
+            loadMoreBtn.classList.toggle('hidden', displayedSchedules >= allSchedules.length);
+            showFloatingNotification('');
+        } catch (error) {
+            showFloatingNotification(`Error loading schedules: ${error.message}`, true);
+            console.error('Error fetching schedules:', error);
+            scheduleTableBody.innerHTML = '<tr><td colspan="6">Gagal memuat jadwal.</td></tr>';
+            totalSchedules.textContent = 'Total: 0 jadwal';
+            scheduleActions.classList.add('hidden');
+            loadMoreBtn.classList.add('hidden');
         } finally {
             spinner.classList.add('hidden');
         }
     }
 
-    async function updateSchedule(scheduleId, updatedData) {
-        try {
-            const res = await fetch('/api/update_schedule', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ scheduleId, ...updatedData }),
-            });
-            if (!res.ok) {
-                throw new Error(`HTTP error updating schedule! status: ${res.status}`);
+    function displaySchedules() {
+        const start = displayedSchedules;
+        const end = Math.min(start + ITEMS_PER_PAGE, allSchedules.length);
+
+        for (let i = start; i < end; i++) {
+            const schedule = allSchedules[i];
+            const row = document.createElement('tr');
+
+            const checkboxCell = document.createElement('td');
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.dataset.scheduleId = schedule.id;
+            checkboxCell.appendChild(checkbox);
+            row.appendChild(checkboxCell);
+
+            const mediaCell = document.createElement('td');
+            const mediaElement = schedule.media_url.toLowerCase().endsWith('.mp4') ?
+                document.createElement('video') :
+                document.createElement('img');
+            mediaElement.src = schedule.media_url;
+            if (mediaElement.tagName === 'VIDEO') {
+                mediaElement.controls = true;
             }
-            const result = await res.json();
-            showFloatingNotification(result.message || 'Jadwal berhasil diperbarui!');
-            await loadSchedules();
-        } catch (error) {
-            showFloatingNotification(`Error updating schedule: ${error.message}`, true);
-            console.error('Error updating schedule:', error);
+            mediaElement.classList.add('schedule-media');
+            mediaCell.appendChild(mediaElement);
+            row.appendChild(mediaCell);
+
+            const captionCell = document.createElement('td');
+            captionCell.textContent = schedule.caption || '-';
+            row.appendChild(captionCell);
+
+            const timeCell = document.createElement('td');
+            const wibTime = convertToWIB(schedule.scheduled_time);
+            timeCell.textContent = formatToLocaleString(wibTime);
+            row.appendChild(timeCell);
+
+            const statusCell = document.createElement('td');
+            statusCell.textContent = schedule.status || 'Pending';
+            row.appendChild(statusCell);
+
+            const actionCell = document.createElement('td');
+            const deleteBtn = document.createElement('button');
+            deleteBtn.textContent = 'Hapus';
+            deleteBtn.classList.add('delete-btn');
+            deleteBtn.addEventListener('click', async () => {
+                const confirmed = await showConfirmModal('Apakah Anda yakin ingin menghapus jadwal ini?');
+                if (!confirmed) return;
+
+                try {
+                    showFloatingNotification('Menghapus jadwal...');
+                    spinner.classList.remove('hidden');
+                    const res = await fetch('/api/delete_schedules', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            accountNum: selectedAccountNum,
+                            accountId: selectedAccountId,
+                            scheduleIds: [schedule.id],
+                        }),
+                    });
+
+                    if (!res.ok) {
+                        throw new Error(`HTTP error! status: ${res.status}`);
+                    }
+
+                    const data = await res.json();
+                    console.log('Delete response:', data);
+
+                    if (data.success) {
+                        showFloatingNotification('Jadwal berhasil dihapus.');
+                        await loadSchedules();
+                    } else {
+                        throw new Error(data.message || 'Gagal menghapus jadwal.');
+                    }
+                } catch (error) {
+                    showFloatingNotification(`Error deleting schedule: ${error.message}`, true);
+                    console.error('Error deleting schedule:', error);
+                } finally {
+                    spinner.classList.add('hidden');
+                }
+            });
+            actionCell.appendChild(deleteBtn);
+            row.appendChild(actionCell);
+
+            scheduleTableBody.appendChild(row);
         }
+
+        displayedSchedules = end;
     }
 
-    async function deleteSelectedSchedules() {
-        const checkboxes = document.querySelectorAll('.schedule-checkbox:checked');
-        if (checkboxes.length === 0) {
+    loadMoreBtn.addEventListener('click', () => {
+        if (isLoadingSchedules) return;
+        isLoadingSchedules = true;
+
+        displaySchedules();
+        loadMoreBtn.classList.toggle('hidden', displayedSchedules >= allSchedules.length);
+        isLoadingSchedules = false;
+    });
+
+    selectAll.addEventListener('change', (e) => {
+        const checkboxes = scheduleTableBody.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = e.target.checked;
+        });
+    });
+
+    deleteSelected.addEventListener('click', async () => {
+        const selectedSchedules = Array.from(scheduleTableBody.querySelectorAll('input[type="checkbox"]:checked'))
+            .map(checkbox => checkbox.dataset.scheduleId)
+            .filter(id => id);
+
+        if (selectedSchedules.length === 0) {
             showFloatingNotification('Pilih setidaknya satu jadwal untuk dihapus.', true);
             return;
         }
 
-        const scheduleIds = Array.from(checkboxes).map(checkbox => checkbox.dataset.scheduleId);
+        const confirmed = await showConfirmModal(`Apakah Anda yakin ingin menghapus ${selectedSchedules.length} jadwal yang dipilih?`);
+        if (!confirmed) return;
 
         try {
-            showFloatingNotification('Menghapus jadwal terpilih...');
+            showFloatingNotification('Menghapus jadwal...');
             spinner.classList.remove('hidden');
-            for (const scheduleId of scheduleIds) {
-                await deleteSchedule(scheduleId);
+            const res = await fetch('/api/delete_schedules', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    accountNum: selectedAccountNum,
+                    accountId: selectedAccountId,
+                    scheduleIds: selectedSchedules,
+                }),
+            });
+
+            if (!res.ok) {
+                throw new Error(`HTTP error! status: ${res.status}`);
             }
-            showFloatingNotification(`${scheduleIds.length} jadwal berhasil dihapus!`);
+
+            const data = await res.json();
+            console.log('Delete response:', data);
+
+            if (data.success) {
+                showFloatingNotification('Jadwal berhasil dihapus.');
+                await loadSchedules();
+            } else {
+                throw new Error(data.message || 'Gagal menghapus jadwal.');
+            }
         } catch (error) {
             showFloatingNotification(`Error deleting schedules: ${error.message}`, true);
             console.error('Error deleting schedules:', error);
         } finally {
             spinner.classList.add('hidden');
         }
-    }
+    });
 
-    function renderSchedules(schedulesToRender, startIndex) {
-        schedulesToRender.forEach((schedule, idx) => {
-            const globalIndex = startIndex + idx;
-            const wibTime = convertToWIB(schedule.time);
-            const formattedWibTime = formatToDatetimeLocal(wibTime);
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${globalIndex + 1}</td>
-                <td><input type="checkbox" class="schedule-checkbox" data-schedule-id="${schedule.scheduleId}"></td>
-                <td>${schedule.username || 'Unknown'}</td>
-                <td><img src="${schedule.mediaUrl}" alt="Media" class="schedule-media-preview"></td>
-                <td class="editable-caption" contenteditable="true" data-schedule-id="${schedule.scheduleId}">${schedule.caption}</td>
-                <td class="editable-time" data-schedule-id="${schedule.scheduleId}">
-                    <input type="datetime-local" class="time-input" value="${formattedWibTime}">
-                </td>
-                <td>${schedule.completed ? 'Selesai' : 'Menunggu'}</td>
-                <td>
-                    <button class="delete-btn" data-schedule-id="${schedule.scheduleId}">Hapus</button>
-                </td>
-            `;
-            scheduleTableBody.appendChild(row);
-        });
-
-        document.querySelectorAll('.editable-caption').forEach(cell => {
-            cell.addEventListener('blur', async (e) => {
-                const scheduleId = e.target.dataset.scheduleId;
-                const newCaption = e.target.textContent.trim();
-                await updateSchedule(scheduleId, { caption: newCaption });
-            });
-        });
-
-        document.querySelectorAll('.editable-time .time-input').forEach(input => {
-            input.addEventListener('change', async (e) => {
-                const scheduleId = e.target.parentElement.dataset.scheduleId;
-                const newTime = e.target.value;
-                await updateSchedule(scheduleId, { time: newTime });
-            });
-        });
-
-        document.querySelectorAll('.delete-btn').forEach(button => {
-            button.addEventListener('click', debounce(async (e) => {
-                const scheduleId = e.target.getAttribute('data-schedule-id');
-                const confirmed = await showConfirmModal('Apakah Anda yakin ingin menghapus jadwal ini?');
-                if (confirmed) {
-                    deleteSchedule(scheduleId);
-                }
-            }, 300));
-        });
-    }
-
-    async function loadSchedules() {
-        if (isLoadingSchedules) {
-            console.log('loadSchedules already in progress, skipping...');
+    scheduleAll.addEventListener('click', () => {
+        const startTime = startDateTime.value;
+        if (!startTime) {
+            showFloatingNotification('Masukkan tanggal dan jam awal untuk menjadwalkan.', true);
             return;
         }
 
-        isLoadingSchedules = true;
-        try {
-            scheduleTableBody.innerHTML = '<tr><td colspan="8">Memuat jadwal...</td></tr>';
-            const res = await fetch('/api/get_schedules');
-            if (!res.ok) {
-                throw new Error(`HTTP error fetching schedules! status: ${res.status}`);
-            }
-            const data = await res.json();
-            console.log('Schedules fetched:', data);
-
-            scheduleTableBody.innerHTML = '';
-            allSchedules = data.schedules || [];
-
-            // Urutkan jadwal berdasarkan tanggal (time) secara ascending
-            allSchedules.sort((a, b) => new Date(a.time) - new Date(b.time));
-
-            let filteredSchedules = allSchedules;
-            if (selectedAccountNum) {
-                filteredSchedules = filteredSchedules.filter(schedule => schedule.accountNum === selectedAccountNum);
-            }
-            if (selectedAccountId) {
-                filteredSchedules = filteredSchedules.filter(schedule => schedule.accountId === selectedAccountId);
-            }
-
-            displayedSchedules = 0;
-
-            if (filteredSchedules.length > 0) {
-                const initialSchedules = filteredSchedules.slice(0, ITEMS_PER_PAGE);
-                renderSchedules(initialSchedules, 0);
-                displayedSchedules = initialSchedules.length;
-
-                totalSchedules.textContent = `Total: ${filteredSchedules.length} jadwal`;
-
-                if (displayedSchedules < filteredSchedules.length) {
-                    loadMoreBtn.classList.remove('hidden');
-                } else {
-                    loadMoreBtn.classList.add('hidden');
-                }
-
-                loadMoreBtn.removeEventListener('click', loadMoreSchedules);
-                loadMoreBtn.addEventListener('click', loadMoreSchedules);
-
-                selectAll.addEventListener('change', () => {
-                    const checkboxes = document.querySelectorAll('.schedule-checkbox');
-                    checkboxes.forEach(checkbox => {
-                        checkbox.checked = selectAll.checked;
-                    });
-                });
-
-                deleteSelected.addEventListener('click', async () => {
-                    const confirmed = await showConfirmModal('Apakah Anda yakin ingin menghapus jadwal yang dipilih?');
-                    if (confirmed) {
-                        deleteSelectedSchedules();
-                    }
-                });
-            } else {
-                scheduleTableBody.innerHTML = '<tr><td colspan="8">Belum ada jadwal untuk akun ini.</td></tr>';
-                totalSchedules.textContent = 'Total: 0 jadwal';
-                loadMoreBtn.classList.add('hidden');
-            }
-        } catch (error) {
-            showFloatingNotification(`Error loading schedules: ${error.message}`, true);
-            console.error('Error fetching schedules:', error);
-            scheduleTableBody.innerHTML = '<tr><td colspan="8">Gagal memuat jadwal.</td></tr>';
-            totalSchedules.textContent = 'Total: 0 jadwal';
-            loadMoreBtn.classList.add('hidden');
-        } finally {
-            isLoadingSchedules = false;
+        if (allMediaFiles.length === 0) {
+            showFloatingNotification('Tidak ada file media untuk dijadwalkan.', true);
+            return;
         }
-    }
 
-    function loadMoreSchedules() {
-        const filteredSchedules = allSchedules.filter(schedule => {
-            if (selectedAccountNum && schedule.accountNum !== selectedAccountNum) return false;
-            if (selectedAccountId && schedule.accountId !== selectedAccountId) return false;
-            return true;
+        const startDate = new Date(startTime);
+        const interval = skipDay.checked ? 2 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000; // 2 hari atau 1 hari
+
+        allMediaFiles.forEach((file, index) => {
+            const scheduleTime = new Date(startDate.getTime() + index * interval);
+            const scheduleInput = gallery.querySelector(`input[data-filename="${file.name}"]`);
+            if (scheduleInput) {
+                scheduleInput.value = formatToDatetimeLocal(scheduleTime);
+                scheduledTimes[file.name] = scheduleInput.value;
+            }
         });
 
-        const nextSchedules = filteredSchedules.slice(displayedSchedules, displayedSchedules + ITEMS_PER_PAGE);
-        renderSchedules(nextSchedules, displayedSchedules);
-        displayedSchedules += nextSchedules.length;
-
-        if (displayedSchedules >= filteredSchedules.length) {
-            loadMoreBtn.classList.add('hidden');
-        }
-    }
+        showFloatingNotification('Jadwal telah diatur untuk semua file.');
+    });
 
     saveSchedules.addEventListener('click', async () => {
-    if (!selectedToken || !accountId.value) {
-        showFloatingNotification('Pilih akun dan username terlebih dahulu.', true);
-        return;
-    }
+        if (!selectedAccountNum || !selectedAccountId) {
+            showFloatingNotification('Pilih akun dan username IG terlebih dahulu.', true);
+            return;
+        }
 
-    const scheduledFiles = allMediaFiles.filter(file => {
-        const scheduledTime = scheduledTimes[file.path];
-        return scheduledTime && typeof scheduledTime === 'string' && scheduledTime.trim() !== '';
-    });
-    if (scheduledFiles.length === 0) {
-        showFloatingNotification('Tidak ada foto yang dijadwalkan.', true);
-        return;
-    }
+        const schedulesToSave = [];
+        let hasError = false;
 
-    showFloatingNotification('Menyimpan jadwal... 0/' + scheduledFiles.length, false, 0); // Tampilkan progres awal
-    spinner.classList.remove('hidden');
+        for (const file of allMediaFiles) {
+            const filename = file.name;
+            const scheduledTime = scheduledTimes[filename];
+            const caption = captions[filename] || '';
 
-    try {
-        let completedCount = 0;
-        for (const file of scheduledFiles) {
-            const formData = {
-                accountId: accountId.value,
-                username: selectedUsername,
-                mediaUrl: file.download_url,
-                caption: captions[file.path] || '',
-                time: scheduledTimes[file.path],
-                userToken: selectedToken,
-                accountNum: userAccount.value,
-                completed: false,
-            };
+            if (!scheduledTime) {
+                showFloatingNotification(`Masukkan waktu jadwal untuk file ${filename}.`, true);
+                hasError = true;
+                break;
+            }
 
-            console.log('Scheduling file:', file.path, 'with data:', formData);
+            const wibTime = new Date(scheduledTime);
+            const utcTime = new Date(wibTime.getTime() - (7 * 60 * 60 * 1000)); // Konversi ke UTC
 
-            const response = await fetch('/api/schedule', {
+            schedulesToSave.push({
+                media_url: file.download_url,
+                caption: caption,
+                scheduled_time: utcTime.toISOString(),
+            });
+        }
+
+        if (hasError) return;
+
+        if (schedulesToSave.length === 0) {
+            showFloatingNotification('Tidak ada jadwal untuk disimpan.', true);
+            return;
+        }
+
+        try {
+            showFloatingNotification('Menyimpan jadwal...');
+            spinner.classList.remove('hidden');
+            const res = await fetch('/api/save_schedules', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData),
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    accountNum: selectedAccountNum,
+                    accountId: selectedAccountId,
+                    schedules: schedulesToSave,
+                }),
             });
 
-            const responseText = await response.text();
-            let result;
-            try {
-                result = JSON.parse(responseText);
-            } catch (parseError) {
-                throw new Error(`Failed to parse server response as JSON: ${responseText}`);
+            if (!res.ok) {
+                throw new Error(`HTTP error! status: ${res.status}`);
             }
 
-            if (!response.ok) {
-                throw new Error(`HTTP error scheduling post! status: ${response.status}, details: ${result.error || responseText}`);
-            }
+            const data = await res.json();
+            console.log('Save schedules response:', data);
 
-            completedCount++;
-            showFloatingNotification(`Menyimpan jadwal... ${completedCount}/${scheduledFiles.length}`, false, 0); // Update progres
-            console.log('Schedule response:', result);
+            if (data.success) {
+                showFloatingNotification('Jadwal berhasil disimpan.');
+                await loadSchedules();
+                gallery.innerHTML = '';
+                allMediaFiles = [];
+                captions = {};
+                scheduledTimes = {};
+                githubFolder.value = 'ig';
+                githubSubfolder.innerHTML = '<option value="">-- Pilih Subfolder --</option>';
+                subfolderContainer.classList.add('hidden');
+            } else {
+                throw new Error(data.message || 'Gagal menyimpan jadwal.');
+            }
+        } catch (error) {
+            showFloatingNotification(`Error saving schedules: ${error.message}`, true);
+            console.error('Error saving schedules:', error);
+        } finally {
+            spinner.classList.add('hidden');
         }
-        showFloatingNotification(`${scheduledFiles.length} foto berhasil dijadwalkan!`, false, 3000); // Notifikasi sukses
-        scheduledTimes = {};
-        await loadSchedules();
-    } catch (error) {
-        showFloatingNotification(`Error scheduling: ${error.message}`, true);
-        console.error('Error scheduling posts:', error);
-    } finally {
-        spinner.classList.add('hidden');
-    }
-});
+    });
 
-    loadSchedules();
+    loadGithubFolders();
 });
