@@ -608,7 +608,35 @@ body.dark-mode .skip-day-option label {
     background-color: #e74c3c;
     color: #fff;
 }
+/* Tambahkan definisi untuk btn-save dan btn-cancel */
+.btn-save {
+    background-color: #2ecc71;
+    color: #fff;
+}
 
+.btn-save:hover {
+    background-color: #27ae60; /* Warna hover yang sama dengan tombol lain */
+}
+
+.btn-cancel {
+    background-color: #e74c3c;
+    color: #fff;
+}
+
+.btn-cancel:hover {
+    background-color: #c0392b; /* Warna hover yang sama dengan tombol lain */
+}
+
+/* Hapus ketergantungan pada :first-child dan :last-child */
+.caption-editor button:first-child,
+.schedule-editor button:first-child {
+    /* background-color dan color sudah ditangani oleh btn-save */
+}
+
+.caption-editor button:last-child,
+.schedule-editor button:last-child {
+    /* background-color dan color sudah ditangani oleh btn-cancel */
+}
 /* Hidden Class */
 .hidden {
     display: none;
