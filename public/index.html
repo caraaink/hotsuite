@@ -19,6 +19,13 @@
             </div>
         </div>
 
+        <!-- Floating Notification -->
+        <div id="floatingNotification" class="floating-notification hidden">
+            <div id="floatingSpinner" class="spinner hidden"></div>
+            <p id="floatingStatus"></p>
+        </div>
+
+        <!-- Form -->
         <form id="scheduleForm" class="upload-form">
             <!-- Baris untuk Pilih Akun, Pilih Username IG, Pilih Folder di GitHub, dan Pilih Subfolder -->
             <div class="select-row">
@@ -42,26 +49,26 @@
                 </div>
 
                 <div class="select-group hidden" id="accountIdContainer">
-                    <label for="accountId">Pilih Username IG:</label>
-                    <select id="accountId" name="accountId" required>
-                        <option value="">-- Pilih Username --</option>
-                    </select>
-                </div>
+        <label for="accountId" style="display: none;">Pilih Username IG:</label>
+        <select id="accountId" name="accountId" required>
+            <option value="">-- Pilih Username --</option>
+        </select>
+    </div>
 
-                <div class="select-group">
-                    <label for="githubFolder">Pilih Folder di GitHub:</label>
-                    <select id="githubFolder" name="githubFolder">
-                        <option value="ig">-- Pilih Folder --</option>
-                    </select>
-                </div>
+    <div class="select-group">
+        <label for="githubFolder">Pilih Folder di GitHub:</label>
+        <select id="githubFolder" name="githubFolder">
+            <option value="ig">-- Pilih Folder --</option>
+        </select>
+    </div>
 
-                <div class="select-group hidden" id="subfolderContainer">
-                    <label for="githubSubfolder">Pilih Subfolder:</label>
-                    <select id="githubSubfolder" name="githubSubfolder">
-                        <option value="">-- Pilih Subfolder --</option>
-                    </select>
-                </div>
-            </div>
+    <div class="select-group hidden" id="subfolderContainer">
+        <label for="githubSubfolder" style="display: none;">Pilih Subfolder:</label>
+        <select id="githubSubfolder" name="githubSubfolder">
+            <option value="">-- Pilih Subfolder --</option>
+        </select>
+    </div>
+</div>
 
             <!-- Input untuk mengunggah file dari perangkat (opsional) -->
             <div class="upload-row">
@@ -78,7 +85,8 @@
 
             <div id="gallery" class="gallery"></div>
 
-            <div class="schedule-all-container">
+            <!-- Schedule All Container -->
+            <div class="schedule-all-container" style="display: none;">
                 <label for="startDateTime">Tanggal dan Jam Awal:</label>
                 <input type="datetime-local" id="startDateTime" name="startDateTime">
                 <div class="skip-day-option">
@@ -119,13 +127,7 @@
         </div>
     </div>
 
-    <!-- Tambahkan elemen melayang untuk loading dan notifikasi -->
-    <div id="floatingNotification" class="floating-notification hidden">
-        <div id="floatingSpinner" class="spinner hidden"></div>
-        <p id="floatingStatus"></p>
-    </div>
-
-    <!-- Tambahkan modal untuk konfirmasi penghapusan -->
+    <!-- Modal untuk konfirmasi hapus -->
     <div id="confirmModal" class="modal hidden">
         <div class="modal-content">
             <p id="confirmMessage"></p>
@@ -147,5 +149,6 @@
     <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9253ffa85a5312db',t:'MTc0Mjc5NjU1NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
     <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9258e4709bb0dab5',t:'MTc0Mjg0Nzg2OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
     <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'925c3a2b5b57ed87',t:'MTc0Mjg4MjgzOC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
+    <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'925d15222ac6bfb0',t:'MTc0Mjg5MTgwNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
 </body>
 </html>
