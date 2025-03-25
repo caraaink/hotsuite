@@ -921,5 +921,63 @@ body.dark-mode .gallery-item .schedule-time.scheduled {
 /* Styling untuk teks "Belum dijadwalkan" di galeri */
 body.dark-mode .gallery-item .schedule-time.unscheduled {
     text-decoration: line-through; /* Mencoret teks */
-    color: #FF6347 !important; /* Abu-abu terang untuk coretan di dark mode */
+    color: #e86a54 !important; /* Abu-abu terang untuk coretan di dark mode */
+}
+/* Baris untuk Pilih Akun, Pilih Username IG, dan Pilih Folder di GitHub */
+.select-row {
+    display: flex;
+    align-items: center; /* Sejajarkan elemen secara vertikal */
+    gap: 15px; /* Jarak antar elemen */
+    margin-bottom: 15px;
+    flex-wrap: wrap; /* Agar responsif di layar kecil */
+}
+
+.select-group {
+    display: flex;
+    flex-direction: column;
+    flex: 1; /* Pastikan elemen mengambil ruang yang sama */
+    min-width: 200px; /* Lebar minimum untuk mencegah elemen terlalu kecil */
+}
+
+.select-group label {
+    margin-bottom: 5px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #2c3e50;
+}
+
+body.dark-mode .select-group label {
+    color: #e0e0e0;
+}
+
+.select-group select {
+    padding: 8px;
+    font-size: 14px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: #f9f9f9;
+    transition: border-color 0.3s ease;
+}
+
+body.dark-mode .select-group select {
+    background: #3a3a3a;
+    color: #e0e0e0;
+    border: 1px solid #4a4a4a;
+}
+
+.select-group select:focus {
+    border-color: #3498db;
+    outline: none;
+}
+
+/* Responsif untuk layar kecil */
+@media (max-width: 768px) {
+    .select-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .select-group {
+        min-width: 100%; /* Lebar penuh di layar kecil */
+    }
 }
