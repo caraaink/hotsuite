@@ -1165,7 +1165,6 @@ document.addEventListener('DOMContentLoaded', () => {
         // Perbarui galeri setelah jadwal semua
         displayGallery(files);
     });
-}
                 const cancelBtn = document.createElement('button');
                 cancelBtn.textContent = 'Batal';
                 cancelBtn.addEventListener('click', () => {
