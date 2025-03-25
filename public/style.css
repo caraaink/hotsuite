@@ -902,14 +902,14 @@ body.dark-mode .skip-day-option label {
         font-size: 0.9rem;
     }
 }
-/* Pastikan warna untuk tanggal 27/03/2025 11:17 di galeri */
-.gallery-item .schedule-time.highlight-date {
-    color: #00CED1 !important; /* Cyan tua untuk kontras, gunakan !important untuk memastikan */
+/* Warna untuk semua konten yang memiliki jadwal di galeri */
+.gallery-item .schedule-time.scheduled {
+    color: #00CED1 !important; /* Cyan tua untuk kontras */
     font-weight: bold; /* Membuat teks lebih tebal agar menonjol */
 }
 
-/* Pastikan styling untuk teks "Belum dijadwalkan" di galeri */
+/* Styling untuk teks "Belum dijadwalkan" di galeri */
 .gallery-item .schedule-time.unscheduled {
     text-decoration: line-through; /* Mencoret teks */
-    color: #A9A9A9 !important; /* Abu-abu terang untuk coretan di dark mode, gunakan !important untuk memastikan */
+    color: #A9A9A9 !important; /* Abu-abu terang untuk coretan di dark mode */
 }
