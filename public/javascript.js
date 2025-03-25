@@ -823,15 +823,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Urutkan withSchedule berdasarkan scheduledTimes (dari terbaru ke terlama)
-    withSchedule.sort((a, b) => {
-        const timeA = scheduledTimes[a.path];
-        const timeB = scheduledTimes[b.path];
-        return new Date(timeB) - new Date(timeA);
-    });
+    // Jangan urutkan withSchedule berdasarkan scheduledTimes, pertahankan urutan awal
+    // withSchedule.sort((a, b) => {
+    //     const timeA = scheduledTimes[a.path];
+    //     const timeB = scheduledTimes[b.path];
+    //     return new Date(timeB) - new Date(timeA);
+    // });
 
     // Gabungkan kembali: foto dengan scheduledTimes di depan, tanpa scheduledTimes di belakang
     const sortedImageFiles = [...withSchedule, ...withoutSchedule];
+
+    // Log untuk memeriksa urutan akhir
+    console.log('Sorted image files:', sortedImageFiles.map(file => file.name));
 
     function formatDateTime(date, hours, minutes) {
         const year = date.getFullYear();
@@ -1171,7 +1174,6 @@ document.addEventListener('DOMContentLoaded', () => {
         window.history.pushState({}, document.title, window.location.pathname);
     });
 }
-
     loadGithubFolders();
 
     async function deleteSchedule(scheduleId) {
