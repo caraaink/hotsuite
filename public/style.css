@@ -923,7 +923,7 @@ body.dark-mode .gallery-item .schedule-time.unscheduled {
     text-decoration: line-through; /* Mencoret teks */
     color: #e86a54 !important; /* Abu-abu terang untuk coretan di dark mode */
 }
-/* Baris untuk Pilih Akun, Pilih Username IG, dan Pilih Folder di GitHub */
+/* Baris untuk Pilih Akun, Pilih Username IG, Pilih Folder di GitHub, dan Pilih Subfolder */
 .select-row {
     display: flex;
     align-items: center; /* Sejajarkan elemen secara vertikal */
