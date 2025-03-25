@@ -781,7 +781,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function displayGallery(files) {
     gallery.innerHTML = '';
-    const imageFiles = files.filter(file => file.name.endsWith('.jpg') || file.name.endsWith('.png'));
+
+    // Log untuk memeriksa data files yang diterima
+    console.log('Files received by displayGallery:', files);
+
+    const imageFiles = files.filter(file => file.name && (file.name.endsWith('.jpg') || file.name.endsWith('.png')));
+
+    // Log untuk memeriksa imageFiles setelah filter
+    console.log('Image files after filter:', imageFiles);
 
     if (imageFiles.length === 0) {
         gallery.innerHTML = '<p>Tidak ada gambar untuk ditampilkan.</p>';
@@ -789,9 +796,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Ambil jadwal yang ada untuk mencocokkan dengan mediaUrl
-    const schedulesResponse = await fetch('/api/get_schedules');
-    const schedules = await schedulesResponse.json();
-    console.log('Schedules for gallery:', schedules);
+    let schedules = [];
+    try {
+        const schedulesResponse = await fetch('/api/get_schedules');
+        if (!schedulesResponse.ok) {
+            throw new Error(`Failed to fetch schedules: ${schedulesResponse.status}`);
+        }
+        schedules = await schedulesResponse.json();
+        console.log('Schedules for gallery:', schedules);
+    } catch (error) {
+        console.error('Error fetching schedules:', error);
+        showFloatingNotification('Gagal mengambil data jadwal. Galeri tetap ditampilkan tanpa jadwal.', true);
+        schedules = { schedules: [] }; // Fallback jika gagal mengambil jadwal
+    }
 
     // Pisahkan imageFiles menjadi dua kelompok: dengan scheduledTimes dan tanpa scheduledTimes
     const withSchedule = [];
@@ -926,8 +943,7 @@ document.addEventListener('DOMContentLoaded', () => {
             container.appendChild(editor);
         });
 
-        const scheduleBtn = document.c
-reateElement('button');
+        const scheduleBtn = document.createElement('button');
         scheduleBtn.className = 'btn schedule';
         scheduleBtn.textContent = 'Jadwalkan';
         scheduleBtn.addEventListener('click', () => {
