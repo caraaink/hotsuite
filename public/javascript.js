@@ -780,62 +780,161 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function displayGallery(files) {
-        gallery.innerHTML = '';
-        const imageFiles = files.filter(file => file.name.endsWith('.jpg') || file.name.endsWith('.png'));
+    gallery.innerHTML = '';
+    const imageFiles = files.filter(file => file.name.endsWith('.jpg') || file.name.endsWith('.png'));
 
-        if (imageFiles.length === 0) {
-            gallery.innerHTML = '<p>Tidak ada gambar untuk ditampilkan.</p>';
-            return;
+    if (imageFiles.length === 0) {
+        gallery.innerHTML = '<p>Tidak ada gambar untuk ditampilkan.</p>';
+        return;
+    }
+
+    // Ambil jadwal yang ada untuk mencocokkan dengan mediaUrl
+    const schedulesResponse = await fetch('/api/get_schedules');
+    const schedules = await schedulesResponse.json();
+    console.log('Schedules for gallery:', schedules);
+
+    // Urutkan imageFiles berdasarkan scheduledTimes, dari terbaru ke terlama, dan yang null di bawah
+    imageFiles.sort((a, b) => {
+        const timeA = scheduledTimes[a.path];
+        const timeB = scheduledTimes[b.path];
+
+        // Jika keduanya null, urutkan berdasarkan nama file
+        if (!timeA && !timeB) {
+            return naturalSort(a, b);
+        }
+        // Jika timeA null, letakkan di bawah
+        if (!timeA) return 1;
+        // Jika timeB null, letakkan di bawah
+        if (!timeB) return -1;
+        // Urutkan berdasarkan tanggal terbaru (descending)
+        return new Date(timeB) - new Date(timeA);
+    });
+
+    function formatDateTime(date, hours, minutes) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const formatted = `${year}-${month}-${day}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+        return formatted;
+    }
+
+    imageFiles.forEach((file, index) => {
+        const container = document.createElement('div');
+        container.className = 'gallery-item';
+
+        const img = document.createElement('img');
+        img.src = file.download_url;
+        img.alt = file.name;
+        img.dataset.fileData = JSON.stringify(file);
+        img.addEventListener('click', () => {
+            gallery.querySelectorAll('img').forEach(i => i.classList.remove('selected'));
+            img.classList.add('selected');
+            mediaUrl.value = file.download_url;
+        });
+
+        const deleteDirectBtn = document.createElement('button');
+        deleteDirectBtn.className = 'delete-direct-btn';
+        deleteDirectBtn.textContent = '×';
+        deleteDirectBtn.addEventListener('click', async () => {
+            const confirmed = await showConfirmModal(`Apakah Anda yakin ingin menghapus ${file.name}?`);
+            if (confirmed) {
+                await deletePhoto(file.path);
+            }
+        });
+        container.appendChild(deleteDirectBtn);
+
+        const name = document.createElement('p');
+        name.textContent = file.name;
+
+        const captionText = document.createElement('p');
+        captionText.className = 'caption-text';
+        captionText.textContent = captions[file.path] || 'Tidak ada caption';
+
+        const scheduleTime = document.createElement('p');
+        scheduleTime.className = 'schedule-time';
+        if (scheduledTimes[file.path]) {
+            const date = new Date(scheduledTimes[file.path]);
+            scheduleTime.textContent = date.toLocaleString('id-ID', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            }).replace(',', '');
+        } else {
+            scheduleTime.textContent = 'Belum dijadwalkan';
         }
 
-        // Ambil jadwal yang ada untuk mencocokkan dengan mediaUrl
-        const schedulesResponse = await fetch('/api/get_schedules');
-        const schedules = await schedulesResponse.json();
-        console.log('Schedules for gallery:', schedules);
+        // Cari jadwal yang sesuai dengan mediaUrl
+        const existingSchedule = schedules.schedules.find(schedule => schedule.mediaUrl === file.download_url);
+        const scheduleId = existingSchedule ? existingSchedule.scheduleId : null;
 
-        function formatDateTime(date, hours, minutes) {
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            const formatted = `${year}-${month}-${day}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
-            return formatted;
-        }
+        const buttonGroup = document.createElement('div');
+        buttonGroup.className = 'button-group';
 
-        imageFiles.forEach((file, index) => {
-            const container = document.createElement('div');
-            container.className = 'gallery-item';
+        const editBtn = document.createElement('button');
+        editBtn.className = 'btn edit';
+        editBtn.textContent = 'Edit';
+        editBtn.addEventListener('click', () => {
+            const editor = document.createElement('div');
+            editor.className = 'caption-editor';
+            const textarea = document.createElement('textarea');
+            textarea.value = captions[file.path] || '';
+            const buttonContainer = document.createElement('div');
+            buttonContainer.className = 'editor-buttons';
+            const saveBtn = document.createElement('button');
+            saveBtn.textContent = 'Simpan';
+            const saveSpinner = document.createElement('span');
+            saveSpinner.className = 'editor-spinner hidden';
+            saveBtn.appendChild(saveSpinner);
+            saveBtn.addEventListener('click', async () => {
+                saveSpinner.classList.remove('hidden');
+                saveBtn.disabled = true;
+                captions[file.path] = textarea.value;
 
-            const img = document.createElement('img');
-            img.src = file.download_url;
-            img.alt = file.name;
-            img.dataset.fileData = JSON.stringify(file);
-            img.addEventListener('click', () => {
-                gallery.querySelectorAll('img').forEach(i => i.classList.remove('selected'));
-                img.classList.add('selected');
-                mediaUrl.value = file.download_url;
-            });
+                const folderPath = file.path.substring(0, file.path.lastIndexOf('/'));
+                const metaCommitMessage = folderPath.startsWith('ig/') 
+                    ? `Update meta file for ${file.path} [vercel-skip]` 
+                    : `Update meta file for ${file.path}`;
 
-            const deleteDirectBtn = document.createElement('button');
-            deleteDirectBtn.className = 'delete-direct-btn';
-            deleteDirectBtn.textContent = '×';
-            deleteDirectBtn.addEventListener('click', async () => {
-                const confirmed = await showConfirmModal(`Apakah Anda yakin ingin menghapus ${file.name}?`);
-                if (confirmed) {
-                    await deletePhoto(file.path);
+                const success = await saveCaptionToGithub(file, captions[file.path], metaCommitMessage);
+                if (success) {
+                    captionText.textContent = captions[file.path] || 'Tidak ada caption';
+                    editor.remove();
+                    showFloatingNotification(`Caption untuk ${file.name} berhasil disimpan.`);
                 }
+                saveSpinner.classList.add('hidden');
+                saveBtn.disabled = false;
             });
-            container.appendChild(deleteDirectBtn);
+            const cancelBtn = document.createElement('button');
+            cancelBtn.textContent = 'Batal';
+            cancelBtn.addEventListener('click', () => editor.remove());
+            buttonContainer.appendChild(saveBtn);
+            buttonContainer.appendChild(cancelBtn);
+            editor.appendChild(textarea);
+            editor.appendChild(buttonContainer);
+            container.appendChild(editor);
+        });
 
-            const name = document.createElement('p');
-            name.textContent = file.name;
+        const scheduleBtn = document.createElement('button');
+        scheduleBtn.className = 'btn schedule';
+        scheduleBtn.textContent = 'Jadwalkan';
+        scheduleBtn.addEventListener('click', () => {
+            const editor = document.createElement('div');
+            editor.className = 'schedule-editor';
+            const datetimeInput = document.createElement('input');
+            datetimeInput.type = 'datetime-local';
+            datetimeInput.value = scheduledTimes[file.path] || ''; // Nilai default jika belum ada jadwal
+            const saveBtn = document.createElement('button');
+            saveBtn.textContent = 'Jadwalkan';
+            saveBtn.addEventListener('click', () => {
+                if (!datetimeInput.value) {
+                    showFloatingNotification('Pilih waktu terlebih dahulu.', true);
+                    return;
+                }
 
-            const captionText = document.createElement('p');
-            captionText.className = 'caption-text';
-            captionText.textContent = captions[file.path] || 'Tidak ada caption';
-
-            const scheduleTime = document.createElement('p');
-            scheduleTime.className = 'schedule-time';
-            if (scheduledTimes[file.path]) {
+                scheduledTimes[file.path] = datetimeInput.value;
                 const date = new Date(scheduledTimes[file.path]);
                 scheduleTime.textContent = date.toLocaleString('id-ID', {
                     day: '2-digit',
@@ -845,91 +944,228 @@ document.addEventListener('DOMContentLoaded', () => {
                     minute: '2-digit',
                     hour12: false
                 }).replace(',', '');
-            } else {
+                editor.remove();
+                showFloatingNotification(`Waktu jadwal untuk ${file.name} disimpan sementara. Klik "Simpan Jadwal" untuk mengirimkan.`);
+
+                // Perbarui galeri setelah jadwal diubah
+                displayGallery(files);
+            });
+            const cancelBtn = document.createElement('button');
+            cancelBtn.textContent = 'Batal';
+            cancelBtn.addEventListener('click', () => {
+                // Reset jadwal untuk file ini
+                delete scheduledTimes[file.path];
                 scheduleTime.textContent = 'Belum dijadwalkan';
+                editor.remove();
+                // Perbarui galeri setelah jadwal dihapus
+                displayGallery(files);
+            });
+            editor.appendChild(datetimeInput);
+            editor.appendChild(saveBtn);
+            editor.appendChild(cancelBtn);
+            container.appendChild(editor);
+        });
+
+        const deleteScheduleBtn = document.createElement('button');
+        deleteScheduleBtn.className = 'btn delete';
+        deleteScheduleBtn.textContent = 'Hapus Jadwal';
+        deleteScheduleBtn.disabled = !scheduleId; // Nonaktifkan jika tidak ada jadwal
+        deleteScheduleBtn.addEventListener('click', async () => {
+            if (!scheduleId) {
+                showFloatingNotification('File ini belum memiliki jadwal.', true);
+                return;
             }
 
-            // Cari jadwal yang sesuai dengan mediaUrl
-            const existingSchedule = schedules.schedules.find(schedule => schedule.mediaUrl === file.download_url);
-            const scheduleId = existingSchedule ? existingSchedule.scheduleId : null;
+            const confirmed = await showConfirmModal(`Apakah Anda yakin ingin menghapus jadwal untuk ${file.name}?`);
+            if (confirmed) {
+                await deleteSchedule(scheduleId);
+                deleteScheduleBtn.disabled = true; // Nonaktifkan tombol setelah dihapus
+                scheduleTime.textContent = 'Belum dijadwalkan';
+                showFloatingNotification(`Jadwal untuk ${file.name} berhasil dihapus.`);
+            }
+        });
 
-            const buttonGroup = document.createElement('div');
-            buttonGroup.className = 'button-group';
+        const publishBtn = document.createElement('button');
+        publishBtn.className = 'btn publish';
+        publishBtn.textContent = 'Publish';
+        publishBtn.addEventListener('click', async () => {
+            if (!selectedToken || !accountId.value) {
+                showFloatingNotification('Pilih akun dan username terlebih dahulu.', true);
+                return;
+            }
 
-            const editBtn = document.createElement('button');
-            editBtn.className = 'btn edit';
-            editBtn.textContent = 'Edit';
-            editBtn.addEventListener('click', () => {
-                const editor = document.createElement('div');
-                editor.className = 'caption-editor';
-                const textarea = document.createElement('textarea');
-                textarea.value = captions[file.path] || '';
-                const buttonContainer = document.createElement('div');
-                buttonContainer.className = 'editor-buttons';
-                const saveBtn = document.createElement('button');
-                saveBtn.textContent = 'Simpan';
-                const saveSpinner = document.createElement('span');
-                saveSpinner.className = 'editor-spinner hidden';
-                saveBtn.appendChild(saveSpinner);
-                saveBtn.addEventListener('click', async () => {
-                    saveSpinner.classList.remove('hidden');
-                    saveBtn.disabled = true;
-                    captions[file.path] = textarea.value;
+            showFloatingNotification('Mempublikasikan...');
+            spinner.classList.remove('hidden');
+            let isUploadedFile = file.path.startsWith('ig/image/');
 
-                    const folderPath = file.path.substring(0, file.path.lastIndexOf('/'));
-                    const metaCommitMessage = folderPath.startsWith('ig/') 
-                        ? `Update meta file for ${file.path} [vercel-skip]` 
-                        : `Update meta file for ${file.path}`;
-
-                    const success = await saveCaptionToGithub(file, captions[file.path], metaCommitMessage);
-                    if (success) {
-                        captionText.textContent = captions[file.path] || 'Tidak ada caption';
-                        editor.remove();
-                        showFloatingNotification(`Caption untuk ${file.name} berhasil disimpan.`);
-                    }
-                    saveSpinner.classList.add('hidden');
-                    saveBtn.disabled = false;
+            try {
+                const response = await fetch('/api/publish', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        accountId: accountId.value,
+                        mediaUrl: file.download_url,
+                        caption: captions[file.path] || '',
+                        userToken: selectedToken,
+                    }),
                 });
-                const cancelBtn = document.createElement('button');
-                cancelBtn.textContent = 'Batal';
-                cancelBtn.addEventListener('click', () => editor.remove());
-                buttonContainer.appendChild(saveBtn);
-                buttonContainer.appendChild(cancelBtn);
-                editor.appendChild(textarea);
-                editor.appendChild(buttonContainer);
-                container.appendChild(editor);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error publishing post! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                showFloatingNotification(result.message || 'Berhasil dipublikasikan!');
+
+                if (isUploadedFile) {
+                    await deletePhoto(file.path);
+                }
+            } catch (error) {
+                showFloatingNotification(`Error publishing: ${error.message}`, true);
+                console.error('Error publishing post:', error);
+            } finally {
+                spinner.classList.add('hidden');
+            }
+        });
+
+        buttonGroup.appendChild(editBtn);
+        buttonGroup.appendChild(scheduleBtn);
+
+        container.appendChild(img);
+        container.appendChild(name);
+        container.appendChild(captionText);
+        container.appendChild(scheduleTime);
+        container.appendChild(buttonGroup);
+        container.appendChild(deleteScheduleBtn); // Tambahkan tombol Hapus Jadwal
+        container.appendChild(publishBtn);
+        gallery.appendChild(container);
+
+        if (startDateTime.value && !scheduledTimes[file.path]) {
+            const start = new Date(startDateTime.value);
+            const hours = start.getHours();
+            const minutes = start.getMinutes();
+            const dayIncrement = skipDay.checked ? 2 : 1;
+            const newDate = new Date(start);
+            newDate.setDate(start.getDate() + (index * dayIncrement));
+            scheduledTimes[file.path] = formatDateTime(newDate, hours, minutes);
+            const date = new Date(scheduledTimes[file.path]);
+            scheduleTime.textContent = date.toLocaleString('id-ID', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            }).replace(',', '');
+            // Perbarui galeri setelah jadwal otomatis diatur
+            displayGallery(files);
+        }
+    });
+
+    startDateTime.addEventListener('input', () => {
+        if (!startDateTime.value) {
+            Object.keys(scheduledTimes).forEach(filePath => {
+                delete scheduledTimes[filePath];
             });
+            Array.from(gallery.children).forEach(container => {
+                const scheduleTimeElement = container.querySelector('.schedule-time');
+                if (scheduleTimeElement) {
+                    scheduleTimeElement.textContent = 'Belum dijadwalkan';
+                }
+            });
+            showFloatingNotification('Jadwal untuk semua foto telah direset.');
+            // Perbarui galeri setelah reset jadwal
+            displayGallery(files);
+        }
+    });
 
-            const scheduleBtn = document.createElement('button');
-            scheduleBtn.className = 'btn schedule';
-            scheduleBtn.textContent = 'Jadwalkan';
-            scheduleBtn.addEventListener('click', () => {
-                const editor = document.createElement('div');
-                editor.className = 'schedule-editor';
-                const datetimeInput = document.createElement('input');
-                datetimeInput.type = 'datetime-local';
-                datetimeInput.value = scheduledTimes[file.path] || ''; // Nilai default jika belum ada jadwal
-                const saveBtn = document.createElement('button');
-                saveBtn.textContent = 'Jadwalkan';
-                saveBtn.addEventListener('click', () => {
-                    if (!datetimeInput.value) {
-                        showFloatingNotification('Pilih waktu terlebih dahulu.', true);
-                        return;
-                    }
+    startDateTime.addEventListener('change', () => {
+        if (!startDateTime.value) return;
+        const start = new Date(startDateTime.value);
+        const hours = start.getHours();
+        const minutes = start.getMinutes();
+        const dayIncrement = skipDay.checked ? 2 : 1;
+        imageFiles.forEach((file, index) => {
+            const newDate = new Date(start);
+            newDate.setDate(start.getDate() + (index * dayIncrement));
+            scheduledTimes[file.path] = formatDateTime(newDate, hours, minutes);
+            const scheduleTimeElement = gallery.children[index].querySelector('.schedule-time');
+            const date = new Date(scheduledTimes[file.path]);
+            scheduleTimeElement.textContent = date.toLocaleString('id-ID', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            }).replace(',', '');
+        });
+        // Perbarui galeri setelah perubahan tanggal awal
+        displayGallery(files);
+    });
 
-                    scheduledTimes[file.path] = datetimeInput.value;
-                    const date = new Date(scheduledTimes[file.path]);
-                    scheduleTime.textContent = date.toLocaleString('id-ID', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        hour12: false
-                    }).replace(',', '');
-                    editor.remove();
-                    showFloatingNotification(`Waktu jadwal untuk ${file.name} disimpan sementara. Klik "Simpan Jadwal" untuk mengirimkan.`);
-                });
+    skipDay.addEventListener('change', () => {
+        if (!startDateTime.value) return;
+        const start = new Date(startDateTime.value);
+        const hours = start.getHours();
+        const minutes = start.getMinutes();
+        const dayIncrement = skipDay.checked ? 2 : 1;
+        imageFiles.forEach((file, index) => {
+            const newDate = new Date(start);
+            newDate.setDate(start.getDate() + (index * dayIncrement));
+            scheduledTimes[file.path] = formatDateTime(newDate, hours, minutes);
+            const scheduleTimeElement = gallery.children[index].querySelector('.schedule-time');
+            const date = new Date(scheduledTimes[file.path]);
+            scheduleTimeElement.textContent = date.toLocaleString('id-ID', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            }).replace(',', '');
+        });
+        // Perbarui galeri setelah perubahan skip day
+        displayGallery(files);
+    });
+
+    scheduleAll.addEventListener('click', () => {
+        if (!startDateTime.value) {
+            showFloatingNotification('Pilih tanggal dan jam awal terlebih dahulu.', true);
+            return;
+        }
+
+        const start = new Date(startDateTime.value);
+        const hours = start.getHours();
+        const minutes = start.getMinutes();
+        const dayIncrement = skipDay.checked ? 2 : 1;
+
+        console.log('Start time selected:', startDateTime.value);
+        console.log('Hours:', hours, 'Minutes:', minutes);
+
+        imageFiles.forEach((file, index) => {
+            const newDate = new Date(start);
+            newDate.setDate(start.getDate() + (index * dayIncrement));
+            scheduledTimes[file.path] = formatDateTime(newDate, hours, minutes);
+            const scheduleTimeElement = gallery.children[index].querySelector('.schedule-time');
+            const date = new Date(scheduledTimes[file.path]);
+            scheduleTimeElement.textContent = date.toLocaleString('id-ID', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            }).replace(',', '');
+            console.log(`File ${file.name} scheduled at: ${scheduledTimes[file.path]}`);
+        });
+
+        showFloatingNotification(`Waktu jadwal untuk semua foto disimpan sementara. Klik "Simpan Jadwal" untuk mengirimkan.`);
+        window.history.pushState({}, document.title, window.location.pathname);
+        // Perbarui galeri setelah jadwal semua
+        displayGallery(files);
+    });
+}
                 const cancelBtn = document.createElement('button');
                 cancelBtn.textContent = 'Batal';
                 cancelBtn.addEventListener('click', () => {
