@@ -380,35 +380,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(`HTTP error fetching metadata! status: ${metaRes.status}`);
             }
             const metaData = await metaRes.json();
-            console.log('Metadata fetched:', metaData);
+            console.log('Metadata fetched from API:', metaData);
 
-            // Jika metadata kosong atau tidak ada, gunakan caption kosong
-            if (!metaData || Object.keys(metaData).length === 0) {
-                console.log('No metadata found, setting empty captions.');
-                allMediaFiles.forEach(file => {
-                    captions[file.path] = '';
-                    metaLoadedCount++;
-                    showFloatingNotification(`Memuat metadata ${metaLoadedCount}/${totalFiles}...`, false, 0);
-                });
-                showFloatingNotification('Tidak ada metadata ditemukan. Menggunakan caption kosong.', true);
-            } else {
-                // Proses metadata yang ditemukan
-                allMediaFiles.forEach(file => {
-                    const folderPath = file.path.substring(0, file.path.lastIndexOf('/'));
-                    const metaPath = `${folderPath}/${file.name}.meta.json`;
-                    captions[file.path] = metaData[metaPath]?.caption || '';
-                    metaLoadedCount++;
-                    showFloatingNotification(`Memuat metadata ${metaLoadedCount}/${totalFiles}...`, false, 0);
-                });
-                showFloatingNotification(`Berhasil memuat metadata untuk ${metaLoadedCount}/${totalFiles} file.`, false, 3000);
-            }
+            // Pastikan loop selalu berjalan, bahkan jika metadata kosong
+            allMediaFiles.forEach(file => {
+                const folderPath = file.path.substring(0, file.path.lastIndexOf('/'));
+                const metaPath = `${folderPath}/${file.name}.meta.json`;
+                // Cek apakah metadata ada dan valid
+                if (metaData && metaData[metaPath] && typeof metaData[metaPath].caption === 'string') {
+                    captions[file.path] = metaData[metaPath].caption;
+                } else {
+                    captions[file.path] = ''; // Fallback ke caption kosong
+                    console.log(`No valid metadata found for ${metaPath}, using empty caption.`);
+                }
+                metaLoadedCount++;
+                showFloatingNotification(`Memuat metadata ${metaLoadedCount}/${totalFiles}...`, false, 0); // Progres X/total
+            });
+
+            // Notifikasi sukses dengan jumlah file yang berhasil dimuat
+            showFloatingNotification(`Berhasil memuat metadata untuk ${metaLoadedCount}/${totalFiles} file.`, false, 3000);
         } catch (error) {
             console.error('Error fetching metadata:', error);
-            // Fallback jika gagal memuat metadata
+            // Fallback: tetapkan caption kosong untuk semua file
             allMediaFiles.forEach(file => {
                 captions[file.path] = '';
                 metaLoadedCount++;
-                showFloatingNotification(`Memuat metadata ${metaLoadedCount}/${totalFiles}...`, false, 0);
+                showFloatingNotification(`Memuat metadata ${metaLoadedCount}/${totalFiles}...`, false, 0); // Progres X/total
             });
             showFloatingNotification('Gagal memuat metadata. Menggunakan caption kosong.', true);
         }
