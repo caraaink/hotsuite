@@ -557,7 +557,24 @@ body.dark-mode .skip-day-option label {
     z-index: 10;
     border-radius: 8px;
 }
+/* Gaya untuk tombol Simpan di caption-editor agar seragam dengan btn-save */
+.caption-editor .editor-buttons button:first-child {
+    background-color: #2ecc71; /* Warna hijau sama seperti btn-save */
+    color: #fff;
+}
 
+.caption-editor .editor-buttons button:first-child:hover {
+    background-color: #27ae60; /* Warna hijau lebih gelap saat hover, sama seperti btn-save */
+}
+
+/* Gaya untuk mode gelap */
+body.dark-mode .caption-editor .editor-buttons button:first-child {
+    background-color: #34c759; /* Warna hijau lebih terang untuk mode gelap, seragam dengan tema */
+}
+
+body.dark-mode .caption-editor .editor-buttons button:first-child:hover {
+    background-color: #2ea44f; /* Warna hijau lebih gelap saat hover di mode gelap */
+}
 .caption-editor textarea,
 .schedule-editor input {
     width: 80%;
