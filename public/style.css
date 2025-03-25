@@ -296,7 +296,7 @@ body.dark-mode .skip-day-option label {
 
 .delete-btn {
     padding: 6px 12px;
-    margin-right: 5px;
+ |   margin-right: 5px;
     border: none;
     border-radius: 6px;
     cursor: pointer;
@@ -701,7 +701,7 @@ body.dark-mode .caption-editor .editor-buttons button:first-child:hover {
         height: 100px;
     }
 
-    /* Schedule List tidak disentuh sesuai permintaan */
+    /* Perbaikan untuk Schedule List di Mobile */
     .schedule-list {
         margin-top: 20px;
         padding: 0; /* Hilangkan padding */
@@ -713,6 +713,8 @@ body.dark-mode .caption-editor .editor-buttons button:first-child:hover {
         padding: 0;
         border-radius: 0; /* Hilangkan border-radius di mobile */
         border: none; /* Hilangkan border luar */
+        display: table; /* Kembalikan ke display tabel */
+        table-layout: fixed; /* Atur lebar kolom secara tetap */
     }
 
     .schedule-list thead,
@@ -720,46 +722,99 @@ body.dark-mode .caption-editor .editor-buttons button:first-child:hover {
     .schedule-list tr,
     .schedule-list th,
     .schedule-list td {
-        display: block; /* Ubah ke block untuk stacked table */
-        width: 100%;
+        display: table-cell; /* Kembalikan ke display tabel */
+        width: auto;
         box-sizing: border-box;
     }
 
     .schedule-list thead {
-        display: none; /* Sembunyikan header di mobile */
+        display: table-header-group; /* Tampilkan header di mobile */
     }
 
     .schedule-list tr {
-        margin-bottom: 10px;
+        display: table-row; /* Kembalikan ke display baris tabel */
+        margin-bottom: 0; /* Hilangkan margin bawah */
         border-bottom: 1px solid #4a4a4a; /* Tambahkan border bawah untuk pemisah */
     }
 
+    .schedule-list th,
     .schedule-list td {
-        padding: 8px 10px;
-        font-size: 14px;
+        padding: 6px 4px; /* Kurangi padding agar muat */
+        font-size: 10px; /* Kurangi ukuran font */
         border: none;
         border-bottom: 1px solid #4a4a4a; /* Border bawah untuk setiap sel */
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        text-align: right; /* Align nilai ke kanan */
+        text-align: center; /* Pusatkan teks untuk tampilan lebih rapi */
+        vertical-align: middle; /* Pusatkan vertikal */
+        white-space: nowrap; /* Cegah teks membungkus */
+        overflow: hidden; /* Sembunyikan teks yang meluap */
+        text-overflow: ellipsis; /* Tambahkan ellipsis untuk teks yang panjang */
     }
 
+    /* Atur lebar kolom secara spesifik */
+    .schedule-list th:nth-child(1), /* No */
+    .schedule-list td:nth-child(1) {
+        width: 8%; /* Kolom No */
+    }
+
+    .schedule-list th:nth-child(2), /* Checkbox */
+    .schedule-list td:nth-child(2) {
+        width: 8%; /* Kolom Checkbox */
+    }
+
+    .schedule-list th:nth-child(3), /* Akun IG */
+    .schedule-list td:nth-child(3) {
+        width: 15%; /* Kolom Akun IG */
+    }
+
+    .schedule-list th:nth-child(4), /* Media */
+    .schedule-list td:nth-child(4) {
+        width: 10%; /* Kolom Media */
+    }
+
+    .schedule-list th:nth-child(5), /* Caption */
+    .schedule-list td:nth-child(5) {
+        width: 15%; /* Kolom Caption */
+    }
+
+    .schedule-list th:nth-child(6), /* Waktu Posting */
+    .schedule-list td:nth-child(6) {
+        width: 20%; /* Kolom Waktu Posting */
+    }
+
+    .schedule-list th:nth-child(7), /* Status */
+    .schedule-list td:nth-child(7) {
+        width: 12%; /* Kolom Status */
+    }
+
+    .schedule-list th:nth-child(8), /* Aksi */
+    .schedule-list td:nth-child(8) {
+        width: 12%; /* Kolom Aksi */
+    }
+
+    /* Hilangkan pseudo-element :before karena tidak diperlukan lagi */
     .schedule-list td:before {
-        content: attr(data-label); /* Gunakan data-label untuk menampilkan nama kolom */
-        font-weight: 500;
-        color: #e0e0e0; /* Warna label di dark mode */
-        width: 40%; /* Lebar label */
-        text-align: left; /* Align label ke kiri */
+        display: none;
     }
 
+    /* Pastikan kolom Aksi tetap rapi */
     .schedule-list td[data-label="Aksi"] {
-        display: flex;
-        justify-content: flex-end;
+        display: table-cell;
+        justify-content: center;
     }
 
     .schedule-list td[data-label="Aksi"]:before {
-        display: none; /* Sembunyikan label "Aksi" */
+        display: none;
+    }
+
+    /* Kurangi ukuran elemen di dalam tabel */
+    .schedule-media-preview {
+        width: 30px; /* Kurangi ukuran gambar preview */
+        height: 30px;
+    }
+
+    .delete-btn {
+        padding: 4px 8px; /* Kurangi padding tombol Hapus */
+        font-size: 10px; /* Kurangi ukuran font tombol */
     }
 
     .schedule-all-container {
@@ -770,11 +825,6 @@ body.dark-mode .caption-editor .editor-buttons button:first-child:hover {
     .schedule-all-btn,
     .save-schedules-btn {
         width: 100%;
-    }
-
-    .schedule-media-preview {
-        width: 40px;
-        height: 40px;
     }
 }
 
@@ -802,14 +852,21 @@ body.dark-mode .caption-editor .editor-buttons button:first-child:hover {
         height: 80px;
     }
 
+    /* Penyesuaian lebih lanjut untuk layar sangat kecil */
+    .schedule-list th,
     .schedule-list td {
-        font-size: 12px;
-        padding: 6px 8px;
+        font-size: 8px; /* Kurangi lagi ukuran font */
+        padding: 4px 2px; /* Kurangi padding lebih lanjut */
     }
 
     .schedule-media-preview {
-        width: 30px;
-        height: 30px;
+        width: 20px; /* Kurangi lagi ukuran gambar preview */
+        height: 20px;
+    }
+
+    .delete-btn {
+        padding: 3px 6px; /* Kurangi padding tombol Hapus */
+        font-size: 8px; /* Kurangi ukuran font tombol */
     }
 }
 
