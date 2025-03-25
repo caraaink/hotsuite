@@ -971,56 +971,67 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         const scheduleBtn = document.createElement('button');
-        scheduleBtn.className = 'btn schedule';
-        scheduleBtn.textContent = 'Jadwalkan';
-        scheduleBtn.addEventListener('click', () => {
-            const editor = document.createElement('div');
-            editor.className = 'schedule-editor';
-            const datetimeInput = document.createElement('input');
-            datetimeInput.type = 'datetime-local';
-            datetimeInput.value = scheduledTimes[file.path] || '';
-            const saveBtn = document.createElement('button');
-            saveBtn.textContent = 'Jadwalkan';
-            saveBtn.addEventListener('click', () => {
-                if (!datetimeInput.value) {
-                    showFloatingNotification('Pilih waktu terlebih dahulu.', true);
-                    return;
-                }
+scheduleBtn.className = 'btn schedule';
+scheduleBtn.textContent = 'Jadwalkan';
+scheduleBtn.addEventListener('click', () => {
+    const editor = document.createElement('div');
+    editor.className = 'schedule-editor';
+    const datetimeInput = document.createElement('input');
+    datetimeInput.type = 'datetime-local';
+    datetimeInput.value = scheduledTimes[file.path] || '';
 
-                scheduledTimes[file.path] = datetimeInput.value;
-                const date = new Date(scheduledTimes[file.path]);
-                const formattedTime = date.toLocaleString('id-ID', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: false
-                }).replace(',', '').replace(/(\d{2}):(\d{2})/, '$1.$2'); // Ubah format dari HH:mm ke HH.mm
-                scheduleTime.textContent = formattedTime;
-                scheduleTime.classList.add('scheduled'); // Tambahkan kelas untuk konten yang memiliki jadwal
-                scheduleTime.classList.remove('unscheduled'); // Hapus kelas unscheduled jika ada
+    // Buat container untuk tombol agar sejajar
+    const buttonContainer = document.createElement('div');
+    buttonContainer.className = 'editor-buttons';
 
-                editor.remove();
-                showFloatingNotification(`Waktu jadwal untuk ${file.name} disimpan sementara. Klik "Simpan Jadwal" untuk mengirimkan.`);
-            });
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'btn-save'; // Kelas untuk tombol Simpan (hijau)
+    saveBtn.textContent = 'Simpan'; // Ubah teks dari "Jadwalkan" menjadi "Simpan"
+    saveBtn.addEventListener('click', () => {
+        if (!datetimeInput.value) {
+            showFloatingNotification('Pilih waktu terlebih dahulu.', true);
+            return;
+        }
 
-            const cancelBtn = document.createElement('button');
-            cancelBtn.textContent = 'Batal';
-            cancelBtn.addEventListener('click', () => {
-                delete scheduledTimes[file.path];
-                scheduleTime.textContent = 'Belum dijadwalkan';
-                scheduleTime.classList.add('unscheduled'); // Tambahkan kembali kelas unscheduled
-                scheduleTime.classList.remove('scheduled'); // Hapus kelas scheduled jika ada
-                editor.remove();
-                displayGallery(files); // Muat ulang galeri, foto ini akan berada di posisi terakhir karena scheduledTimes menjadi null
-            });
+        scheduledTimes[file.path] = datetimeInput.value;
+        const date = new Date(scheduledTimes[file.path]);
+        const formattedTime = date.toLocaleString('id-ID', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+        }).replace(',', '').replace(/(\d{2}):(\d{2})/, '$1.$2');
+        scheduleTime.textContent = formattedTime;
+        scheduleTime.classList.add('scheduled');
+        scheduleTime.classList.remove('unscheduled');
 
-            editor.appendChild(datetimeInput);
-            editor.appendChild(saveBtn);
-            editor.appendChild(cancelBtn);
-            container.appendChild(editor);
-        });
+        editor.remove();
+        showFloatingNotification(`Waktu jadwal untuk ${file.name} disimpan sementara. Klik "Simpan Jadwal" untuk mengirimkan.`);
+    });
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'btn-cancel'; // Kelas untuk tombol Batal (merah)
+    cancelBtn.textContent = 'Batal';
+    cancelBtn.addEventListener('click', () => {
+        delete scheduledTimes[file.path];
+        scheduleTime.textContent = 'Belum dijadwalkan';
+        scheduleTime.classList.add('unscheduled');
+        scheduleTime.classList.remove('scheduled');
+        editor.remove();
+        displayGallery(files);
+    });
+
+    // Tambahkan tombol ke dalam container
+    buttonContainer.appendChild(saveBtn);
+    buttonContainer.appendChild(cancelBtn);
+
+    // Tambahkan elemen ke editor
+    editor.appendChild(datetimeInput);
+    editor.appendChild(buttonContainer);
+    container.appendChild(editor);
+});
 
         const deleteScheduleBtn = document.createElement('button');
         deleteScheduleBtn.className = 'btn delete';
