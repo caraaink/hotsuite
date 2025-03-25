@@ -1113,7 +1113,8 @@ document.addEventListener('DOMContentLoaded', () => {
         window.history.pushState({}, document.title, window.location.pathname);
         // Perbarui galeri setelah semua scheduledTimes diperbarui
         displayGallery(files);
-    });
+});
+}
             const cancelBtn = document.createElement('button');
             cancelBtn.textContent = 'Batal';
             cancelBtn.addEventListener('click', () => {
