@@ -902,31 +902,24 @@ body.dark-mode .skip-day-option label {
         font-size: 0.9rem;
     }
 }
-/* Responsif untuk layar kecil */
-@media (max-width: 600px) {
-    .modal-content {
-        padding: 20px;
-        max-width: 90%;
-    }
-
-    .modal-content p {
-        font-size: 1rem;
-    }
-
-    .modal-buttons button {
-        padding: 8px 20px;
-        font-size: 0.9rem;
-    }
+/* Pastikan warna default untuk schedule-time dihapus atau dikurangi spesifisitasnya */
+.gallery-item .schedule-time {
+    color: #777; /* Warna default untuk light mode */
 }
 
-/* Pastikan warna untuk semua konten yang memiliki jadwal di galeri */
-body.dark-mode .container .gallery .gallery-item .schedule-time.scheduled {
+/* Pastikan warna default untuk dark mode tidak menimpa */
+body.dark-mode .gallery-item .schedule-time {
+    color: #b0b0b0;
+}
+
+/* Warna untuk semua konten yang memiliki jadwal di galeri */
+body.dark-mode .gallery-item .schedule-time.scheduled {
     color: #00CED1 !important; /* Cyan tua untuk kontras */
     font-weight: bold; /* Membuat teks lebih tebal agar menonjol */
 }
 
-/* Pastikan styling untuk teks "Belum dijadwalkan" di galeri */
-body.dark-mode .container .gallery .gallery-item .schedule-time.unscheduled {
+/* Styling untuk teks "Belum dijadwalkan" di galeri */
+body.dark-mode .gallery-item .schedule-time.unscheduled {
     text-decoration: line-through; /* Mencoret teks */
     color: #A9A9A9 !important; /* Abu-abu terang untuk coretan di dark mode */
 }
