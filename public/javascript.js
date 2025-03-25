@@ -973,7 +973,7 @@ document.addEventListener('DOMContentLoaded', () => {
             buttonGroup.className = 'button-group';
 
             const editBtn = document.createElement('button');
-            editBtn.className = 'btn-save';
+            editBtn.className = 'btn edit';
             editBtn.textContent = 'Edit';
             editBtn.addEventListener('click', () => {
                 const editor = document.createElement('div');
@@ -981,7 +981,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const textarea = document.createElement('textarea');
                 textarea.value = captions[file.path] || '';
                 const buttonContainer = document.createElement('div');
-                buttonContainer.className = 'editor-buttons';
+                buttonContainer.className = 'btn-save';
                 const saveBtn = document.createElement('button');
                 saveBtn.textContent = 'Simpan';
                 const saveSpinner = document.createElement('span');
