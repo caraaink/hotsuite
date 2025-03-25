@@ -963,6 +963,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 scheduleTime.classList.add('scheduled'); // Tambahkan kelas untuk konten yang memiliki jadwal
             } else {
                 scheduleTime.textContent = 'Belum dijadwalkan';
+                scheduleTime.classList.add('unscheduled'); // Tambahkan kelas untuk mencoret
             }
 
             const existingSchedule = schedules.schedules.find(schedule => schedule.mediaUrl === file.download_url);
