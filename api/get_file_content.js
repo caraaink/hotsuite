@@ -8,18 +8,16 @@ module.exports = async (req, res) => {
     return res.status(400).json({ error: 'Paths are required' });
   }
 
-  // paths bisa berupa string (satu path) atau array (multiple paths)
   const pathArray = Array.isArray(paths) ? paths : [paths];
-
-  // Cek cache untuk semua path
   const results = {};
   const pathsToFetch = [];
 
+  // Cek cache untuk semua path
   for (const path of pathArray) {
     const cacheKey = `file_content:${path}`;
     const cachedContent = await kv.get(cacheKey);
     if (cachedContent) {
-      console.log(`Returning cached content for path: ${path}`);
+      console.log(`Returning cached content for path: ${path}`, cachedContent);
       results[path] = cachedContent;
     } else {
       pathsToFetch.push(path);
@@ -30,23 +28,35 @@ module.exports = async (req, res) => {
   if (pathsToFetch.length > 0) {
     try {
       const promises = pathsToFetch.map(async (path) => {
-        const response = await axios.get(`https://api.github.com/repos/caraaink/hotsuite/contents/${path}`, {
-          headers: {
-            Authorization: `token ${process.env.GITHUB_TOKEN}`,
-            Accept: 'application/vnd.github.v3+json',
-          },
-        });
+        try {
+          const response = await axios.get(`https://api.github.com/repos/caraaink/hotsuite/contents/${path}`, {
+            headers: {
+              Authorization: `token ${process.env.GITHUB_TOKEN}`,
+              Accept: 'application/vnd.github.v3+json',
+            },
+          });
 
-        const fileData = response.data;
-        if (!fileData.content) {
-          throw new Error('File content not found');
+          const fileData = response.data;
+          if (!fileData.content) {
+            throw new Error('File content not found');
+          }
+
+          const content = Buffer.from(fileData.content, 'base64').toString('utf-8');
+          let parsedContent;
+          try {
+            parsedContent = JSON.parse(content);
+          } catch (parseError) {
+            console.error(`Error parsing JSON for path ${path}:`, parseError.message);
+            parsedContent = { caption: '' }; // Fallback ke caption kosong jika JSON tidak valid
+          }
+
+          const cacheKey = `file_content:${path}`;
+          await kv.set(cacheKey, parsedContent, { ex: 3600 }); // Cache selama 1 jam
+          return { path, content: parsedContent };
+        } catch (error) {
+          console.error(`Error fetching file content for path ${path}:`, error.response?.data || error.message);
+          return { path, content: null };
         }
-
-        const content = Buffer.from(fileData.content, 'base64').toString('utf-8');
-        const parsedContent = JSON.parse(content);
-        const cacheKey = `file_content:${path}`;
-        await kv.set(cacheKey, parsedContent, { ex: 3600 }); // Cache selama 1 jam
-        return { path, content: parsedContent };
       });
 
       const fetchedResults = await Promise.allSettled(promises);
@@ -56,7 +66,7 @@ module.exports = async (req, res) => {
         if (result.status === 'fulfilled') {
           results[path] = result.value.content;
         } else {
-          console.error(`Error fetching file content for path ${path}:`, result.reason?.response?.data || result.reason?.message);
+          console.error(`Error in Promise for path ${path}:`, result.reason);
           results[path] = null; // Jika gagal, set null
         }
       });
