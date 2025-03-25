@@ -327,81 +327,86 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function fetchFilesInSubfolder(path) {
-        showFloatingNotification('Memuat daftar file...');
-        spinner.classList.remove('hidden');
-        try {
-            const res = await fetch(`/api/get_github_files?path=${path}`);
-            if (!res.ok) {
-                throw new Error(`HTTP error! status: ${res.status}`);
-            }
-            const data = await res.json();
-            console.log(`Files fetched for path ${path}:`, data);
-
-            allMediaFiles = [];
-            const mediaFiles = data.files.filter(item => 
-                item.type === 'file' && 
-                (item.name.endsWith('.jpg') || item.name.endsWith('.png') || item.name.endsWith('.mp4'))
-            );
-            const totalFiles = mediaFiles.length;
-
-            if (totalFiles === 0) {
-                showFloatingNotification('Tidak ada file media yang didukung di folder ini.', true);
-                spinner.classList.add('hidden');
-                return allMediaFiles;
-            }
-
-            let loadedCount = 0;
-            for (const item of mediaFiles) {
-                loadedCount++;
-                showFloatingNotification(`Memuat file ${loadedCount} dari ${totalFiles}...`, false, 0);
-                allMediaFiles.push({
-                    name: item.name,
-                    path: item.path,
-                    download_url: item.download_url,
-                });
-                await new Promise(resolve => setTimeout(resolve, 500));
-            }
-
-            allMediaFiles.sort(naturalSort);
-
-            const metaPaths = allMediaFiles.map(file => {
-                const folderPath = file.path.substring(0, file.path.lastIndexOf('/'));
-                const metaFileName = `${file.name}.meta.json`;
-                return `${folderPath}/${metaFileName}`;
-            });
-
-            showFloatingNotification('Memuat metadata file...', false, 0);
-            try {
-                const metaRes = await fetch(`/api/get_file_content?${metaPaths.map(path => `paths=${encodeURIComponent(path)}`).join('&')}`);
-                if (!metaRes.ok) {
-                    throw new Error(`HTTP error fetching metadata! status: ${metaRes.status}`);
-                }
-                const metaData = await metaRes.json();
-
-                allMediaFiles.forEach(file => {
-                    const folderPath = file.path.substring(0, file.path.lastIndexOf('/'));
-                    const metaPath = `${folderPath}/${file.name}.meta.json`;
-                    captions[file.path] = metaData[metaPath]?.caption || '';
-                });
-            } catch (error) {
-                console.error('Error fetching metadata:', error);
-                allMediaFiles.forEach(file => {
-                    captions[file.path] = '';
-                });
-            }
-
-            showFloatingNotification(`Berhasil memuat ${totalFiles} file.`, false, 3000);
-            return allMediaFiles;
-        } catch (error) {
-            console.error(`Error fetching files for path ${path}:`, error);
-            showFloatingNotification(`Error loading files: ${error.message}`, true);
-            return [];
-        } finally {
-            setTimeout(() => {
-                spinner.classList.add('hidden');
-            }, 3000);
+    showFloatingNotification('Memuat daftar file...');
+    spinner.classList.remove('hidden');
+    try {
+        const res = await fetch(`/api/get_github_files?path=${path}`);
+        if (!res.ok) {
+            throw new Error(`HTTP error! status: ${res.status}`);
         }
+        const data = await res.json();
+        console.log(`Files fetched for path ${path}:`, data);
+
+        allMediaFiles = [];
+        const mediaFiles = data.files.filter(item => 
+            item.type === 'file' && 
+            (item.name.endsWith('.jpg') || item.name.endsWith('.png') || item.name.endsWith('.mp4'))
+        );
+        const totalFiles = mediaFiles.length;
+
+        if (totalFiles === 0) {
+            showFloatingNotification('Tidak ada file media yang didukung di folder ini.', true);
+            spinner.classList.add('hidden');
+            return allMediaFiles;
+        }
+
+        let loadedCount = 0;
+        for (const item of mediaFiles) {
+            loadedCount++;
+            showFloatingNotification(`Memuat file ${loadedCount} dari ${totalFiles}...`, false, 0);
+            allMediaFiles.push({
+                name: item.name,
+                path: item.path,
+                download_url: item.download_url,
+            });
+            await new Promise(resolve => setTimeout(resolve, 500));
+        }
+
+        allMediaFiles.sort(naturalSort);
+
+        const metaPaths = allMediaFiles.map(file => {
+            const folderPath = file.path.substring(0, file.path.lastIndexOf('/'));
+            const metaFileName = `${file.name}.meta.json`;
+            return `${folderPath}/${metaFileName}`;
+        });
+
+        showFloatingNotification(`Memuat metadata untuk ${totalFiles} file...`, false, 0); // Info metadata
+        try {
+            const metaRes = await fetch(`/api/get_file_content?${metaPaths.map(path => `paths=${encodeURIComponent(path)}`).join('&')}`);
+            if (!metaRes.ok) {
+                throw new Error(`HTTP error fetching metadata! status: ${metaRes.status}`);
+            }
+            const metaData = await metaRes.json();
+
+            let metaLoadedCount = 0;
+            allMediaFiles.forEach(file => {
+                const folderPath = file.path.substring(0, file.path.lastIndexOf('/'));
+                const metaPath = `${folderPath}/${file.name}.meta.json`;
+                captions[file.path] = metaData[metaPath]?.caption || '';
+                metaLoadedCount++;
+                showFloatingNotification(`Memuat metadata ${metaLoadedCount}/${totalFiles}...`, false, 0); // Progres metadata
+            });
+            showFloatingNotification(`Berhasil memuat metadata untuk ${totalFiles} file.`, false, 3000);
+        } catch (error) {
+            console.error('Error fetching metadata:', error);
+            allMediaFiles.forEach(file => {
+                captions[file.path] = '';
+            });
+            showFloatingNotification('Gagal memuat metadata. Menggunakan caption kosong.', true);
+        }
+
+        showFloatingNotification(`Berhasil memuat ${totalFiles} file.`, false, 3000);
+        return allMediaFiles;
+    } catch (error) {
+        console.error(`Error fetching files for path ${path}:`, error);
+        showFloatingNotification(`Error loading files: ${error.message}`, true);
+        return [];
+    } finally {
+        setTimeout(() => {
+            spinner.classList.add('hidden');
+        }, 3000);
     }
+}
 
     githubFolder.addEventListener('change', async () => {
         const folderPath = githubFolder.value;
@@ -1020,7 +1025,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            showFloatingNotification('Mempublikasikan...');
+            showFloatingNotification('Mempublikasikan...', false, 0);
             spinner.classList.remove('hidden');
             let isUploadedFile = file.path.startsWith('ig/image/');
 
@@ -1041,7 +1046,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 const result = await response.json();
-                showFloatingNotification(result.message || 'Berhasil dipublikasikan!');
+                showFloatingNotification(result.message || 'Berhasil dipublikasikan ke Instagram!', false, 3000); // Pastikan notifikasi muncul
 
                 if (isUploadedFile) {
                     await deletePhoto(file.path);
@@ -1386,72 +1391,71 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     saveSchedules.addEventListener('click', async () => {
-        if (!selectedToken || !accountId.value) {
-            showFloatingNotification('Pilih akun dan username terlebih dahulu.', true);
-            return;
-        }
+    if (!selectedToken || !accountId.value) {
+        showFloatingNotification('Pilih akun dan username terlebih dahulu.', true);
+        return;
+    }
 
-        const scheduledFiles = allMediaFiles.filter(file => {
-            const scheduledTime = scheduledTimes[file.path];
-            // Hanya sertakan file yang memiliki jadwal valid (tidak null, undefined, atau string kosong)
-            return scheduledTime && typeof scheduledTime === 'string' && scheduledTime.trim() !== '';
-        });
-        if (scheduledFiles.length === 0) {
-            showFloatingNotification('Tidak ada foto yang dijadwalkan.', true);
-            return;
-        }
-
-        showFloatingNotification('Menyimpan jadwal...');
-        spinner.classList.remove('hidden');
-
-        try {
-            for (const file of scheduledFiles) {
-                const formData = {
-                    accountId: accountId.value,
-                    username: selectedUsername,
-                    mediaUrl: file.download_url,
-                    caption: captions[file.path] || '',
-                    time: scheduledTimes[file.path],
-                    userToken: selectedToken,
-                    accountNum: userAccount.value,
-                    completed: false,
-                };
-
-                console.log('Scheduling file:', file.path, 'with data:', formData);
-
-                const response = await fetch('/api/schedule', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(formData),
-                });
-
-                console.log('Response status:', response.status);
-                const responseText = await response.text();
-                console.log('Raw response:', responseText);
-
-                let result;
-                try {
-                    result = JSON.parse(responseText);
-                } catch (parseError) {
-                    throw new Error(`Failed to parse server response as JSON: ${responseText}`);
-                }
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error scheduling post! status: ${response.status}, details: ${result.error || responseText}`);
-                }
-
-                console.log('Schedule response:', result);
-            }
-            showFloatingNotification(`${scheduledFiles.length} foto berhasil dijadwalkan!`);
-            scheduledTimes = {};
-            await loadSchedules();
-        } catch (error) {
-            showFloatingNotification(`Error scheduling: ${error.message}`, true);
-            console.error('Error scheduling posts:', error);
-        } finally {
-            spinner.classList.add('hidden');
-        }
+    const scheduledFiles = allMediaFiles.filter(file => {
+        const scheduledTime = scheduledTimes[file.path];
+        return scheduledTime && typeof scheduledTime === 'string' && scheduledTime.trim() !== '';
     });
+    if (scheduledFiles.length === 0) {
+        showFloatingNotification('Tidak ada foto yang dijadwalkan.', true);
+        return;
+    }
+
+    showFloatingNotification('Menyimpan jadwal... 0/' + scheduledFiles.length, false, 0); // Tampilkan progres awal
+    spinner.classList.remove('hidden');
+
+    try {
+        let completedCount = 0;
+        for (const file of scheduledFiles) {
+            const formData = {
+                accountId: accountId.value,
+                username: selectedUsername,
+                mediaUrl: file.download_url,
+                caption: captions[file.path] || '',
+                time: scheduledTimes[file.path],
+                userToken: selectedToken,
+                accountNum: userAccount.value,
+                completed: false,
+            };
+
+            console.log('Scheduling file:', file.path, 'with data:', formData);
+
+            const response = await fetch('/api/schedule', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData),
+            });
+
+            const responseText = await response.text();
+            let result;
+            try {
+                result = JSON.parse(responseText);
+            } catch (parseError) {
+                throw new Error(`Failed to parse server response as JSON: ${responseText}`);
+            }
+
+            if (!response.ok) {
+                throw new Error(`HTTP error scheduling post! status: ${response.status}, details: ${result.error || responseText}`);
+            }
+
+            completedCount++;
+            showFloatingNotification(`Menyimpan jadwal... ${completedCount}/${scheduledFiles.length}`, false, 0); // Update progres
+            console.log('Schedule response:', result);
+        }
+        showFloatingNotification(`${scheduledFiles.length} foto berhasil dijadwalkan!`, false, 3000); // Notifikasi sukses
+        scheduledTimes = {};
+        await loadSchedules();
+    } catch (error) {
+        showFloatingNotification(`Error scheduling: ${error.message}`, true);
+        console.error('Error scheduling posts:', error);
+    } finally {
+        spinner.classList.add('hidden');
+    }
+});
 
     loadSchedules();
 });
