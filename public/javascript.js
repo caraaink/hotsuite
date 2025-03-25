@@ -203,46 +203,51 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     userAccount.addEventListener('change', async () => {
-        const accountNum = userAccount.value;
-        selectedAccountNum = accountNum;
-        console.log('Selected account number:', accountNum);
+    const accountNum = userAccount.value;
+    selectedAccountNum = accountNum;
+    console.log('Selected account number:', accountNum);
 
-        if (!accountNum) {
-            accountId.innerHTML = '<option value="">-- Pilih Username --</option>';
-            selectedToken = null;
-            selectedUsername = null;
-            selectedAccountNum = null;
-            selectedAccountId = null;
-            allIgAccounts = [];
-            nextCursor = null;
-            await loadSchedules();
-            return;
+    const accountIdContainer = document.getElementById('accountIdContainer');
+
+    if (!accountNum) {
+        accountId.innerHTML = '<option value="">-- Pilih Username --</option>';
+        selectedToken = null;
+        selectedUsername = null;
+        selectedAccountNum = null;
+        selectedAccountId = null;
+        allIgAccounts = [];
+        nextCursor = null;
+        accountIdContainer.classList.add('hidden'); // Sembunyikan Pilih Username IG
+        await loadSchedules();
+        return;
+    }
+
+    try {
+        const tokenRes = await fetch(`/api/refresh-token?accountNum=${accountNum}`);
+        if (!tokenRes.ok) {
+            throw new Error(`HTTP error fetching token! status: ${tokenRes.status}`);
+        }
+        const tokenData = await tokenRes.json();
+        console.log('Token fetched:', tokenData);
+        selectedToken = tokenData.token;
+        if (!selectedToken) {
+            throw new Error('No token found for this account');
         }
 
-        try {
-            const tokenRes = await fetch(`/api/refresh-token?accountNum=${accountNum}`);
-            if (!tokenRes.ok) {
-                throw new Error(`HTTP error fetching token! status: ${tokenRes.status}`);
-            }
-            const tokenData = await tokenRes.json();
-            console.log('Token fetched:', tokenData);
-            selectedToken = tokenData.token;
-            if (!selectedToken) {
-                throw new Error('No token found for this account');
-            }
+        allIgAccounts = [];
+        nextCursor = null;
+        accountId.innerHTML = '<option value="">-- Memuat Username --</option>';
+        accountIdContainer.classList.remove('hidden'); // Tampilkan Pilih Username IG
 
-            allIgAccounts = [];
-            nextCursor = null;
-            accountId.innerHTML = '<option value="">-- Memuat Username --</option>';
-
-            await fetchIgAccounts(`Akun ${accountNum}`);
-            await loadSchedules();
-        } catch (error) {
-            showFloatingNotification(`Error fetching accounts: ${error.message}`, true);
-            console.error('Error fetching accounts:', error);
-            accountId.innerHTML = '<option value="">-- Gagal Memuat --</option>';
-        }
-    });
+        await fetchIgAccounts(`Akun ${accountNum}`);
+        await loadSchedules();
+    } catch (error) {
+        showFloatingNotification(`Error fetching accounts: ${error.message}`, true);
+        console.error('Error fetching accounts:', error);
+        accountId.innerHTML = '<option value="">-- Gagal Memuat --</option>';
+        accountIdContainer.classList.add('hidden'); // Sembunyikan jika gagal
+    }
+});
 
     accountId.addEventListener('change', async () => {
         const selectedOption = accountId.options[accountId.selectedIndex];
@@ -424,24 +429,42 @@ document.addEventListener('DOMContentLoaded', () => {
 }
 
     githubFolder.addEventListener('change', async () => {
-        const folderPath = githubFolder.value;
-        allMediaFiles = [];
-        captions = {};
-        scheduledTimes = {};
-        gallery.innerHTML = '';
-        mediaUrl.value = '';
+    const folderPath = githubFolder.value;
+    allMediaFiles = [];
+    captions = {};
+    scheduledTimes = {};
+    gallery.innerHTML = '';
+    mediaUrl.value = '';
 
-        if (!folderPath) {
-            subfolderContainer.classList.remove('hidden');
-            githubSubfolder.innerHTML = '<option value="">-- Pilih Subfolder --</option>';
-            return;
-        }
+    const subfolderContainer = document.getElementById('subfolderContainer');
 
-        try {
-            if (folderPath === 'ig/image') {
-                subfolderContainer.classList.add('hidden');
+    if (!folderPath || folderPath === 'ig') {
+        subfolderContainer.classList.add('hidden'); // Sembunyikan Pilih Subfolder
+        githubSubfolder.innerHTML = '<option value="">-- Pilih Subfolder --</option>';
+        return;
+    }
+
+    try {
+        if (folderPath === 'ig/image') {
+            subfolderContainer.classList.add('hidden'); // Tetap sembunyikan jika folder adalah ig/image
+            const files = await fetchFilesInSubfolder(folderPath);
+            allMediaFiles = files;
+            displayGallery(files);
+
+            if (files.length === 0) {
+                showFloatingNotification('No supported media files found in this folder.', true);
+            } else {
+                showFloatingNotification('');
+            }
+        } else {
+            subfolderContainer.classList.remove('hidden'); // Tampilkan Pilih Subfolder
+            const subfolders = await fetchSubfolders(folderPath);
+            console.log('All subfolders found:', subfolders);
+
+            if (subfolders.length === 0) {
                 const files = await fetchFilesInSubfolder(folderPath);
                 allMediaFiles = files;
+                githubSubfolder.innerHTML = '<option value="">-- Tidak Ada Subfolder --</option>';
                 displayGallery(files);
 
                 if (files.length === 0) {
@@ -450,42 +473,27 @@ document.addEventListener('DOMContentLoaded', () => {
                     showFloatingNotification('');
                 }
             } else {
-                subfolderContainer.classList.remove('hidden');
-                const subfolders = await fetchSubfolders(folderPath);
-                console.log('All subfolders found:', subfolders);
+                githubSubfolder.innerHTML = '<option value="">-- Pilih Subfolder --</option>';
+                subfolders.forEach(subfolder => {
+                    const option = document.createElement('option');
+                    option.value = subfolder.path;
+                    option.textContent = subfolder.name;
+                    githubSubfolder.appendChild(option);
+                });
 
-                if (subfolders.length === 0) {
-                    const files = await fetchFilesInSubfolder(folderPath);
-                    allMediaFiles = files;
-                    githubSubfolder.innerHTML = '<option value="">-- Tidak Ada Subfolder --</option>';
-                    displayGallery(files);
-
-                    if (files.length === 0) {
-                        showFloatingNotification('No supported media files found in this folder.', true);
-                    } else {
-                        showFloatingNotification('');
-                    }
+                if (githubSubfolder.options.length === 1) {
+                    showFloatingNotification('No subfolders found in this folder.', true);
                 } else {
-                    githubSubfolder.innerHTML = '<option value="">-- Pilih Subfolder --</option>';
-                    subfolders.forEach(subfolder => {
-                        const option = document.createElement('option');
-                        option.value = subfolder.path;
-                        option.textContent = subfolder.name;
-                        githubSubfolder.appendChild(option);
-                    });
-
-                    if (githubSubfolder.options.length === 1) {
-                        showFloatingNotification('No subfolders found in this folder.', true);
-                    } else {
-                        showFloatingNotification('');
-                    }
+                    showFloatingNotification('');
                 }
             }
-        } catch (error) {
-            showFloatingNotification(`Error loading subfolders: ${error.message}`, true);
-            console.error('Error fetching subfolders:', error);
         }
-    });
+    } catch (error) {
+        showFloatingNotification(`Error loading subfolders: ${error.message}`, true);
+        console.error('Error fetching subfolders:', error);
+        subfolderContainer.classList.add('hidden'); // Sembunyikan jika gagal
+    }
+});
 
     githubSubfolder.addEventListener('change', async () => {
         const subfolderPath = githubSubfolder.value;
