@@ -365,7 +365,7 @@ body.dark-mode .skip-day-option label {
 /* Editor Spinner */
 .editor-spinner {
     display: inline-block;
-    border: 2px solid rgba(255, 255, 255, 0.3);
+    border: 2px solid rgba(255, 0, 0, 0.3);
     border-left: 2px solid #fff;
     border-radius: 50%;
     width: 16px;
@@ -518,7 +518,7 @@ body.dark-mode .skip-day-option label {
 
 /* Atur container untuk Load More */
 .load-more-container {
-    display: flex;
+    display: border-box;
     justify-content: center;
     margin: 20px 0;
 }
@@ -557,6 +557,7 @@ body.dark-mode .skip-day-option label {
     z-index: 10;
     border-radius: 8px;
 }
+
 /* Gaya untuk tombol Simpan di caption-editor agar seragam dengan btn-save */
 .caption-editor .editor-buttons button:first-child {
     background-color: #2ecc71; /* Warna hijau sama seperti btn-save */
@@ -575,6 +576,7 @@ body.dark-mode .caption-editor .editor-buttons button:first-child {
 body.dark-mode .caption-editor .editor-buttons button:first-child:hover {
     background-color: #2ea44f; /* Warna hijau lebih gelap saat hover di mode gelap */
 }
+
 .caption-editor textarea,
 .schedule-editor input {
     width: 80%;
@@ -626,8 +628,10 @@ body.dark-mode .caption-editor .editor-buttons button:first-child:hover {
 /* Responsive Design */
 @media (max-width: 768px) {
     .container {
-        margin: 15px;
-        padding: 15px;
+        margin: 0; /* Hilangkan margin agar full body */
+        padding: 10px; /* Kurangi padding untuk lebih rapat */
+        border-radius: 0; /* Hilangkan border-radius di mobile */
+        box-shadow: none; /* Hilangkan shadow di mobile */
     }
 
     .header h2 {
@@ -653,29 +657,219 @@ body.dark-mode .caption-editor .editor-buttons button:first-child:hover {
         height: 100px;
     }
 
-    .schedule-list th,
-    .schedule-list td {
-        padding: 8px 10px;
-        font-size: 14px;
+    /* Perbaikan untuk tabel di mobile */
+    .schedule-list {
+        margin-top: 20px;
+        padding: 0; /* Hilangkan padding */
+        overflow-x: auto; /* Tambahkan scroll horizontal jika diperlukan */
     }
 
     .schedule-list table {
-        font-size: 14px;
+        width: 100%;
+        min-width: 600px; /* Pastikan tabel cukup lebar untuk semua kolom */
+        margin: 0;
+        padding: 0;
+        border: none; /* Hilangkan border luar */
+        border-radius: 0; /* Hilangkan border-radius di mobile */
+        background: transparent; /* Sesuaikan dengan background container */
     }
 
+    .schedule-list thead,
+    .schedule-list tbody,
+    .schedule-list tr {
+        display: table; /* Pertahankan struktur tabel */
+        width: 100%;
+    }
+
+    .schedule-list th,
+    .schedule-list td {
+        display: table-cell; /* Pertahankan struktur kolom */
+        padding: 4px 6px; /* Kurangi padding untuk lebih rapat */
+        font-size: 10px; /* Kecilkan ukuran font */
+        border-bottom: 1px solid #eee;
+        text-align: left;
+        vertical-align: middle;
+    }
+
+    /* Atur lebar kolom secara proporsional */
+    .schedule-list th:nth-child(1),
+    .schedule-list td:nth-child(1) {
+        width: 5%; /* No */
+    }
+
+    .schedule-list th:nth-child(2),
+    .schedule-list td:nth-child(2) {
+        width: 5%; /* Checkbox */
+    }
+
+    .schedule-list th:nth-child(3),
+    .schedule-list td:nth-child(3) {
+        width: 15%; /* Akun IG */
+    }
+
+    .schedule-list th:nth-child(4),
+    .schedule-list td:nth-child(4) {
+        width: 10%; /* Media */
+    }
+
+    .schedule-list th:nth-child(5),
+    .schedule-list td:nth-child(5) {
+        width: 20%; /* Caption */
+        word-break: break-word; /* Pastikan teks panjang membungkus */
+        white-space: normal; /* Izinkan teks membungkus */
+    }
+
+    .schedule-list th:nth-child(6),
+    .schedule-list td:nth-child(6) {
+        width: 15%; /* Waktu Posting */
+        white-space: nowrap; /* Pastikan tanggal tidak membungkus */
+    }
+
+    .schedule-list th:nth-child(7),
+    .schedule-list td:nth-child(7) {
+        width: 15%; /* Status */
+    }
+
+    .schedule-list th:nth-child(8),
+    .schedule-list td:nth-child(8) {
+        width: 15%; /* Aksi */
+    }
+
+    body.dark-mode .schedule-list th,
+    body.dark-mode .schedule-list td {
+        border: 1px solid #4a4a4a;
+    }
+
+    body.dark-mode .schedule-list th {
+        background: #444;
+        color: #ffffff;
+    }
+
+    /* Sesuaikan preview media */
+    .schedule-media-preview {
+        width: 30px;
+        height: 30px;
+    }
+
+    /* Kecilkan tombol Hapus di kolom Aksi */
+    .delete-btn {
+        padding: 4px 8px; /* Kecilkan padding */
+        font-size: 10px; /* Kecilkan ukuran font */
+    }
+
+    /* Perbaikan untuk schedule-all-container agar elemen berada dalam satu baris */
     .schedule-all-container {
-        flex-direction: column;
-        align-items: flex-start;
+        flex-direction: row; /* Ubah ke baris */
+        align-items: center; /* Pusatkan secara vertikal */
+        flex-wrap: nowrap; /* Pastikan tidak membungkus */
+        gap: 5px; /* Kurangi jarak antar elemen */
+        overflow-x: auto; /* Tambahkan scroll horizontal jika elemen melebihi lebar */
+        padding-bottom: 5px; /* Berikan ruang untuk scroll */
+    }
+
+    /* Pastikan elemen di dalam schedule-all-container tidak menyusut terlalu banyak */
+    .skip-day-option {
+        flex-shrink: 0; /* Pastikan tidak menyusut */
+        white-space: nowrap; /* Pastikan teks tidak membungkus */
+    }
+
+    .skip-day-option label {
+        font-size: 12px; /* Kecilkan ukuran font */
+    }
+
+    .skip-day-option select {
+        font-size: 12px; /* Kecilkan ukuran font */
+        padding: 4px; /* Kurangi padding */
+        height: 30px; /* Sesuaikan tinggi */
     }
 
     .schedule-all-btn,
     .save-schedules-btn {
-        width: 100%;
+        width: auto; /* Ubah dari width: 100% menjadi auto agar sesuai dengan konten */
+        padding: 6px 12px; /* Kurangi padding */
+        font-size: 12px; /* Kecilkan ukuran font */
+        flex-shrink: 0; /* Pastikan tombol tidak menyusut terlalu banyak */
+        white-space: nowrap; /* Pastikan teks tombol tidak membungkus */
     }
 
-    .schedule-media-preview {
-        width: 40px;
-        height: 40px;
+    /* Pastikan schedule-all-btn tidak keluar dari body */
+    .schedule-all-btn {
+        max-width: 120px; /* Batasi lebar maksimum */
+    }
+
+    /* Kecilkan teks dan tombol Hapus Terpilih */
+    #totalSchedules {
+        font-size: 10px; /* Kecilkan ukuran font */
+        color: #ccc;
+    }
+
+    .delete-selected-btn {
+        padding: 6px 12px; /* Kecilkan padding */
+        font-size: 12px; /* Kecilkan ukuran font */
+        max-width: 130px; /* Kurangi lebar maksimum */
+    }
+
+    /* Perbaikan untuk dropdown dan input di mobile */
+    .select-row {
+        flex-direction: column; /* Ubah ke kolom agar lebih rapi */
+        align-items: stretch;
+        gap: 10px;
+    }
+
+    .select-group {
+        min-width: 100%; /* Pastikan dropdown mengambil lebar penuh */
+        max-width: 100%; /* Batasi lebar maksimum */
+    }
+
+    .select-group select {
+        padding: 6px; /* Kurangi padding */
+        font-size: 12px; /* Kecilkan ukuran font */
+        max-width: 100%; /* Pastikan tidak melebihi body */
+    }
+
+    /* Ubah layout upload-row menjadi satu baris di mobile */
+    .upload-row {
+        flex-direction: row; /* Satu baris */
+        align-items: center;
+        gap: 5px; /* Kurangi jarak antar elemen */
+        flex-wrap: nowrap; /* Pastikan tidak membungkus */
+    }
+
+    .upload-file-section,
+    .upload-folder-section {
+        flex: 1; /* Berikan ruang proporsional */
+        min-width: 0; /* Pastikan elemen bisa menyusut */
+    }
+
+    .upload-file-section input[type="file"],
+    .upload-folder-section input[type="text"] {
+        padding: 4px; /* Kurangi padding */
+        font-size: 12px; /* Kecilkan ukuran font */
+        height: 30px; /* Kurangi tinggi */
+    }
+
+    .upload-folder-section input[type="text"] {
+        width: 100%; /* Pastikan input mengambil lebar penuh */
+        max-width: 120px; /* Batasi lebar maksimum untuk mempersingkat */
+    }
+
+    .upload-btn {
+        padding: 4px 8px; /* Kurangi padding */
+        font-size: 12px; /* Kecilkan ukuran font */
+        height: 30px; /* Sesuaikan tinggi dengan input */
+        margin-top: 23px; /* Sesuaikan dengan tinggi input */
+        flex-shrink: 0; /* Pastikan tombol tidak menyusut terlalu banyak */
+        min-width: 80px; /* Berikan lebar minimum */
+    }
+
+    /* Perbaikan untuk tombol di galeri agar tidak keluar body */
+    .gallery-item .btn {
+        padding: 4px 6px; /* Kurangi padding */
+        font-size: 10px; /* Kecilkan ukuran font */
+        max-width: 100%; /* Pastikan tidak melebihi lebar galeri item */
+        white-space: nowrap; /* Pastikan teks tidak membungkus */
+        overflow: hidden; /* Sembunyikan teks yang melebihi */
+        text-overflow: ellipsis; /* Tambahkan elipsis jika teks terlalu panjang */
     }
 }
 
@@ -705,13 +899,79 @@ body.dark-mode .caption-editor .editor-buttons button:first-child:hover {
 
     .schedule-list th,
     .schedule-list td {
-        font-size: 12px;
-        padding: 6px 8px;
+        padding: 3px 5px; /* Kurangi padding lebih lanjut */
+        font-size: 9px; /* Kecilkan lebih lanjut untuk layar sangat kecil */
     }
 
     .schedule-media-preview {
-        width: 30px;
-        height: 30px;
+        width: 25px;
+        height: 25px;
+    }
+
+    /* Kecilkan lebih lanjut untuk layar sangat kecil */
+    #totalSchedules {
+        font-size: 9px;
+    }
+
+    .delete-selected-btn {
+        padding: 5px 10px;
+        font-size: 11px;
+        max-width: 120px;
+    }
+
+    .select-group select {
+        padding: 5px; /* Kurangi padding lebih lanjut */
+        font-size: 11px; /* Kecilkan lebih lanjut */
+    }
+
+    .upload-file-section input[type="file"],
+    .upload-folder-section input[type="text"] {
+        padding: 3px; /* Kurangi padding lebih lanjut */
+        font-size: 11px; /* Kecilkan lebih lanjut */
+        height: 28px; /* Kurangi tinggi lebih lanjut */
+    }
+
+    .upload-folder-section input[type="text"] {
+        max-width: 100px; /* Persingkat lebih lanjut */
+    }
+
+    .upload-btn {
+        padding: 3px 6px; /* Kurangi padding lebih lanjut */
+        font-size: 11px; /* Kecilkan lebih lanjut */
+        height: 28px; /* Sesuaikan tinggi */
+        min-width: 70px; /* Kurangi lebar minimum */
+        margin-top: 22px; /* Sesuaikan dengan tinggi input */
+    }
+
+    /* Perbaikan untuk schedule-all-container di layar sangat kecil */
+    .schedule-all-container {
+        gap: 3px; /* Kurangi jarak lebih lanjut */
+    }
+
+    .skip-day-option label {
+        font-size: 10px; /* Kecilkan lebih lanjut */
+    }
+
+    .skip-day-option select {
+        font-size: 10px; /* Kecilkan lebih lanjut */
+        padding: 3px; /* Kurangi padding lebih lanjut */
+        height: 28px; /* Sesuaikan tinggi */
+    }
+
+    .schedule-all-btn,
+    .save-schedules-btn {
+        padding: 5px 10px; /* Kurangi padding lebih lanjut */
+        font-size: 10px; /* Kecilkan lebih lanjut */
+    }
+
+    .schedule-all-btn {
+        max-width: 100px; /* Batasi lebar maksimum lebih kecil */
+    }
+
+    /* Perbaikan untuk tombol di galeri di layar sangat kecil */
+    .gallery-item .btn {
+        padding: 3px 5px; /* Kurangi padding lebih lanjut */
+        font-size: 9px; /* Kecilkan lebih lanjut */
     }
 }
 
@@ -738,7 +998,8 @@ body.dark-mode .caption-editor .editor-buttons button:first-child:hover {
     padding: 5px;
 }
 
-.editable-caption:hover, .editable-caption:focus {
+.editable-caption:hover,
+.editable-caption:focus {
     border: 1px solid #ccc;
     outline: none;
 }
@@ -757,20 +1018,23 @@ body.dark-mode .caption-editor .editor-buttons button:first-child:hover {
     margin-bottom: 15px;
 }
 
-.upload-file-section, .upload-folder-section {
+.upload-file-section,
+.upload-folder-section {
     display: flex;
     flex-direction: column;
     flex: 1;
 }
 
-.upload-file-section label, .upload-folder-section label {
+.upload-file-section label,
+.upload-folder-section label {
     margin-bottom: 5px;
     font-size: 14px;
     font-weight: 500;
     color: #ddd;
 }
 
-.upload-file-section input[type="file"], .upload-folder-section input[type="text"] {
+.upload-file-section input[type="file"],
+.upload-folder-section input[type="text"] {
     padding: 8px;
     border: 1px solid #ddd;
     border-radius: 6px;
@@ -1005,6 +1269,7 @@ body.dark-mode .select-group select {
         min-width: 100%;
     }
 }
+
 /* Notifikasi Tidak Ada Jadwal */
 .no-schedule-message {
     text-align: center;
@@ -1028,27 +1293,4 @@ body.dark-mode .no-schedule-message {
     align-items: flex-start;
     gap: 5px;
     margin-top: 10px;
-}
-.upload-folder-section {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-}
-
-.folder-selection {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-}
-
-#uploadFolderSelect,
-#uploadFolderInput {
-    padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 14px;
-}
-
-#uploadFolderInput {
-    flex: 1;
 }
