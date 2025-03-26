@@ -1551,38 +1551,41 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         displayedSchedules = 0;
-        scheduleTableBody.innerHTML = ''; // Kosongkan tabel sebelum render
 
-        // Tampilkan hanya 20 jadwal pertama sebagai default
+        // Tampilkan 20 jadwal pertama secara default
         const initialSchedules = filteredSchedules.slice(0, ITEMS_PER_PAGE);
+        scheduleTableBody.innerHTML = ''; // Kosongkan tabel sebelum render
         renderSchedules(initialSchedules, 0);
         displayedSchedules = initialSchedules.length;
-
-        // Perbarui total jadwal
-        totalSchedules.textContent = `Total: ${filteredSchedules.length} jadwal`;
 
         // Perbarui visibilitas elemen berdasarkan filteredSchedules
         updateScheduleVisibility(filteredSchedules);
 
         if (filteredSchedules.length > 0) {
-            // Tambahkan event listener untuk "Load More"
-            loadMoreBtn.removeEventListener('click', loadMoreSchedules); // Hapus listener lama
+            // Tambahkan event listener untuk Load More
+            loadMoreBtn.removeEventListener('click', loadMoreSchedules);
             loadMoreBtn.addEventListener('click', loadMoreSchedules);
 
-            // Tampilkan tombol "Load More" jika ada lebih dari 20 jadwal
+            selectAll.addEventListener('change', () => {
+                const checkboxes = document.querySelectorAll('.schedule-checkbox');
+                checkboxes.forEach(checkbox => {
+                    checkbox.checked = selectAll.checked;
+                });
+            });
+
+            deleteSelected.addEventListener('click', async () => {
+                const confirmed = await showConfirmModal('Apakah Anda yakin ingin menghapus jadwal yang dipilih?');
+                if (confirmed) {
+                    deleteSelectedSchedules();
+                }
+            });
+
+            // Tampilkan tombol Load More jika ada lebih dari 20 jadwal
             if (filteredSchedules.length > ITEMS_PER_PAGE) {
                 loadMoreBtn.classList.remove('hidden');
             } else {
                 loadMoreBtn.classList.add('hidden');
             }
-
-            // Event listener untuk "Select All"
-            selectAll.removeEventListener('change', handleSelectAll); // Hapus listener lama
-            selectAll.addEventListener('change', handleSelectAll);
-
-            // Event listener untuk "Delete Selected"
-            deleteSelected.removeEventListener('click', handleDeleteSelected); // Hapus listener lama
-            deleteSelected.addEventListener('click', handleDeleteSelected);
         } else {
             loadMoreBtn.classList.add('hidden');
         }
