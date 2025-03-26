@@ -461,6 +461,7 @@ body.dark-mode .skip-day-option label {
     border-radius: 8px;
 }
 
+/* Perbaikan: Pastikan semua gallery-item memiliki tinggi yang seragam */
 .gallery-item {
     text-align: center;
     position: relative;
@@ -468,11 +469,16 @@ body.dark-mode .skip-day-option label {
     padding: 10px;
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column; /* Atur elemen dalam kolom */
+    justify-content: space-between; /* Pastikan elemen didistribusikan dengan baik */
+    height: 300px; /* Atur tinggi tetap untuk semua gallery-item */
 }
 
+/* Perbaikan: Batasi tinggi gambar agar seragam */
 .gallery-item img {
     width: 100%;
-    height: 120px;
+    height: 120px; /* Tinggi tetap untuk gambar */
     object-fit: cover;
     border-radius: 6px;
     cursor: pointer;
@@ -483,6 +489,63 @@ body.dark-mode .skip-day-option label {
 .gallery-item img:hover,
 .gallery-item img.selected {
     border: 2px solid #3498db;
+}
+
+/* Perbaikan: Batasi tinggi nama file */
+.gallery-item p:first-of-type {
+    margin: 8px 0;
+    font-size: 14px;
+    color: #555;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; /* Tambahkan elipsis jika nama file terlalu panjang */
+}
+
+/* Perbaikan: Batasi tinggi caption dan tambahkan scroll jika melebihi */
+.gallery-item .caption-text {
+    font-size: 12px;
+    color: #777;
+    margin: 8px 0;
+    max-height: 5em; /* Maksimal 5 baris (dengan asumsi line-height 1em per baris) */
+    line-height: 1em; /* Atur line-height untuk menghitung baris */
+    overflow-y: auto; /* Tambahkan scroll vertikal jika melebihi */
+    overflow-x: hidden; /* Sembunyikan scroll horizontal */
+    word-wrap: break-word; /* Pastikan teks membungkus */
+    padding-right: 5px; /* Berikan ruang untuk scrollbar */
+    scrollbar-width: thin; /* Untuk Firefox */
+    scrollbar-color: #888 #f1f1f1; /* Warna scrollbar untuk Firefox */
+}
+
+/* Perbaikan: Gaya scrollbar untuk browser berbasis Webkit (Chrome, Safari) */
+.gallery-item .caption-text::-webkit-scrollbar {
+    width: 6px;
+}
+
+.gallery-item .caption-text::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.gallery-item .caption-text::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 3px;
+}
+
+.gallery-item .caption-text::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Perbaikan: Pastikan schedule-time juga seragam */
+.gallery-item .schedule-time {
+    font-size: 12px;
+    color: #777;
+    margin: 8px 0;
+}
+
+/* Perbaikan: Pastikan button-group mengambil ruang yang sama */
+.gallery-item .button-group {
+    display: flex;
+    gap: 10px;
+    margin-top: auto; /* Dorong ke bawah */
 }
 
 .gallery-item .btn {
@@ -502,6 +565,15 @@ body.dark-mode .skip-day-option label {
 
 .gallery-item .btn.schedule {
     background-color: #f39c12;
+}
+
+/* Perbaikan: Pastikan tombol lainnya (delete dan publish) juga seragam */
+.gallery-item .btn.delete,
+.gallery-item .btn.publish {
+    margin: 5px 0;
+    padding: 6px 10px;
+    font-size: 14px;
+    width: 100%;
 }
 
 /* Atur tombol Edit dan Jadwalkan dalam satu baris */
@@ -926,12 +998,9 @@ body.dark-mode .caption-editor .editor-buttons button:first-child:hover {
         height: 28px; /* Kurangi tinggi lebih lanjut */
     }
 
-    .upload-btn {
-        padding: 3px 6px; /* Kurangi padding lebih lanjut */
-        font-size: 11px; /* Kecilkan lebih lanjut */
-        height: 28px; /* Sesuaikan tinggi */
-        min-width: 70px; /* Kurangi lebar minimum */
-        margin-top: 22px; /* Sesuaikan dengan tinggi input */
+    .upload-file-section label,
+    .upload-folder-section label {
+        font-size: 11px;
     }
 
     /* Perbaikan untuk schedule-all-container di layar sangat kecil */
