@@ -147,8 +147,9 @@ body.dark-mode .gallery-item p {
     color: #777;
 }
 
+/* Perbaikan: Tingkatkan kontras warna teks caption di dark mode */
 body.dark-mode .gallery-item .caption-text {
-    color: #b0b0b0;
+    color: #d0d0d0; /* Ubah ke warna yang lebih terang untuk kontras */
 }
 
 .gallery-item .schedule-time {
@@ -461,7 +462,7 @@ body.dark-mode .skip-day-option label {
     border-radius: 8px;
 }
 
-/* Perbaikan: Pastikan semua gallery-item memiliki tinggi yang seragam */
+/* Pastikan semua gallery-item memiliki tinggi yang seragam */
 .gallery-item {
     text-align: center;
     position: relative;
@@ -475,7 +476,7 @@ body.dark-mode .skip-day-option label {
     height: 300px; /* Atur tinggi tetap untuk semua gallery-item */
 }
 
-/* Perbaikan: Batasi tinggi gambar agar seragam */
+/* Batasi tinggi gambar agar seragam */
 .gallery-item img {
     width: 100%;
     height: 120px; /* Tinggi tetap untuk gambar */
@@ -491,7 +492,7 @@ body.dark-mode .skip-day-option label {
     border: 2px solid #3498db;
 }
 
-/* Perbaikan: Batasi tinggi nama file */
+/* Batasi tinggi nama file */
 .gallery-item p:first-of-type {
     margin: 8px 0;
     font-size: 14px;
@@ -501,12 +502,13 @@ body.dark-mode .skip-day-option label {
     text-overflow: ellipsis; /* Tambahkan elipsis jika nama file terlalu panjang */
 }
 
-/* Perbaikan: Batasi tinggi caption dan tambahkan scroll jika melebihi */
+/* Perbaikan: Batasi tinggi caption, tambahkan scroll, dan pastikan terlihat */
 .gallery-item .caption-text {
     font-size: 12px;
     color: #777;
     margin: 8px 0;
     max-height: 5em; /* Maksimal 5 baris (dengan asumsi line-height 1em per baris) */
+    min-height: 2em; /* Berikan tinggi minimum agar selalu terlihat */
     line-height: 1em; /* Atur line-height untuk menghitung baris */
     overflow-y: auto; /* Tambahkan scroll vertikal jika melebihi */
     overflow-x: hidden; /* Sembunyikan scroll horizontal */
@@ -514,9 +516,10 @@ body.dark-mode .skip-day-option label {
     padding-right: 5px; /* Berikan ruang untuk scrollbar */
     scrollbar-width: thin; /* Untuk Firefox */
     scrollbar-color: #888 #f1f1f1; /* Warna scrollbar untuk Firefox */
+    flex-grow: 1; /* Pastikan caption mengambil ruang yang cukup */
 }
 
-/* Perbaikan: Gaya scrollbar untuk browser berbasis Webkit (Chrome, Safari) */
+/* Gaya scrollbar untuk browser berbasis Webkit (Chrome, Safari) */
 .gallery-item .caption-text::-webkit-scrollbar {
     width: 6px;
 }
@@ -534,14 +537,14 @@ body.dark-mode .skip-day-option label {
     background: #555;
 }
 
-/* Perbaikan: Pastikan schedule-time juga seragam */
+/* Pastikan schedule-time juga seragam */
 .gallery-item .schedule-time {
     font-size: 12px;
     color: #777;
     margin: 8px 0;
 }
 
-/* Perbaikan: Pastikan button-group mengambil ruang yang sama */
+/* Pastikan button-group mengambil ruang yang sama */
 .gallery-item .button-group {
     display: flex;
     gap: 10px;
@@ -567,7 +570,7 @@ body.dark-mode .skip-day-option label {
     background-color: #f39c12;
 }
 
-/* Perbaikan: Pastikan tombol lainnya (delete dan publish) juga seragam */
+/* Pastikan tombol lainnya (delete dan publish) juga seragam */
 .gallery-item .btn.delete,
 .gallery-item .btn.publish {
     margin: 5px 0;
