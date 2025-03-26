@@ -573,8 +573,11 @@ async function saveCaptionToGithub(file, caption, commitMessage) {
     }
 }
 
-loadGithubFolders();
-loadUploadFolders();
+// Tunggu DOM siap sebelum memanggil fungsi awal
+document.addEventListener('DOMContentLoaded', () => {
+    loadGithubFolders();
+    loadUploadFolders();
+});
 
 window.allMediaFiles = allMediaFiles;
 window.captions = captions;
