@@ -1209,7 +1209,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const deleteScheduleBtn = document.createElement('button');
     deleteScheduleBtn.className = 'btn delete';
-    deleteScheduleBtn.textContent = 'Hapus Jadwal';
+    deleteScheduleBtn.textContent = 'Hapus';
     deleteScheduleBtn.disabled = !scheduleId;
     deleteScheduleBtn.addEventListener('click', async () => {
         if (!scheduleId) {

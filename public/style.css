@@ -160,11 +160,10 @@ body.dark-mode .gallery-item .schedule-time {
     color: #b0b0b0;
 }
 
-/* Tombol Hapus Jadwal di Galeri */
+/* Tombol Hapus di Galeri */
 .gallery-item .btn.delete {
     background-color: #e74c3c;
     color: #fff;
-    margin-top: 5px;
 }
 
 .gallery-item .btn.delete:hover {
@@ -472,7 +471,7 @@ body.dark-mode .skip-day-option label {
     display: flex;
     flex-direction: column; /* Atur elemen dalam kolom */
     justify-content: space-between; /* Pastikan elemen didistribusikan dengan baik */
-    height: 320px; /* Tingkatkan tinggi untuk memberikan ruang lebih */
+    height: 320px; /* Tinggi tetap untuk semua gallery-item */
 }
 
 /* Batasi tinggi gambar agar seragam */
@@ -492,11 +491,11 @@ body.dark-mode .skip-day-option label {
     border: 2px solid #3498db;
 }
 
-/* Perbaikan: Pindahkan nama file ke sudut kiri atas gambar */
+/* Pindahkan nama file ke sudut kiri atas gambar */
 .gallery-item p:first-of-type {
     position: absolute;
-    top: 30px; /* Berikan jarak dari atas agar berada di bawah tombol hapus */
-    left: 10px; /* Berikan jarak dari sisi kiri */
+    top: 5px; /* Sejajarkan dengan tombol X */
+    left: 5px; /* Posisikan di ujung kiri foto */
     margin: 0; /* Hapus margin default */
     font-size: 12px; /* Kecilkan ukuran font agar tidak terlalu besar */
     color: #fff; /* Warna putih agar kontras dengan gambar */
@@ -506,7 +505,7 @@ body.dark-mode .skip-day-option label {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: calc(100% - 50px); /* Batasi lebar agar tidak menutupi tombol hapus */
+    max-width: calc(100% - 40px); /* Batasi lebar agar tidak bertabrakan dengan tombol X */
     z-index: 1; /* Pastikan berada di atas gambar */
 }
 
@@ -516,7 +515,7 @@ body.dark-mode .gallery-item p:first-of-type {
     background: rgba(0, 0, 0, 0.7);
 }
 
-/* Perbaikan: Batasi tinggi caption, tambahkan scroll, dan pastikan terlihat */
+/* Batasi tinggi caption, tambahkan scroll, dan pastikan terlihat */
 .gallery-item .caption-text {
     font-size: 12px;
     color: #777;
@@ -560,65 +559,74 @@ body.dark-mode .gallery-item p:first-of-type {
     flex-grow: 0; /* Jangan biarkan schedule-time mengambil ruang berlebih */
 }
 
-/* Pastikan button-group mengambil ruang yang sama */
+/* Grup tombol Edit dan Jadwalkan */
 .gallery-item .button-group {
-    display: flex;
-    gap: 10px;
-    margin-top: auto; /* Dorong ke bawah */
-    flex-grow: 0; /* Jangan biarkan button-group mengambil ruang berlebih */
-}
-
-/* Perbaikan: Berikan ruang yang cukup untuk tombol Hapus Jadwal dan Publish */
-.gallery-item .btn {
-    margin: 5px 0;
-    padding: 6px 10px;
-    font-size: 14px;
-    width: 100%;
-    flex-grow: 0; /* Pastikan tombol tidak membesar */
-}
-
-.gallery-item .btn.edit {
-    background-color: #3498db;
-}
-
-.gallery-item .btn.publish {
-    background-color: #2ecc71;
-}
-
-.gallery-item .btn.schedule {
-    background-color: #f39c12;
-}
-
-/* Perbaikan: Pastikan tombol Hapus Jadwal dan Publish memiliki ruang yang cukup */
-.gallery-item .btn.delete,
-.gallery-item .btn.publish {
-    margin: 5px 0;
-    padding: 6px 10px;
-    font-size: 14px;
-    width: 100%;
-    flex-grow: 0; /* Pastikan tombol tidak membesar */
-}
-
-/* Tambahkan margin antara Hapus Jadwal dan Publish */
-.gallery-item .btn.delete {
-    margin-bottom: 8px; /* Berikan jarak antara Hapus Jadwal dan Publish */
-}
-
-/* Atur tombol Edit dan Jadwalkan dalam satu baris */
-.button-group {
     display: flex;
     gap: 10px;
     margin-top: 10px;
     margin-left: -10px;
+    flex-grow: 0; /* Jangan biarkan button-group mengambil ruang berlebih */
 }
 
-.button-group .btn {
-    flex: 1;
+/* Grup tombol Hapus dan Publish */
+.gallery-item .action-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+    margin-left: -10px;
+    flex-grow: 0; /* Jangan biarkan action-group mengambil ruang berlebih */
+}
+
+/* Gaya tombol di dalam button-group dan action-group */
+.gallery-item .button-group .btn,
+.gallery-item .action-group .btn {
+    flex: 1; /* Pastikan tombol mengambil ruang yang sama */
+    margin: 0; /* Hapus margin default */
+    padding: 6px 10px;
+    font-size: 14px;
+    border-radius: 6px;
+}
+
+/* Gaya tombol Edit */
+.gallery-item .btn.edit {
+    background-color: #3498db;
+}
+
+/* Gaya tombol Jadwalkan */
+.gallery-item .btn.schedule {
+    background-color: #f39c12;
+}
+
+/* Gaya tombol Hapus */
+.gallery-item .btn.delete {
+    background-color: #e74c3c;
+}
+
+/* Gaya tombol Publish */
+.gallery-item .btn.publish {
+    background-color: #2ecc71;
+}
+
+/* Hover effect untuk tombol */
+.gallery-item .btn.edit:hover {
+    background-color: #2980b9;
+}
+
+.gallery-item .btn.schedule:hover {
+    background-color: #e67e22;
+}
+
+.gallery-item .btn.delete:hover {
+    background-color: #c0392b;
+}
+
+.gallery-item .btn.publish:hover {
+    background-color: #27ae60;
 }
 
 /* Atur container untuk Load More */
 .load-more-container {
-    display: border-box;
+    display: flex;
     justify-content: center;
     margin: 20px 0;
 }
@@ -957,10 +965,11 @@ body.dark-mode .caption-editor .editor-buttons button:first-child:hover {
         min-width: 80px; /* Berikan lebar minimum */
     }
 
-    /* Perbaikan untuk tombol di galeri agar tidak keluar body */
-    .gallery-item .btn {
-        padding: 4px 6px; /* Kurangi padding */
-        font-size: 10px; /* Kecilkan ukuran font */
+    /* Perbaikan untuk tombol di galeri agar seragam di mobile */
+    .gallery-item .button-group .btn,
+    .gallery-item .action-group .btn {
+        padding: 4px 6px; /* Samakan padding dengan tombol Edit dan Jadwalkan */
+        font-size: 10px; /* Samakan ukuran font */
         max-width: 100%; /* Pastikan tidak melebihi lebar galeri item */
         white-space: nowrap; /* Pastikan teks tidak membungkus */
         overflow: hidden; /* Sembunyikan teks yang melebihi */
@@ -970,8 +979,9 @@ body.dark-mode .caption-editor .editor-buttons button:first-child:hover {
     /* Sesuaikan nama file di layar kecil */
     .gallery-item p:first-of-type {
         font-size: 10px; /* Kecilkan font di layar kecil */
-        max-width: calc(100% - 40px); /* Sesuaikan lebar */
-        top: 25px; /* Sesuaikan posisi */
+        max-width: calc(100% - 35px); /* Sesuaikan lebar */
+        top: 5px; /* Tetap sejajar dengan tombol X */
+        left: 5px; /* Tetap di ujung kiri */
     }
 }
 
@@ -1064,16 +1074,18 @@ body.dark-mode .caption-editor .editor-buttons button:first-child:hover {
     }
 
     /* Perbaikan untuk tombol di galeri di layar sangat kecil */
-    .gallery-item .btn {
-        padding: 3px 5px; /* Kurangi padding lebih lanjut */
-        font-size: 9px; /* Kecilkan lebih lanjut */
+    .gallery-item .button-group .btn,
+    .gallery-item .action-group .btn {
+        padding: 3px 5px; /* Samakan padding */
+        font-size: 9px; /* Samakan ukuran font */
     }
 
     /* Sesuaikan nama file di layar sangat kecil */
     .gallery-item p:first-of-type {
         font-size: 8px; /* Kecilkan lebih lanjut */
         max-width: calc(100% - 30px); /* Sesuaikan lebar */
-        top: 20px; /* Sesuaikan posisi */
+        top: 5px; /* Tetap sejajar dengan tombol X */
+        left: 5px; /* Tetap di ujung kiri */
     }
 }
 
