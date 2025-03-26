@@ -511,7 +511,7 @@ async function deletePhoto(filePath) {
     spinner.classList.remove('hidden');
 
     try {
-        const folderPath = filePath.substring(0, filePath.lastIndexOf('/')); // Perbaikan: file.path -> filePath
+        const folderPath = filePath.substring(0, filePath.lastIndexOf('/'));
         const commitMessage = folderPath.startsWith('ig/') 
             ? `Delete file ${filePath} [vercel-skip]` 
             : `Delete file ${filePath}`;

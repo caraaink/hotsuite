@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const themeMenu = document.getElementById('themeMenu');
     const toggleDarkMode = document.getElementById('toggleDarkMode');
 
+    // Fungsi untuk mengonversi waktu dari UTC ke WIB
     window.convertToWIB = function(utcTime) {
         const date = new Date(utcTime);
         const wibOffset = 7 * 60 * 60 * 1000;
@@ -14,10 +15,12 @@ document.addEventListener('DOMContentLoaded', () => {
         return wibTime;
     };
 
+    // Fungsi untuk memformat waktu dalam WIB ke format datetime-local
     window.formatToDatetimeLocal = function(wibTime) {
         return wibTime.toISOString().slice(0, 16);
     };
 
+    // Fungsi untuk memformat waktu dalam WIB ke format lokal
     window.formatToLocaleString = function(wibTime) {
         return wibTime.toLocaleString('id-ID', {
             timeZone: 'Asia/Jakarta',
@@ -30,6 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }).replace(',', '');
     };
 
+    // Fungsi debounce
     window.debounce = function(func, wait) {
         let timeout;
         return function (...args) {
@@ -38,6 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     };
 
+    // Fungsi untuk menampilkan modal konfirmasi
     window.showConfirmModal = function(message) {
         return new Promise((resolve) => {
             const modal = document.getElementById('confirmModal');
@@ -60,7 +65,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
+    // Fungsi untuk menampilkan notifikasi
     window.showFloatingNotification = function(message, isError = false, duration = 3000) {
+        if (!status || !floatingNotification || !spinner) {
+            console.error('Elemen notifikasi tidak ditemukan!');
+            return;
+        }
         status.textContent = message;
         floatingNotification.classList.remove('hidden');
         if (isError) {
@@ -76,14 +86,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // Load dark mode preference
     if (localStorage.getItem('theme') === 'dark') {
         document.body.classList.add('dark-mode');
     }
 
+    // Toggle theme menu
     themeToggle.addEventListener('click', () => {
         themeMenu.classList.toggle('hidden');
     });
 
+    // Toggle dark mode
     toggleDarkMode.addEventListener('click', () => {
         document.body.classList.toggle('dark-mode');
         const isDarkMode = document.body.classList.contains('dark-mode');
@@ -91,6 +104,7 @@ document.addEventListener('DOMContentLoaded', () => {
         themeMenu.classList.add('hidden');
     });
 
+    // Prevent form from adding parameters to URL
     form.addEventListener('submit', (e) => {
         e.preventDefault();
     });
