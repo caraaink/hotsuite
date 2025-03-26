@@ -7,6 +7,11 @@ module.exports = async (req, res) => {
         return res.status(400).json({ error: "Missing fileName or content" });
     }
 
+    // Validasi path: pastikan tidak langsung ke 'ig' atau subfolder selain 'ig/image' jika tidak diizinkan
+    if (fileName.startsWith('ig/') && !fileName.startsWith('ig/image/')) {
+        return res.status(400).json({ error: "Cannot upload directly to 'ig' or its subfolders except 'ig/image'" });
+    }
+
     const octokit = new Octokit({
         auth: process.env.GITHUB_TOKEN,
     });
@@ -22,7 +27,10 @@ module.exports = async (req, res) => {
             sha = data.sha;
             console.log(`File ${fileName} already exists, SHA: ${sha}`);
         } catch (error) {
-            if (error.status !== 404) throw error;
+            if (error.status !== 404) {
+                console.error("Error checking file existence:", error.message);
+                return res.status(500).json({ error: "Failed to check file existence", details: error.message });
+            }
             console.log(`File ${fileName} does not exist yet`);
         }
 
@@ -42,6 +50,6 @@ module.exports = async (req, res) => {
         });
     } catch (error) {
         console.error("Error uploading to GitHub:", error.message, error.status);
-        res.status(error.status || 500).json({ error: error.message });
+        res.status(error.status || 500).json({ error: "Failed to upload to GitHub", details: error.message });
     }
 };
