@@ -147,9 +147,8 @@ body.dark-mode .gallery-item p {
     color: #777;
 }
 
-/* Perbaikan: Tingkatkan kontras warna teks caption di dark mode */
 body.dark-mode .gallery-item .caption-text {
-    color: #d0d0d0; /* Ubah ke warna yang lebih terang untuk kontras */
+    color: #d0d0d0;
 }
 
 .gallery-item .schedule-time {
@@ -507,7 +506,7 @@ body.dark-mode .skip-day-option label {
     font-size: 12px;
     color: #777;
     margin: 8px 0;
-    max-height: 5em; /* Maksimal 5 baris (dengan asumsi line-height 1em per baris) */
+    max-height: 3em; /* Kurangi menjadi 3 baris agar tombol memiliki lebih banyak ruang */
     min-height: 2em; /* Berikan tinggi minimum agar selalu terlihat */
     line-height: 1em; /* Atur line-height untuk menghitung baris */
     overflow-y: auto; /* Tambahkan scroll vertikal jika melebihi */
@@ -516,7 +515,8 @@ body.dark-mode .skip-day-option label {
     padding-right: 5px; /* Berikan ruang untuk scrollbar */
     scrollbar-width: thin; /* Untuk Firefox */
     scrollbar-color: #888 #f1f1f1; /* Warna scrollbar untuk Firefox */
-    flex-grow: 1; /* Pastikan caption mengambil ruang yang cukup */
+    flex-grow: 0; /* Jangan biarkan caption mengambil semua ruang */
+    flex-shrink: 1; /* Izinkan caption menyusut jika diperlukan */
 }
 
 /* Gaya scrollbar untuk browser berbasis Webkit (Chrome, Safari) */
@@ -542,6 +542,7 @@ body.dark-mode .skip-day-option label {
     font-size: 12px;
     color: #777;
     margin: 8px 0;
+    flex-grow: 0; /* Jangan biarkan schedule-time mengambil ruang berlebih */
 }
 
 /* Pastikan button-group mengambil ruang yang sama */
@@ -549,13 +550,16 @@ body.dark-mode .skip-day-option label {
     display: flex;
     gap: 10px;
     margin-top: auto; /* Dorong ke bawah */
+    flex-grow: 0; /* Jangan biarkan button-group mengambil ruang berlebih */
 }
 
+/* Perbaikan: Berikan ruang yang cukup untuk tombol Hapus Jadwal dan Publish */
 .gallery-item .btn {
     margin: 5px 0;
     padding: 6px 10px;
     font-size: 14px;
     width: 100%;
+    flex-grow: 0; /* Pastikan tombol tidak membesar */
 }
 
 .gallery-item .btn.edit {
@@ -570,13 +574,19 @@ body.dark-mode .skip-day-option label {
     background-color: #f39c12;
 }
 
-/* Pastikan tombol lainnya (delete dan publish) juga seragam */
+/* Perbaikan: Pastikan tombol Hapus Jadwal dan Publish memiliki ruang yang cukup */
 .gallery-item .btn.delete,
 .gallery-item .btn.publish {
     margin: 5px 0;
     padding: 6px 10px;
     font-size: 14px;
     width: 100%;
+    flex-grow: 0; /* Pastikan tombol tidak membesar */
+}
+
+/* Tambahkan margin antara Hapus Jadwal dan Publish */
+.gallery-item .btn.delete {
+    margin-bottom: 8px; /* Berikan jarak antara Hapus Jadwal dan Publish */
 }
 
 /* Atur tombol Edit dan Jadwalkan dalam satu baris */
