@@ -755,14 +755,44 @@ body.dark-mode .caption-editor .editor-buttons button:first-child:hover {
         font-size: 10px; /* Kecilkan ukuran font */
     }
 
+    /* Perbaikan untuk schedule-all-container agar elemen berada dalam satu baris */
     .schedule-all-container {
-        flex-direction: column;
-        align-items: flex-start;
+        flex-direction: row; /* Ubah ke baris */
+        align-items: center; /* Pusatkan secara vertikal */
+        flex-wrap: nowrap; /* Pastikan tidak membungkus */
+        gap: 5px; /* Kurangi jarak antar elemen */
+        overflow-x: auto; /* Tambahkan scroll horizontal jika elemen melebihi lebar */
+        padding-bottom: 5px; /* Berikan ruang untuk scroll */
+    }
+
+    /* Pastikan elemen di dalam schedule-all-container tidak menyusut terlalu banyak */
+    .skip-day-option {
+        flex-shrink: 0; /* Pastikan tidak menyusut */
+        white-space: nowrap; /* Pastikan teks tidak membungkus */
+    }
+
+    .skip-day-option label {
+        font-size: 12px; /* Kecilkan ukuran font */
+    }
+
+    .skip-day-option select {
+        font-size: 12px; /* Kecilkan ukuran font */
+        padding: 4px; /* Kurangi padding */
+        height: 30px; /* Sesuaikan tinggi */
     }
 
     .schedule-all-btn,
     .save-schedules-btn {
-        width: 100%;
+        width: auto; /* Ubah dari width: 100% menjadi auto agar sesuai dengan konten */
+        padding: 6px 12px; /* Kurangi padding */
+        font-size: 12px; /* Kecilkan ukuran font */
+        flex-shrink: 0; /* Pastikan tombol tidak menyusut terlalu banyak */
+        white-space: nowrap; /* Pastikan teks tombol tidak membungkus */
+    }
+
+    /* Pastikan schedule-all-btn tidak keluar dari body */
+    .schedule-all-btn {
+        max-width: 120px; /* Batasi lebar maksimum */
     }
 
     /* Kecilkan teks dan tombol Hapus Terpilih */
@@ -899,6 +929,31 @@ body.dark-mode .caption-editor .editor-buttons button:first-child:hover {
         height: 28px; /* Sesuaikan tinggi */
         min-width: 70px; /* Kurangi lebar minimum */
         margin-top: 22px; /* Sesuaikan dengan tinggi input */
+    }
+
+    /* Perbaikan untuk schedule-all-container di layar sangat kecil */
+    .schedule-all-container {
+        gap: 3px; /* Kurangi jarak lebih lanjut */
+    }
+
+    .skip-day-option label {
+        font-size: 10px; /* Kecilkan lebih lanjut */
+    }
+
+    .skip-day-option select {
+        font-size: 10px; /* Kecilkan lebih lanjut */
+        padding: 3px; /* Kurangi padding lebih lanjut */
+        height: 28px; /* Sesuaikan tinggi */
+    }
+
+    .schedule-all-btn,
+    .save-schedules-btn {
+        padding: 5px 10px; /* Kurangi padding lebih lanjut */
+        font-size: 10px; /* Kecilkan lebih lanjut */
+    }
+
+    .schedule-all-btn {
+        max-width: 100px; /* Batasi lebar maksimum lebih kecil */
     }
 }
 
