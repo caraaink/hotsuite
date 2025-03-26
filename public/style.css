@@ -492,11 +492,11 @@ body.dark-mode .skip-day-option label {
     border: 2px solid #3498db;
 }
 
-/* Perbaikan: Pindahkan nama file ke sudut kiri atas gambar */
+/* Perbaikan: Pindahkan nama file ke sudut kiri atas gambar, sejajar dengan tombol X */
 .gallery-item p:first-of-type {
     position: absolute;
-    top: 5px; /* Sejajarkan dengan tombol X */
-    left: 5px; /* Posisikan di ujung kiri foto */
+    top: 5px; /* Sesuaikan dengan top: 5px pada .delete-direct-btn agar sejajar */
+    left: 5px; /* Sesuaikan dengan jarak dari tepi kiri, sama seperti right pada tombol X */
     margin: 0; /* Hapus margin default */
     font-size: 12px; /* Kecilkan ukuran font agar tidak terlalu besar */
     color: #fff; /* Warna putih agar kontras dengan gambar */
@@ -506,7 +506,7 @@ body.dark-mode .skip-day-option label {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: calc(100% - 40px); /* Batasi lebar agar tidak bertabrakan dengan tombol X */
+    max-width: calc(100% - 40px); /* Kurangi lebar agar tidak bertabrakan dengan tombol X */
     z-index: 1; /* Pastikan berada di atas gambar */
 }
 
@@ -515,7 +515,22 @@ body.dark-mode .gallery-item p:first-of-type {
     color: #fff;
     background: rgba(0, 0, 0, 0.7);
 }
+/* Responsivitas untuk layar kecil */
+@media (max-width: 768px) {
+    .gallery-item p:first-of-type {
+        font-size: 10px; /* Kecilkan font di layar kecil */
+        max-width: calc(100% - 35px); /* Sesuaikan lebar */
+        top: 5px; /* Tetap sejajar dengan tombol X */
+    }
+}
 
+@media (max-width: 480px) {
+    .gallery-item p:first-of-type {
+        font-size: 8px; /* Kecilkan lebih lanjut */
+        max-width: calc(100% - 30px); /* Sesuaikan lebar */
+        top: 5px; /* Tetap sejajar dengan tombol X */
+    }
+}
 /* Perbaikan: Batasi tinggi caption, tambahkan scroll, dan pastikan terlihat */
 .gallery-item .caption-text {
     font-size: 12px;
