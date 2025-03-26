@@ -472,7 +472,7 @@ body.dark-mode .skip-day-option label {
     display: flex;
     flex-direction: column; /* Atur elemen dalam kolom */
     justify-content: space-between; /* Pastikan elemen didistribusikan dengan baik */
-    height: 300px; /* Atur tinggi tetap untuk semua gallery-item */
+    height: 320px; /* Tingkatkan tinggi untuk memberikan ruang lebih */
 }
 
 /* Batasi tinggi gambar agar seragam */
@@ -484,6 +484,7 @@ body.dark-mode .skip-day-option label {
     cursor: pointer;
     border: 2px solid transparent;
     transition: border 0.3s ease;
+    position: relative; /* Pastikan gambar sebagai referensi untuk posisi absolut */
 }
 
 .gallery-item img:hover,
@@ -491,14 +492,28 @@ body.dark-mode .skip-day-option label {
     border: 2px solid #3498db;
 }
 
-/* Batasi tinggi nama file */
+/* Perbaikan: Pindahkan nama file ke sudut kiri atas gambar */
 .gallery-item p:first-of-type {
-    margin: 8px 0;
-    font-size: 14px;
-    color: #555;
+    position: absolute;
+    top: 30px; /* Berikan jarak dari atas agar berada di bawah tombol hapus */
+    left: 10px; /* Berikan jarak dari sisi kiri */
+    margin: 0; /* Hapus margin default */
+    font-size: 12px; /* Kecilkan ukuran font agar tidak terlalu besar */
+    color: #fff; /* Warna putih agar kontras dengan gambar */
+    background: rgba(0, 0, 0, 0.5); /* Berikan latar belakang semi-transparan */
+    padding: 2px 5px; /* Berikan padding kecil */
+    border-radius: 3px; /* Berikan sudut melengkung */
     white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis; /* Tambahkan elipsis jika nama file terlalu panjang */
+    text-overflow: ellipsis;
+    max-width: calc(100% - 50px); /* Batasi lebar agar tidak menutupi tombol hapus */
+    z-index: 1; /* Pastikan berada di atas gambar */
+}
+
+/* Sesuaikan warna nama file di dark mode */
+body.dark-mode .gallery-item p:first-of-type {
+    color: #fff;
+    background: rgba(0, 0, 0, 0.7);
 }
 
 /* Perbaikan: Batasi tinggi caption, tambahkan scroll, dan pastikan terlihat */
@@ -506,8 +521,8 @@ body.dark-mode .skip-day-option label {
     font-size: 12px;
     color: #777;
     margin: 8px 0;
-    max-height: 3em; /* Kurangi menjadi 3 baris agar tombol memiliki lebih banyak ruang */
-    min-height: 2em; /* Berikan tinggi minimum agar selalu terlihat */
+    max-height: 3em; /* Batasi menjadi 3 baris */
+    min-height: 2em; /* Berikan tinggi minimum */
     line-height: 1em; /* Atur line-height untuk menghitung baris */
     overflow-y: auto; /* Tambahkan scroll vertikal jika melebihi */
     overflow-x: hidden; /* Sembunyikan scroll horizontal */
@@ -951,6 +966,13 @@ body.dark-mode .caption-editor .editor-buttons button:first-child:hover {
         overflow: hidden; /* Sembunyikan teks yang melebihi */
         text-overflow: ellipsis; /* Tambahkan elipsis jika teks terlalu panjang */
     }
+
+    /* Sesuaikan nama file di layar kecil */
+    .gallery-item p:first-of-type {
+        font-size: 10px; /* Kecilkan font di layar kecil */
+        max-width: calc(100% - 40px); /* Sesuaikan lebar */
+        top: 25px; /* Sesuaikan posisi */
+    }
 }
 
 @media (max-width: 480px) {
@@ -1045,6 +1067,13 @@ body.dark-mode .caption-editor .editor-buttons button:first-child:hover {
     .gallery-item .btn {
         padding: 3px 5px; /* Kurangi padding lebih lanjut */
         font-size: 9px; /* Kecilkan lebih lanjut */
+    }
+
+    /* Sesuaikan nama file di layar sangat kecil */
+    .gallery-item p:first-of-type {
+        font-size: 8px; /* Kecilkan lebih lanjut */
+        max-width: calc(100% - 30px); /* Sesuaikan lebar */
+        top: 20px; /* Sesuaikan posisi */
     }
 }
 
@@ -1207,6 +1236,7 @@ body.dark-mode .upload-file-section input[type="file"] {
     font-size: 14px;
     font-weight: bold;
     transition: background-color 0.3s ease;
+    z-index: 2; /* Pastikan tombol hapus berada di atas nama file */
 }
 
 .delete-direct-btn:hover {
