@@ -7,6 +7,11 @@ module.exports = async (req, res) => {
         return res.status(400).json({ error: 'Missing required field: path' });
     }
 
+    // Validasi path: pastikan tidak menghapus folder 'ig' atau subfoldernya secara langsung
+    if (path === 'ig' || (path.startsWith('ig/') && path.split('/').length <= 2 && path !== 'ig/image')) {
+        return res.status(400).json({ error: "Cannot delete 'ig' or its direct subfolders except 'ig/image'" });
+    }
+
     try {
         const octokit = new Octokit({
             auth: process.env.GITHUB_TOKEN,
