@@ -365,7 +365,7 @@ body.dark-mode .skip-day-option label {
 /* Editor Spinner */
 .editor-spinner {
     display: inline-block;
-    border: 2px solid rgba(255, 255, 255, 0.3);
+    border: 2px solid rgba(255, 0, 0, 0.3);
     border-left: 2px solid #fff;
     border-radius: 50%;
     width: 16px;
@@ -518,7 +518,7 @@ body.dark-mode .skip-day-option label {
 
 /* Atur container untuk Load More */
 .load-more-container {
-    display: flex;
+    display: border-box;
     justify-content: center;
     margin: 20px 0;
 }
@@ -557,6 +557,7 @@ body.dark-mode .skip-day-option label {
     z-index: 10;
     border-radius: 8px;
 }
+
 /* Gaya untuk tombol Simpan di caption-editor agar seragam dengan btn-save */
 .caption-editor .editor-buttons button:first-child {
     background-color: #2ecc71; /* Warna hijau sama seperti btn-save */
@@ -575,6 +576,7 @@ body.dark-mode .caption-editor .editor-buttons button:first-child {
 body.dark-mode .caption-editor .editor-buttons button:first-child:hover {
     background-color: #2ea44f; /* Warna hijau lebih gelap saat hover di mode gelap */
 }
+
 .caption-editor textarea,
 .schedule-editor input {
     width: 80%;
@@ -859,6 +861,16 @@ body.dark-mode .caption-editor .editor-buttons button:first-child:hover {
         flex-shrink: 0; /* Pastikan tombol tidak menyusut terlalu banyak */
         min-width: 80px; /* Berikan lebar minimum */
     }
+
+    /* Perbaikan untuk tombol di galeri agar tidak keluar body */
+    .gallery-item .btn {
+        padding: 4px 6px; /* Kurangi padding */
+        font-size: 10px; /* Kecilkan ukuran font */
+        max-width: 100%; /* Pastikan tidak melebihi lebar galeri item */
+        white-space: nowrap; /* Pastikan teks tidak membungkus */
+        overflow: hidden; /* Sembunyikan teks yang melebihi */
+        text-overflow: ellipsis; /* Tambahkan elipsis jika teks terlalu panjang */
+    }
 }
 
 @media (max-width: 480px) {
@@ -920,7 +932,7 @@ body.dark-mode .caption-editor .editor-buttons button:first-child:hover {
     }
 
     .upload-folder-section input[type="text"] {
-        max-width: 100px; /* Ppersingkat lebih lanjut */
+        max-width: 100px; /* Persingkat lebih lanjut */
     }
 
     .upload-btn {
@@ -955,6 +967,12 @@ body.dark-mode .caption-editor .editor-buttons button:first-child:hover {
     .schedule-all-btn {
         max-width: 100px; /* Batasi lebar maksimum lebih kecil */
     }
+
+    /* Perbaikan untuk tombol di galeri di layar sangat kecil */
+    .gallery-item .btn {
+        padding: 3px 5px; /* Kurangi padding lebih lanjut */
+        font-size: 9px; /* Kecilkan lebih lanjut */
+    }
 }
 
 /* Sembunyikan elemen kosong */
@@ -980,7 +998,8 @@ body.dark-mode .caption-editor .editor-buttons button:first-child:hover {
     padding: 5px;
 }
 
-.editable-caption:hover, .editable-caption:focus {
+.editable-caption:hover,
+.editable-caption:focus {
     border: 1px solid #ccc;
     outline: none;
 }
@@ -999,20 +1018,23 @@ body.dark-mode .caption-editor .editor-buttons button:first-child:hover {
     margin-bottom: 15px;
 }
 
-.upload-file-section, .upload-folder-section {
+.upload-file-section,
+.upload-folder-section {
     display: flex;
     flex-direction: column;
     flex: 1;
 }
 
-.upload-file-section label, .upload-folder-section label {
+.upload-file-section label,
+.upload-folder-section label {
     margin-bottom: 5px;
     font-size: 14px;
     font-weight: 500;
     color: #ddd;
 }
 
-.upload-file-section input[type="file"], .upload-folder-section input[type="text"] {
+.upload-file-section input[type="file"],
+.upload-folder-section input[type="text"] {
     padding: 8px;
     border: 1px solid #ddd;
     border-radius: 6px;
@@ -1247,6 +1269,7 @@ body.dark-mode .select-group select {
         min-width: 100%;
     }
 }
+
 /* Notifikasi Tidak Ada Jadwal */
 .no-schedule-message {
     text-align: center;
