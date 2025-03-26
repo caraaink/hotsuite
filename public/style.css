@@ -848,11 +848,6 @@ body.dark-mode .caption-editor .editor-buttons button:first-child:hover {
         height: 30px; /* Kurangi tinggi */
     }
 
-    .upload-folder-section input[type="text"] {
-        width: 100%; /* Pastikan input mengambil lebar penuh */
-        max-width: 120px; /* Batasi lebar maksimum untuk mempersingkat */
-    }
-
     .upload-btn {
         padding: 4px 8px; /* Kurangi padding */
         font-size: 12px; /* Kecilkan ukuran font */
@@ -931,10 +926,6 @@ body.dark-mode .caption-editor .editor-buttons button:first-child:hover {
         height: 28px; /* Kurangi tinggi lebih lanjut */
     }
 
-    .upload-folder-section input[type="text"] {
-        max-width: 100px; /* Persingkat lebih lanjut */
-    }
-
     .upload-btn {
         padding: 3px 6px; /* Kurangi padding lebih lanjut */
         font-size: 11px; /* Kecilkan lebih lanjut */
@@ -1011,6 +1002,7 @@ body.dark-mode .caption-editor .editor-buttons button:first-child:hover {
     color: #fff;
 }
 
+/* Upload Row */
 .upload-row {
     display: flex;
     align-items: center;
@@ -1030,23 +1022,69 @@ body.dark-mode .caption-editor .editor-buttons button:first-child:hover {
     margin-bottom: 5px;
     font-size: 14px;
     font-weight: 500;
-    color: #ddd;
+    color: #2c3e50;
 }
 
-.upload-file-section input[type="file"],
+body.dark-mode .upload-file-section label,
+body.dark-mode .upload-folder-section label {
+    color: #e0e0e0;
+}
+
+/* Upload Folder Section */
+.upload-folder-section .folder-selection {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    width: 100%;
+}
+
+.upload-folder-section select,
 .upload-folder-section input[type="text"] {
+    padding: 8px;
+    font-size: 14px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: #f9f9f9;
+    color: #333;
+    width: 100%;
+    box-sizing: border-box;
+    transition: none;
+}
+
+body.dark-mode .upload-folder-section select,
+body.dark-mode .upload-folder-section input[type="text"] {
+    background: #3a3a3a;
+    color: #e0e0e0;
+    border: 1px solid #4a4a4a;
+}
+
+.upload-folder-section select:focus,
+.upload-folder-section input[type="text"]:focus {
+    border: 1px solid #ddd;
+    outline: none;
+}
+
+body.dark-mode .upload-folder-section select:focus,
+body.dark-mode .upload-folder-section input[type="text"]:focus {
+    border: 1px solid #4a4a4a;
+}
+
+/* Upload File Section */
+.upload-file-section input[type="file"] {
     padding: 8px;
     border: 1px solid #ddd;
     border-radius: 6px;
     font-size: 14px;
     height: 36px;
     box-sizing: border-box;
-    background-color: #333;
-    color: #ddd;
+    background: #f9f9f9;
+    color: #333;
 }
 
-.upload-folder-section input[type="text"] {
-    width: 300px;
+body.dark-mode .upload-file-section input[type="file"] {
+    background: #3a3a3a;
+    color: #e0e0e0;
+    border: 1px solid #4a4a4a;
 }
 
 .upload-btn {
@@ -1267,6 +1305,39 @@ body.dark-mode .select-group select {
 
     .select-group {
         min-width: 100%;
+    }
+
+    /* Responsivitas untuk upload-folder-section */
+    .upload-folder-section .folder-selection {
+        gap: 5px;
+    }
+
+    .upload-file-section input[type="file"],
+    .upload-folder-section select,
+    .upload-folder-section input[type="text"] {
+        padding: 6px;
+        font-size: 12px;
+        height: 30px;
+    }
+
+    .upload-file-section label,
+    .upload-folder-section label {
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .upload-file-section input[type="file"],
+    .upload-folder-section select,
+    .upload-folder-section input[type="text"] {
+        padding: 5px;
+        font-size: 11px;
+        height: 28px;
+    }
+
+    .upload-file-section label,
+    .upload-folder-section label {
+        font-size: 11px;
     }
 }
 
