@@ -129,7 +129,7 @@
     </div>
     <div class="load-more-container">
         <button id="loadMore" class="load-more-btn hidden">Load More</button>
-    </div>
+    </div><div id="pagination" class="pagination"></div>
     <div class="delete-container" id="deleteContainer" style="display: none;">
         <span id="totalSchedules"></span>
         <button id="deleteSelected" class="delete-selected-btn">Hapus Terpilih</button>
@@ -147,8 +147,11 @@
         </div>
     </div>
 
-    <!-- Panggil file javascript.js -->
-    <script src="/javascript.js"></script>
+    <!-- Panggil file javascript -->
+    <script src="core.js"></script>
+<script src="accounts.js"></script>
+<script src="github.js"></script>
+<script src="schedules.js"></script>
         
     <!-- Script Cloudflare tetap di sini -->
     <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'924bd8b1db1eb023',t:'MTc0MjcxMTA3My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
