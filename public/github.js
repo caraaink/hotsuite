@@ -3,7 +3,7 @@ let allMediaFiles = [];
 let captions = {};
 
 async function loadGithubFolders() {
-    showFloatingNotification('Memuat daftar folder...');
+    window.showFloatingNotification('Memuat daftar folder...');
     const spinner = document.getElementById('floatingSpinner');
     spinner.classList.remove('hidden');
     try {
@@ -26,12 +26,12 @@ async function loadGithubFolders() {
         });
 
         if (githubFolder.options.length === 1) {
-            showFloatingNotification('No subfolders found in ig directory.', true);
+            window.showFloatingNotification('No subfolders found in ig directory.', true);
         } else {
-            showFloatingNotification('');
+            window.showFloatingNotification('');
         }
     } catch (error) {
-        showFloatingNotification(`Error loading GitHub folders: ${error.message}`, true);
+        window.showFloatingNotification(`Error loading GitHub folders: ${error.message}`, true);
         console.error('Error fetching GitHub folders:', error);
     } finally {
         spinner.classList.add('hidden');
@@ -45,7 +45,7 @@ function naturalSort(a, b) {
 }
 
 async function fetchSubfolders(path) {
-    showFloatingNotification('Memuat daftar subfolder...');
+    window.showFloatingNotification('Memuat daftar subfolder...');
     const spinner = document.getElementById('floatingSpinner');
     spinner.classList.remove('hidden');
     try {
@@ -69,7 +69,7 @@ async function fetchSubfolders(path) {
         return allSubfolders;
     } catch (error) {
         console.error(`Error fetching subfolders for path ${path}:`, error);
-        showFloatingNotification(`Error loading subfolders: ${error.message}`, true);
+        window.showFloatingNotification(`Error loading subfolders: ${error.message}`, true);
         return [];
     } finally {
         spinner.classList.add('hidden');
@@ -77,7 +77,7 @@ async function fetchSubfolders(path) {
 }
 
 async function fetchFilesInSubfolder(path) {
-    showFloatingNotification('Memuat daftar file...');
+    window.showFloatingNotification('Memuat daftar file...');
     const spinner = document.getElementById('floatingSpinner');
     spinner.classList.remove('hidden');
     try {
@@ -95,7 +95,7 @@ async function fetchFilesInSubfolder(path) {
         const totalFiles = mediaFiles.length;
 
         if (totalFiles === 0) {
-            showFloatingNotification('Tidak ada file media yang didukung di folder ini.', true);
+            window.showFloatingNotification('Tidak ada file media yang didukung di folder ini.', true);
             spinner.classList.add('hidden');
             return allMediaFiles;
         }
@@ -103,7 +103,7 @@ async function fetchFilesInSubfolder(path) {
         let loadedCount = 0;
         for (const item of mediaFiles) {
             loadedCount++;
-            showFloatingNotification(`Memuat file ${loadedCount} dari ${totalFiles}...`, false, 0);
+            window.showFloatingNotification(`Memuat file ${loadedCount} dari ${totalFiles}...`, false, 0);
             allMediaFiles.push({
                 name: item.name,
                 path: item.path,
@@ -120,7 +120,7 @@ async function fetchFilesInSubfolder(path) {
             return `${folderPath}/${metaFileName}`;
         });
 
-        showFloatingNotification(`Memuat metadata untuk ${totalFiles} file...`, false, 0);
+        window.showFloatingNotification(`Memuat metadata untuk ${totalFiles} file...`, false, 0);
         let metaLoadedCount = 0;
 
         try {
@@ -139,25 +139,25 @@ async function fetchFilesInSubfolder(path) {
                     captions[file.path] = '';
                 }
                 metaLoadedCount++;
-                showFloatingNotification(`Memuat metadata ${metaLoadedCount}/${totalFiles}...`, false, 0);
+                window.showFloatingNotification(`Memuat metadata ${metaLoadedCount}/${totalFiles}...`, false, 0);
             });
 
-            showFloatingNotification(`Berhasil memuat metadata untuk ${metaLoadedCount}/${totalFiles} file.`, false, 3000);
+            window.showFloatingNotification(`Berhasil memuat metadata untuk ${metaLoadedCount}/${totalFiles} file.`, false, 3000);
         } catch (error) {
             console.error('Error fetching metadata:', error);
             allMediaFiles.forEach(file => {
                 captions[file.path] = '';
                 metaLoadedCount++;
-                showFloatingNotification(`Memuat metadata ${metaLoadedCount}/${totalFiles}...`, false, 0);
+                window.showFloatingNotification(`Memuat metadata ${metaLoadedCount}/${totalFiles}...`, false, 0);
             });
-            showFloatingNotification('Gagal memuat metadata. Menggunakan caption kosong.', true);
+            window.showFloatingNotification('Gagal memuat metadata. Menggunakan caption kosong.', true);
         }
 
-        showFloatingNotification(`Berhasil memuat ${totalFiles} file.`, false, 3000);
+        window.showFloatingNotification(`Berhasil memuat ${totalFiles} file.`, false, 3000);
         return allMediaFiles;
     } catch (error) {
         console.error(`Error fetching files for path ${path}:`, error);
-        showFloatingNotification(`Error loading files: ${error.message}`, true);
+        window.showFloatingNotification(`Error loading files: ${error.message}`, true);
         return [];
     } finally {
         setTimeout(() => {
@@ -191,7 +191,7 @@ document.getElementById('githubFolder').addEventListener('change', async () => {
             subfolderLabel.style.display = 'none';
             const files = await fetchFilesInSubfolder(folderPath);
             allMediaFiles = files;
-            displayGallery(files);
+            window.displayGallery(files);
         } else {
             subfolderContainer.classList.remove('hidden');
             subfolderLabel.style.display = 'block';
@@ -202,7 +202,7 @@ document.getElementById('githubFolder').addEventListener('change', async () => {
                 const files = await fetchFilesInSubfolder(folderPath);
                 allMediaFiles = files;
                 document.getElementById('githubSubfolder').innerHTML = '<option value="">-- Tidak Ada Subfolder --</option>';
-                displayGallery(files);
+                window.displayGallery(files);
             } else {
                 document.getElementById('githubSubfolder').innerHTML = '<option value="">-- Pilih Subfolder --</option>';
                 subfolders.forEach(subfolder => {
@@ -214,7 +214,7 @@ document.getElementById('githubFolder').addEventListener('change', async () => {
             }
         }
     } catch (error) {
-        showFloatingNotification(`Error loading subfolders: ${error.message}`, true);
+        window.showFloatingNotification(`Error loading subfolders: ${error.message}`, true);
         console.error('Error fetching subfolders:', error);
         subfolderContainer.classList.add('hidden');
         subfolderLabel.style.display = 'none';
@@ -236,9 +236,9 @@ document.getElementById('githubSubfolder').addEventListener('change', async () =
     try {
         const files = await fetchFilesInSubfolder(subfolderPath);
         allMediaFiles = files;
-        displayGallery(files);
+        window.displayGallery(files);
     } catch (error) {
-        showFloatingNotification(`Error loading files: ${error.message}`, true);
+        window.showFloatingNotification(`Error loading files: ${error.message}`, true);
         console.error('Error fetching files:', error);
     }
 });
@@ -276,7 +276,7 @@ async function loadUploadFolders() {
         uploadFolderSelect.appendChild(customOption);
     } catch (error) {
         console.error('Error loading upload folders:', error);
-        showFloatingNotification(`Error loading upload folders: ${error.message}`, true);
+        window.showFloatingNotification(`Error loading upload folders: ${error.message}`, true);
     }
 }
 
@@ -309,7 +309,7 @@ document.getElementById('uploadFolderSelect').addEventListener('change', async (
                 uploadFolderInput.placeholder = 'Masukkan subfolder (opsional)';
             }
         } catch (error) {
-            showFloatingNotification(`Error loading subfolders: ${error.message}`, true);
+            window.showFloatingNotification(`Error loading subfolders: ${error.message}`, true);
             console.error('Error fetching subfolders:', error);
         }
     }
@@ -330,7 +330,7 @@ document.getElementById('uploadSubfolderSelect').addEventListener('change', () =
 document.getElementById('uploadToGithub').addEventListener('click', async () => {
     const uploadFile = document.getElementById('uploadFile');
     if (!uploadFile.files || uploadFile.files.length === 0) {
-        showFloatingNotification('Pilih file terlebih dahulu.', true);
+        window.showFloatingNotification('Pilih file terlebih dahulu.', true);
         return;
     }
 
@@ -342,7 +342,7 @@ document.getElementById('uploadToGithub').addEventListener('click', async () => 
     if (uploadFolderSelect.value === 'custom') {
         uploadFolderValue = uploadFolderInput.value.trim();
         if (!uploadFolderValue) {
-            showFloatingNotification('Masukkan path folder tujuan.', true);
+            window.showFloatingNotification('Masukkan path folder tujuan.', true);
             return;
         }
     } else if (uploadFolderSelect.value) {
@@ -363,7 +363,7 @@ document.getElementById('uploadToGithub').addEventListener('click', async () => 
 
         const invalidChars = /[<>:"|?*]/;
         if (invalidChars.test(uploadFolderValue)) {
-            showFloatingNotification('Path folder tujuan mengandung karakter yang tidak diizinkan.', true);
+            window.showFloatingNotification('Path folder tujuan mengandung karakter yang tidak diizinkan.', true);
             return;
         }
     }
@@ -380,7 +380,7 @@ document.getElementById('uploadToGithub').addEventListener('click', async () => 
     const metaFiles = files.filter(file => file.name.toLowerCase().endsWith('.json'));
 
     if (mediaFiles.length === 0) {
-        showFloatingNotification('Pilih setidaknya satu file media (JPG, JPEG, PNG, atau MP4).', true);
+        window.showFloatingNotification('Pilih setidaknya satu file media (JPG, JPEG, PNG, atau MP4).', true);
         return;
     }
 
@@ -392,7 +392,7 @@ document.getElementById('uploadToGithub').addEventListener('click', async () => 
 
     let uploadedCount = 0;
     const totalFiles = mediaFiles.length;
-    showFloatingNotification(`Mengunggah file 1 dari ${totalFiles}...`);
+    window.showFloatingNotification(`Mengunggah file 1 dari ${totalFiles}...`);
     const spinner = document.getElementById('floatingSpinner');
     spinner.classList.remove('hidden');
 
@@ -480,7 +480,7 @@ document.getElementById('uploadToGithub').addEventListener('click', async () => 
                         captions[newFile.path] = metaContent.caption || '';
                         uploadedCount++;
                         if (uploadedCount < totalFiles) {
-                            showFloatingNotification(`Mengunggah file ${uploadedCount + 1} dari ${totalFiles}...`);
+                            window.showFloatingNotification(`Mengunggah file ${uploadedCount + 1} dari ${totalFiles}...`);
                         }
 
                         resolve(newFile);
@@ -492,13 +492,13 @@ document.getElementById('uploadToGithub').addEventListener('click', async () => 
             });
         }
 
-        showFloatingNotification(`${mediaFiles.length} file media berhasil diunggah ke GitHub!`);
-        displayGallery(allMediaFiles);
+        window.showFloatingNotification(`${mediaFiles.length} file media berhasil diunggah ke GitHub!`);
+        window.displayGallery(allMediaFiles);
 
         await loadUploadFolders();
         await loadGithubFolders();
     } catch (error) {
-        showFloatingNotification(`Error uploading to GitHub: ${error.message}`, true);
+        window.showFloatingNotification(`Error uploading to GitHub: ${error.message}`, true);
         console.error('Error uploading to GitHub:', error);
     } finally {
         spinner.classList.add('hidden');
@@ -506,12 +506,12 @@ document.getElementById('uploadToGithub').addEventListener('click', async () => 
 });
 
 async function deletePhoto(filePath) {
-    showFloatingNotification(`Menghapus ${filePath}...`);
+    window.showFloatingNotification(`Menghapus ${filePath}...`);
     const spinner = document.getElementById('floatingSpinner');
     spinner.classList.remove('hidden');
 
     try {
-        const folderPath = filePath.substring(0, file.path.lastIndexOf('/'));
+        const folderPath = filePath.substring(0, filePath.lastIndexOf('/')); // Perbaikan: file.path -> filePath
         const commitMessage = folderPath.startsWith('ig/') 
             ? `Delete file ${filePath} [vercel-skip]` 
             : `Delete file ${filePath}`;
@@ -530,13 +530,13 @@ async function deletePhoto(filePath) {
         }
 
         const deleteResult = await deleteResponse.json();
-        showFloatingNotification(`${deleteResult.message}`);
+        window.showFloatingNotification(`${deleteResult.message}`);
 
         allMediaFiles = allMediaFiles.filter(f => f.path !== filePath);
         delete captions[filePath];
-        displayGallery(allMediaFiles);
+        window.displayGallery(allMediaFiles);
     } catch (error) {
-        showFloatingNotification(`Gagal menghapus file dari GitHub: ${error.message}`, true);
+        window.showFloatingNotification(`Gagal menghapus file dari GitHub: ${error.message}`, true);
         console.error('Error deleting file from GitHub:', error);
     } finally {
         spinner.classList.add('hidden');
@@ -567,7 +567,7 @@ async function saveCaptionToGithub(file, caption, commitMessage) {
 
         return true;
     } catch (error) {
-        showFloatingNotification(`Error saving meta file for ${file.name}: ${error.message}`, true);
+        window.showFloatingNotification(`Error saving meta file for ${file.name}: ${error.message}`, true);
         console.error(`Error saving meta file for ${file.name}:`, error);
         return false;
     }
@@ -576,9 +576,8 @@ async function saveCaptionToGithub(file, caption, commitMessage) {
 loadGithubFolders();
 loadUploadFolders();
 
-// Ekspor fungsi dan variabel untuk digunakan di schedules.js
-window.allMediaFiles = () => allMediaFiles;
-window.captions = () => captions;
+window.allMediaFiles = allMediaFiles;
+window.captions = captions;
 window.deletePhoto = deletePhoto;
 window.saveCaptionToGithub = saveCaptionToGithub;
 window.fetchFilesInSubfolder = fetchFilesInSubfolder;

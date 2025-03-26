@@ -11,7 +11,7 @@ async function fetchIgAccounts(accountKey) {
     const spinner = document.getElementById('floatingSpinner');
     try {
         spinner.classList.remove('hidden');
-        showFloatingNotification('Memuat akun Instagram...');
+        window.showFloatingNotification('Memuat akun Instagram...');
         const url = nextCursor
             ? `/api/get_accounts?account_key=${accountKey}&limit=${PER_PAGE}&after=${nextCursor}`
             : `/api/get_accounts?account_key=${accountKey}&limit=${PER_PAGE}`;
@@ -36,12 +36,12 @@ async function fetchIgAccounts(accountKey) {
         if (allIgAccounts.length < MAX_IG_LIMIT && nextCursor) {
             await fetchIgAccounts(accountKey);
         } else if (allIgAccounts.length >= MAX_IG_LIMIT) {
-            showFloatingNotification(`Mencapai batas maksimum ${MAX_IG_LIMIT} akun.`, false, 3000);
+            window.showFloatingNotification(`Mencapai batas maksimum ${MAX_IG_LIMIT} akun.`, false, 3000);
         } else {
-            showFloatingNotification(`Berhasil memuat ${allIgAccounts.length} akun Instagram.`, false, 3000);
+            window.showFloatingNotification(`Berhasil memuat ${allIgAccounts.length} akun Instagram.`, false, 3000);
         }
     } catch (error) {
-        showFloatingNotification(`Error fetching accounts: ${error.message}`, true);
+        window.showFloatingNotification(`Error fetching accounts: ${error.message}`, true);
         console.error('Error fetching accounts:', error);
         document.getElementById('accountId').innerHTML = '<option value="">-- Gagal Memuat --</option>';
     } finally {
@@ -85,7 +85,7 @@ document.getElementById('userAccount').addEventListener('change', async () => {
         nextCursor = null;
         accountIdContainer.classList.add('hidden');
         accountIdLabel.style.display = 'none';
-        await loadSchedules();
+        await window.loadSchedules();
         return;
     }
 
@@ -108,9 +108,9 @@ document.getElementById('userAccount').addEventListener('change', async () => {
         accountIdLabel.textContent = 'Username IG';
 
         await fetchIgAccounts(`Akun ${accountNum}`);
-        await loadSchedules();
+        await window.loadSchedules();
     } catch (error) {
-        showFloatingNotification(`Error fetching accounts: ${error.message}`, true);
+        window.showFloatingNotification(`Error fetching accounts: ${error.message}`, true);
         console.error('Error fetching accounts:', error);
         document.getElementById('accountId').innerHTML = '<option value="">-- Gagal Memuat --</option>';
         accountIdContainer.classList.add('hidden');
@@ -122,11 +122,11 @@ document.getElementById('accountId').addEventListener('change', async () => {
     const selectedOption = document.getElementById('accountId').options[document.getElementById('accountId').selectedIndex];
     selectedUsername = selectedOption ? selectedOption.dataset.username : null;
     selectedAccountId = selectedOption ? selectedOption.value : null;
-    await loadSchedules();
+    await window.loadSchedules();
 });
 
-// Ekspor variabel global agar bisa diakses di script lain
-window.selectedToken = () => selectedToken;
-window.selectedUsername = () => selectedUsername;
-window.selectedAccountNum = () => selectedAccountNum;
-window.selectedAccountId = () => selectedAccountId;
+// Ekspor variabel global sebagai nilai langsung
+window.selectedToken = selectedToken;
+window.selectedUsername = selectedUsername;
+window.selectedAccountNum = selectedAccountNum;
+window.selectedAccountId = selectedAccountId;

@@ -25,7 +25,7 @@ async function displayGallery(files) {
         schedules = await schedulesResponse.json();
     } catch (error) {
         console.error('Error fetching schedules:', error);
-        showFloatingNotification('Gagal mengambil data jadwal.', true);
+        window.showFloatingNotification('Gagal mengambil data jadwal.', true);
         schedules = { schedules: [] };
     }
 
@@ -61,8 +61,8 @@ async function displayGallery(files) {
         deleteDirectBtn.className = 'delete-direct-btn';
         deleteDirectBtn.textContent = '×';
         deleteDirectBtn.addEventListener('click', async () => {
-            const confirmed = await showConfirmModal(`Apakah Anda yakin ingin menghapus ${file.name}?`);
-            if (confirmed) await deletePhoto(file.path);
+            const confirmed = await window.showConfirmModal(`Apakah Anda yakin ingin menghapus ${file.name}?`);
+            if (confirmed) await window.deletePhoto(file.path);
         });
         container.appendChild(deleteDirectBtn);
 
@@ -71,7 +71,7 @@ async function displayGallery(files) {
 
         const captionText = document.createElement('p');
         captionText.className = 'caption-text';
-        captionText.textContent = captions()[file.path] || 'Tidak ada caption';
+        captionText.textContent = window.captions[file.path] || 'Tidak ada caption';
 
         let isDragging = false;
         let startY = 0;
@@ -136,7 +136,7 @@ async function displayGallery(files) {
             const editor = document.createElement('div');
             editor.className = 'caption-editor';
             const textarea = document.createElement('textarea');
-            textarea.value = captions()[file.path] || '';
+            textarea.value = window.captions[file.path] || '';
             const buttonContainer = document.createElement('div');
             buttonContainer.className = 'editor-buttons';
             const saveBtn = document.createElement('button');
@@ -147,18 +147,18 @@ async function displayGallery(files) {
             saveBtn.addEventListener('click', async () => {
                 saveSpinner.classList.remove('hidden');
                 saveBtn.disabled = true;
-                captions()[file.path] = textarea.value;
+                window.captions[file.path] = textarea.value;
 
                 const folderPath = file.path.substring(0, file.path.lastIndexOf('/'));
                 const metaCommitMessage = folderPath.startsWith('ig/') 
                     ? `Update meta file for ${file.path} [vercel-skip]` 
                     : `Update meta file for ${file.path}`;
 
-                const success = await saveCaptionToGithub(file, captions()[file.path], metaCommitMessage);
+                const success = await window.saveCaptionToGithub(file, window.captions[file.path], metaCommitMessage);
                 if (success) {
-                    captionText.textContent = captions()[file.path] || 'Tidak ada caption';
+                    captionText.textContent = window.captions[file.path] || 'Tidak ada caption';
                     editor.remove();
-                    showFloatingNotification(`Caption untuk ${file.name} berhasil disimpan.`);
+                    window.showFloatingNotification(`Caption untuk ${file.name} berhasil disimpan.`);
                 }
                 saveSpinner.classList.add('hidden');
                 saveBtn.disabled = false;
@@ -192,7 +192,7 @@ async function displayGallery(files) {
             saveBtn.textContent = 'Simpan';
             saveBtn.addEventListener('click', () => {
                 if (!datetimeInput.value) {
-                    showFloatingNotification('Pilih waktu terlebih dahulu.', true);
+                    window.showFloatingNotification('Pilih waktu terlebih dahulu.', true);
                     return;
                 }
                 scheduledTimes[file.path] = datetimeInput.value;
@@ -209,7 +209,7 @@ async function displayGallery(files) {
                 scheduleTime.classList.add('scheduled');
                 scheduleTime.classList.remove('unscheduled');
                 editor.remove();
-                showFloatingNotification(`Waktu jadwal untuk ${file.name} disimpan sementara. Klik "Simpan Jadwal" untuk mengirimkan.`);
+                window.showFloatingNotification(`Waktu jadwal untuk ${file.name} disimpan sementara. Klik "Simpan Jadwal" untuk mengirimkan.`);
             });
 
             const cancelBtn = document.createElement('button');
@@ -237,17 +237,17 @@ async function displayGallery(files) {
         deleteScheduleBtn.disabled = !scheduleId;
         deleteScheduleBtn.addEventListener('click', async () => {
             if (!scheduleId) {
-                showFloatingNotification('File ini belum memiliki jadwal.', true);
+                window.showFloatingNotification('File ini belum memiliki jadwal.', true);
                 return;
             }
-            const confirmed = await showConfirmModal(`Apakah Anda yakin ingin menghapus jadwal untuk ${file.name}?`);
+            const confirmed = await window.showConfirmModal(`Apakah Anda yakin ingin menghapus jadwal untuk ${file.name}?`);
             if (confirmed) {
                 await deleteSchedule(scheduleId);
                 deleteScheduleBtn.disabled = true;
                 scheduleTime.textContent = 'Belum dijadwalkan';
                 scheduleTime.classList.add('unscheduled');
                 scheduleTime.classList.remove('scheduled');
-                showFloatingNotification(`Jadwal untuk ${file.name} berhasil dihapus.`);
+                window.showFloatingNotification(`Jadwal untuk ${file.name} berhasil dihapus.`);
             }
         });
 
@@ -255,12 +255,12 @@ async function displayGallery(files) {
         publishBtn.className = 'btn publish';
         publishBtn.textContent = 'Publish';
         publishBtn.addEventListener('click', async () => {
-            if (!selectedToken() || !selectedAccountId()) {
-                showFloatingNotification('Pilih akun dan username terlebih dahulu.', true);
+            if (!window.selectedToken || !window.selectedAccountId) {
+                window.showFloatingNotification('Pilih akun dan username terlebih dahulu.', true);
                 return;
             }
 
-            showFloatingNotification('Mempublikasikan...', false, 0);
+            window.showFloatingNotification('Mempublikasikan...', false, 0);
             const spinner = document.getElementById('floatingSpinner');
             spinner.classList.remove('hidden');
             let isUploadedFile = file.path.startsWith('ig/image/');
@@ -270,10 +270,10 @@ async function displayGallery(files) {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        accountId: selectedAccountId(),
+                        accountId: window.selectedAccountId,
                         mediaUrl: file.download_url,
-                        caption: captions()[file.path] || '',
-                        userToken: selectedToken(),
+                        caption: window.captions[file.path] || '',
+                        userToken: window.selectedToken,
                     }),
                 });
 
@@ -282,11 +282,11 @@ async function displayGallery(files) {
                 }
 
                 const result = await response.json();
-                showFloatingNotification(result.message || 'Berhasil dipublikasikan ke Instagram!', false, 3000);
+                window.showFloatingNotification(result.message || 'Berhasil dipublikasikan ke Instagram!', false, 3000);
 
-                if (isUploadedFile) await deletePhoto(file.path);
+                if (isUploadedFile) await window.deletePhoto(file.path);
             } catch (error) {
-                showFloatingNotification(`Error publishing: ${error.message}`, true);
+                window.showFloatingNotification(`Error publishing: ${error.message}`, true);
                 console.error('Error publishing post:', error);
             } finally {
                 spinner.classList.add('hidden');
@@ -321,7 +321,7 @@ async function displayGallery(files) {
                     scheduleTimeElement.classList.remove('scheduled');
                 }
             });
-            showFloatingNotification('Jadwal untuk semua foto telah direset.');
+            window.showFloatingNotification('Jadwal untuk semua foto telah direset.');
         }
     });
 
@@ -383,7 +383,7 @@ async function displayGallery(files) {
 
     scheduleAll.addEventListener('click', () => {
         if (!startDateTime.value) {
-            showFloatingNotification('Pilih tanggal dan jam awal terlebih dahulu.', true);
+            window.showFloatingNotification('Pilih tanggal dan jam awal terlebih dahulu.', true);
             return;
         }
 
@@ -413,7 +413,7 @@ async function displayGallery(files) {
             }
         });
 
-        showFloatingNotification(`Waktu jadwal untuk semua foto disimpan sementara. Klik "Simpan Jadwal" untuk mengirimkan.`);
+        window.showFloatingNotification(`Waktu jadwal untuk semua foto disimpan sementara. Klik "Simpan Jadwal" untuk mengirimkan.`);
         window.history.pushState({}, document.title, window.location.pathname);
     });
 }
@@ -423,8 +423,8 @@ function renderSchedules(schedulesToRender, startIndex) {
     scheduleTableBody.innerHTML = '';
     schedulesToRender.forEach((schedule, idx) => {
         const globalIndex = startIndex + idx;
-        const wibTime = convertToWIB(schedule.time);
-        const formattedWibTime = formatToDatetimeLocal(wibTime);
+        const wibTime = window.convertToWIB(schedule.time);
+        const formattedWibTime = window.formatToDatetimeLocal(wibTime);
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${globalIndex + 1}</td>
@@ -460,9 +460,9 @@ function renderSchedules(schedulesToRender, startIndex) {
     });
 
     document.querySelectorAll('.delete-btn').forEach(button => {
-        button.addEventListener('click', debounce(async (e) => {
+        button.addEventListener('click', window.debounce(async (e) => {
             const scheduleId = e.target.getAttribute('data-schedule-id');
-            const confirmed = await showConfirmModal('Apakah Anda yakin ingin menghapus jadwal ini?');
+            const confirmed = await window.showConfirmModal('Apakah Anda yakin ingin menghapus jadwal ini?');
             if (confirmed) deleteSchedule(scheduleId);
         }, 300));
     });
@@ -528,11 +528,11 @@ async function loadSchedules() {
         allSchedules.sort((a, b) => new Date(a.time) - new Date(b.time));
 
         let filteredSchedules = allSchedules;
-        if (selectedAccountNum()) {
-            filteredSchedules = filteredSchedules.filter(schedule => schedule.accountNum === selectedAccountNum());
+        if (window.selectedAccountNum) {
+            filteredSchedules = filteredSchedules.filter(schedule => schedule.accountNum === window.selectedAccountNum);
         }
-        if (selectedAccountId()) {
-            filteredSchedules = filteredSchedules.filter(schedule => schedule.accountId === selectedAccountId());
+        if (window.selectedAccountId) {
+            filteredSchedules = filteredSchedules.filter(schedule => schedule.accountId === window.selectedAccountId);
         }
 
         const deleteContainer = document.getElementById('deleteContainer');
@@ -559,12 +559,12 @@ async function loadSchedules() {
             });
 
             document.getElementById('deleteSelected').addEventListener('click', async () => {
-                const confirmed = await showConfirmModal('Apakah Anda yakin ingin menghapus jadwal yang dipilih?');
+                const confirmed = await window.showConfirmModal('Apakah Anda yakin ingin menghapus jadwal yang dipilih?');
                 if (confirmed) deleteSelectedSchedules();
             });
         }
     } catch (error) {
-        showFloatingNotification(`Error loading schedules: ${error.message}`, true);
+        window.showFloatingNotification(`Error loading schedules: ${error.message}`, true);
         console.error('Error fetching schedules:', error);
         scheduleTableBody.innerHTML = '<tr><td colspan="8">Gagal memuat jadwal.</td></tr>';
         document.getElementById('totalSchedules').textContent = 'Total: 0 jadwal';
@@ -575,7 +575,7 @@ async function loadSchedules() {
 async function deleteSchedule(scheduleId) {
     const spinner = document.getElementById('floatingSpinner');
     try {
-        showFloatingNotification('Menghapus jadwal...');
+        window.showFloatingNotification('Menghapus jadwal...');
         spinner.classList.remove('hidden');
         const res = await fetch('/api/delete_schedule', {
             method: 'POST',
@@ -584,10 +584,10 @@ async function deleteSchedule(scheduleId) {
         });
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         const result = await res.json();
-        showFloatingNotification(result.message || 'Jadwal berhasil dihapus!');
+        window.showFloatingNotification(result.message || 'Jadwal berhasil dihapus!');
         await loadSchedules();
     } catch (error) {
-        showFloatingNotification(`Error deleting schedule: ${error.message}`, true);
+        window.showFloatingNotification(`Error deleting schedule: ${error.message}`, true);
         console.error('Error deleting schedule:', error);
     } finally {
         spinner.classList.add('hidden');
@@ -603,10 +603,10 @@ async function updateSchedule(scheduleId, updatedData) {
         });
         if (!res.ok) throw new Error(`HTTP error updating schedule! status: ${res.status}`);
         const result = await res.json();
-        showFloatingNotification(result.message || 'Jadwal berhasil diperbarui!');
+        window.showFloatingNotification(result.message || 'Jadwal berhasil diperbarui!');
         await loadSchedules();
     } catch (error) {
-        showFloatingNotification(`Error updating schedule: ${error.message}`, true);
+        window.showFloatingNotification(`Error updating schedule: ${error.message}`, true);
         console.error('Error updating schedule:', error);
     }
 }
@@ -614,7 +614,7 @@ async function updateSchedule(scheduleId, updatedData) {
 async function deleteSelectedSchedules() {
     const checkboxes = document.querySelectorAll('.schedule-checkbox:checked');
     if (checkboxes.length === 0) {
-        showFloatingNotification('Pilih setidaknya satu jadwal untuk dihapus.', true);
+        window.showFloatingNotification('Pilih setidaknya satu jadwal untuk dihapus.', true);
         return;
     }
 
@@ -622,14 +622,14 @@ async function deleteSelectedSchedules() {
     const spinner = document.getElementById('floatingSpinner');
 
     try {
-        showFloatingNotification('Menghapus jadwal terpilih...');
+        window.showFloatingNotification('Menghapus jadwal terpilih...');
         spinner.classList.remove('hidden');
         for (const scheduleId of scheduleIds) {
             await deleteSchedule(scheduleId);
         }
-        showFloatingNotification(`${scheduleIds.length} jadwal berhasil dihapus!`);
+        window.showFloatingNotification(`${scheduleIds.length} jadwal berhasil dihapus!`);
     } catch (error) {
-        showFloatingNotification(`Error deleting schedules: ${error.message}`, true);
+        window.showFloatingNotification(`Error deleting schedules: ${error.message}`, true);
         console.error('Error deleting schedules:', error);
     } finally {
         spinner.classList.add('hidden');
@@ -637,18 +637,18 @@ async function deleteSelectedSchedules() {
 }
 
 document.getElementById('saveSchedules').addEventListener('click', async () => {
-    if (!selectedToken() || !selectedAccountId()) {
-        showFloatingNotification('Pilih akun dan username terlebih dahulu.', true);
+    if (!window.selectedToken || !window.selectedAccountId) {
+        window.showFloatingNotification('Pilih akun dan username terlebih dahulu.', true);
         return;
     }
 
-    const scheduledFiles = allMediaFiles().filter(file => scheduledTimes[file.path] && scheduledTimes[file.path].trim() !== '');
+    const scheduledFiles = window.allMediaFiles.filter(file => scheduledTimes[file.path] && scheduledTimes[file.path].trim() !== '');
     if (scheduledFiles.length === 0) {
-        showFloatingNotification('Tidak ada foto yang dijadwalkan.', true);
+        window.showFloatingNotification('Tidak ada foto yang dijadwalkan.', true);
         return;
     }
 
-    showFloatingNotification('Menyimpan jadwal... 0/' + scheduledFiles.length, false, 0);
+    window.showFloatingNotification('Menyimpan jadwal... 0/' + scheduledFiles.length, false, 0);
     const spinner = document.getElementById('floatingSpinner');
     spinner.classList.remove('hidden');
 
@@ -656,12 +656,12 @@ document.getElementById('saveSchedules').addEventListener('click', async () => {
         let completedCount = 0;
         for (const file of scheduledFiles) {
             const formData = {
-                accountId: selectedAccountId(),
-                username: selectedUsername(),
+                accountId: window.selectedAccountId,
+                username: window.selectedUsername,
                 mediaUrl: file.download_url,
-                caption: captions()[file.path] || '',
+                caption: window.captions[file.path] || '',
                 time: scheduledTimes[file.path],
-                userToken: selectedToken(),
+                userToken: window.selectedToken,
                 accountNum: document.getElementById('userAccount').value,
                 completed: false,
             };
@@ -676,13 +676,13 @@ document.getElementById('saveSchedules').addEventListener('click', async () => {
             if (!response.ok) throw new Error(`HTTP error scheduling post! status: ${response.status}, details: ${result.error}`);
 
             completedCount++;
-            showFloatingNotification(`Menyimpan jadwal... ${completedCount}/${scheduledFiles.length}`, false, 0);
+            window.showFloatingNotification(`Menyimpan jadwal... ${completedCount}/${scheduledFiles.length}`, false, 0);
         }
-        showFloatingNotification(`${scheduledFiles.length} foto berhasil dijadwalkan!`, false, 3000);
+        window.showFloatingNotification(`${scheduledFiles.length} foto berhasil dijadwalkan!`, false, 3000);
         scheduledTimes = {};
         await loadSchedules();
     } catch (error) {
-        showFloatingNotification(`Error scheduling: ${error.message}`, true);
+        window.showFloatingNotification(`Error scheduling: ${error.message}`, true);
         console.error('Error scheduling posts:', error);
     } finally {
         spinner.classList.add('hidden');
@@ -691,6 +691,5 @@ document.getElementById('saveSchedules').addEventListener('click', async () => {
 
 loadSchedules();
 
-// Ekspor fungsi untuk digunakan di accounts.js
 window.loadSchedules = loadSchedules;
 window.displayGallery = displayGallery;
