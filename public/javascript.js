@@ -1522,84 +1522,102 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function loadSchedules() {
-        if (isLoadingSchedules) {
-            console.log('loadSchedules already in progress, skipping...');
-            return;
-        }
-
-        isLoadingSchedules = true;
-        try {
-            scheduleTableBody.innerHTML = '<tr><td colspan="8">Memuat jadwal...</td></tr>';
-            const res = await fetch('/api/get_schedules');
-            if (!res.ok) {
-                throw new Error(`HTTP error fetching schedules! status: ${res.status}`);
-            }
-            const data = await res.json();
-            console.log('Schedules fetched:', data);
-
-            allSchedules = data.schedules || [];
-
-            // Urutkan jadwal berdasarkan tanggal (time) secara ascending
-            allSchedules.sort((a, b) => new Date(a.time) - new Date(b.time));
-
-            let filteredSchedules = allSchedules;
-            if (selectedAccountNum) {
-                filteredSchedules = filteredSchedules.filter(schedule => schedule.accountNum === selectedAccountNum);
-            }
-            if (selectedAccountId) {
-                filteredSchedules = filteredSchedules.filter(schedule => schedule.accountId === selectedAccountId);
-            }
-
-            displayedSchedules = 0;
-
-            // Perbarui visibilitas elemen berdasarkan filteredSchedules
-            updateScheduleVisibility(filteredSchedules);
-
-            if (filteredSchedules.length > 0) {
-                loadMoreBtn.removeEventListener('click', loadMoreSchedules);
-                loadMoreBtn.addEventListener('click', loadMoreSchedules);
-
-                selectAll.addEventListener('change', () => {
-                    const checkboxes = document.querySelectorAll('.schedule-checkbox');
-                    checkboxes.forEach(checkbox => {
-                        checkbox.checked = selectAll.checked;
-                    });
-                });
-
-                deleteSelected.addEventListener('click', async () => {
-                    const confirmed = await showConfirmModal('Apakah Anda yakin ingin menghapus jadwal yang dipilih?');
-                    if (confirmed) {
-                        deleteSelectedSchedules();
-                    }
-                });
-            }
-        } catch (error) {
-            showFloatingNotification(`Error loading schedules: ${error.message}`, true);
-            console.error('Error fetching schedules:', error);
-            scheduleTableBody.innerHTML = '<tr><td colspan="8">Gagal memuat jadwal.</td></tr>';
-            totalSchedules.textContent = 'Total: 0 jadwal';
-            loadMoreBtn.classList.add('hidden');
-            updateScheduleVisibility([]); // Pastikan elemen disembunyikan jika gagal
-        } finally {
-            isLoadingSchedules = false;
-        }
+    if (isLoadingSchedules) {
+        console.log('loadSchedules already in progress, skipping...');
+        return;
     }
 
-    function loadMoreSchedules() {
-        const filteredSchedules = allSchedules.filter(schedule => {
-            if (selectedAccountNum && schedule.accountNum !== selectedAccountNum) return false;
-            if (selectedAccountId && schedule.accountId !== selectedAccountId) return false;
-            return true;
-        });
+    isLoadingSchedules = true;
+    try {
+        scheduleTableBody.innerHTML = '<tr><td colspan="8">Memuat jadwal...</td></tr>';
+        const res = await fetch('/api/get_schedules');
+        if (!res.ok) {
+            throw new Error(`HTTP error fetching schedules! status: ${res.status}`);
+        }
+        const data = await res.json();
+        console.log('Schedules fetched:', data);
 
-        const nextSchedules = filteredSchedules.slice(displayedSchedules, displayedSchedules + ITEMS_PER_PAGE);
-        renderSchedules(nextSchedules, displayedSchedules);
-        displayedSchedules += nextSchedules.length;
+        allSchedules = data.schedules || [];
 
-        if (displayedSchedules >= filteredSchedules.length) {
+        // Urutkan jadwal berdasarkan tanggal (time) secara ascending
+        allSchedules.sort((a, b) => new Date(a.time) - new Date(b.time));
+
+        let filteredSchedules = allSchedules;
+        if (selectedAccountNum) {
+            filteredSchedules = filteredSchedules.filter(schedule => schedule.accountNum === selectedAccountNum);
+        }
+        if (selectedAccountId) {
+            filteredSchedules = filteredSchedules.filter(schedule => schedule.accountId === selectedAccountId);
+        }
+
+        displayedSchedules = 0;
+
+        // Tampilkan 20 jadwal pertama sebagai default
+        const initialSchedules = filteredSchedules.slice(0, ITEMS_PER_PAGE);
+        scheduleTableBody.innerHTML = ''; // Kosongkan setelah memuat data
+        renderSchedules(initialSchedules, 0);
+        displayedSchedules = initialSchedules.length;
+
+        // Perbarui visibilitas elemen berdasarkan filteredSchedules
+        updateScheduleVisibility(filteredSchedules);
+
+        if (filteredSchedules.length > 0) {
+            // Tambahkan event listener untuk "Load More"
+            loadMoreBtn.removeEventListener('click', loadMoreSchedules); // Hapus listener lama
+            loadMoreBtn.addEventListener('click', loadMoreSchedules);
+
+            // Tampilkan tombol "Load More" jika ada lebih dari 20 jadwal
+            if (filteredSchedules.length > ITEMS_PER_PAGE) {
+                loadMoreBtn.classList.remove('hidden');
+            } else {
+                loadMoreBtn.classList.add('hidden');
+            }
+
+            selectAll.addEventListener('change', () => {
+                const checkboxes = document.querySelectorAll('.schedule-checkbox');
+                checkboxes.forEach(checkbox => {
+                    checkbox.checked = selectAll.checked;
+                });
+            });
+
+            deleteSelected.addEventListener('click', async () => {
+                const confirmed = await showConfirmModal('Apakah Anda yakin ingin menghapus jadwal yang dipilih?');
+                if (confirmed) {
+                    deleteSelectedSchedules();
+                }
+            });
+        } else {
             loadMoreBtn.classList.add('hidden');
         }
+    } catch (error) {
+        showFloatingNotification(`Error loading schedules: ${error.message}`, true);
+        console.error('Error fetching schedules:', error);
+        scheduleTableBody.innerHTML = '<tr><td colspan="8">Gagal memuat jadwal.</td></tr>';
+        totalSchedules.textContent = 'Total: 0 jadwal';
+        loadMoreBtn.classList.add('hidden');
+        updateScheduleVisibility([]); // Pastikan elemen disembunyikan jika gagal
+    } finally {
+        isLoadingSchedules = false;
     }
+}
+
+function loadMoreSchedules() {
+    const filteredSchedules = allSchedules.filter(schedule => {
+        if (selectedAccountNum && schedule.accountNum !== selectedAccountNum) return false;
+        if (selectedAccountId && schedule.accountId !== selectedAccountId) return false;
+        return true;
+    });
+
+    const nextSchedules = filteredSchedules.slice(displayedSchedules, displayedSchedules + ITEMS_PER_PAGE);
+    renderSchedules(nextSchedules, displayedSchedules);
+    displayedSchedules += nextSchedules.length;
+
+    if (displayedSchedules >= filteredSchedules.length) {
+        loadMoreBtn.classList.add('hidden');
+    } else {
+        loadMoreBtn.classList.remove('hidden');
+    }
+}
 
     saveSchedules.addEventListener('click', async () => {
         if (!selectedToken || !accountId.value) {
