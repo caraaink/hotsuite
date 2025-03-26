@@ -1151,12 +1151,65 @@ document.addEventListener('DOMContentLoaded', () => {
     scheduleBtn.className = 'btn schedule';
     scheduleBtn.textContent = 'Jadwalkan';
     scheduleBtn.addEventListener('click', () => {
-        // ... (kode untuk editor jadwal)
+        const editor = document.createElement('div');
+        editor.className = 'schedule-editor';
+        const datetimeInput = document.createElement('input');
+        datetimeInput.type = 'datetime-local';
+        datetimeInput.value = scheduledTimes[file.path] || '';
+
+        const buttonContainer = document.createElement('div');
+        buttonContainer.className = 'editor-buttons';
+
+        const saveBtn = document.createElement('button');
+        saveBtn.className = 'btn-save';
+        saveBtn.textContent = 'Simpan';
+        saveBtn.addEventListener('click', () => {
+            if (!datetimeInput.value) {
+                showFloatingNotification('Pilih waktu terlebih dahulu.', true);
+                return;
+            }
+
+            scheduledTimes[file.path] = datetimeInput.value;
+            const date = new Date(scheduledTimes[file.path]);
+            const formattedTime = date.toLocaleString('id-ID', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            }).replace(',', '').replace(/(\d{2}):(\d{2})/, '$1.$2');
+            scheduleTime.textContent = formattedTime;
+            scheduleTime.classList.add('scheduled');
+            scheduleTime.classList.remove('unscheduled');
+
+            editor.remove();
+            showFloatingNotification(`Waktu jadwal untuk ${file.name} disimpan sementara. Klik "Simpan Jadwal" untuk mengirimkan.`);
+        });
+
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'btn-cancel';
+        cancelBtn.textContent = 'Batal';
+        cancelBtn.addEventListener('click', () => {
+            delete scheduledTimes[file.path];
+            scheduleTime.textContent = 'Belum dijadwalkan';
+            scheduleTime.classList.add('unscheduled');
+            scheduleTime.classList.remove('scheduled');
+            editor.remove();
+            displayGallery(files);
+        });
+
+        buttonContainer.appendChild(saveBtn);
+        buttonContainer.appendChild(cancelBtn);
+
+        editor.appendChild(datetimeInput);
+        editor.appendChild(buttonContainer);
+        container.appendChild(editor);
     });
 
     const deleteScheduleBtn = document.createElement('button');
     deleteScheduleBtn.className = 'btn delete';
-    deleteScheduleBtn.textContent = 'Hapus';
+    deleteScheduleBtn.textContent = 'Hapus Jadwal';
     deleteScheduleBtn.disabled = !scheduleId;
     deleteScheduleBtn.addEventListener('click', async () => {
         if (!scheduleId) {
@@ -1174,11 +1227,6 @@ document.addEventListener('DOMContentLoaded', () => {
             showFloatingNotification(`Jadwal untuk ${file.name} berhasil dihapus.`);
         }
     });
-
-    const publishBtn = document.createElement('button');
-    publishBtn.className = 'btn publish';
-    publishBtn.textContent = 'Publish';
-    publishBtn.addEventListener('click', async () => {
 
     const publishBtn = document.createElement('button');
     publishBtn.className = 'btn publish';
@@ -1226,18 +1274,13 @@ document.addEventListener('DOMContentLoaded', () => {
     buttonGroup.appendChild(editBtn);
     buttonGroup.appendChild(scheduleBtn);
 
-    // Tambahkan action-group untuk tombol Hapus dan Publish
-    const actionGroup = document.createElement('div');
-    actionGroup.className = 'action-group';
-    actionGroup.appendChild(deleteScheduleBtn);
-    actionGroup.appendChild(publishBtn);
-
     container.appendChild(img);
     container.appendChild(name);
     container.appendChild(captionText);
     container.appendChild(scheduleTime);
     container.appendChild(buttonGroup);
-    container.appendChild(actionGroup); // Tambahkan action-group ke container
+    container.appendChild(deleteScheduleBtn);
+    container.appendChild(publishBtn);
     gallery.appendChild(container);
 });
 
