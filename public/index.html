@@ -75,9 +75,15 @@
                     <input type="file" id="uploadFile" name="uploadFile" accept=".jpg,.jpeg,.png,.mp4,.json" multiple>
                 </div>
                 <div class="upload-folder-section">
-                    <label for="uploadFolder">Folder Tujuan:</label>
-                    <input type="text" id="uploadFolder" name="uploadFolder" placeholder="Masukkan path folder (opsional)">
-                </div>
+    <label for="uploadFolderSelect">Folder Tujuan:</label>
+    <div class="folder-selection">
+        <select id="uploadFolderSelect" name="uploadFolderSelect">
+            <option value="">-- Pilih Folder --</option>
+            <!-- Opsi folder akan diisi oleh JavaScript -->
+        </select>
+        <input type="text" id="uploadFolderInput" name="uploadFolderInput" placeholder="Masukkan path folder (opsional)" style="display: none;">
+    </div>
+</div>
                 <button type="button" id="uploadToGithub" class="upload-btn">Unggah ke GitHub</button>
             </div>
 
