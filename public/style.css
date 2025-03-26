@@ -515,22 +515,7 @@ body.dark-mode .gallery-item p:first-of-type {
     color: #fff;
     background: rgba(0, 0, 0, 0.7);
 }
-/* Responsivitas untuk layar kecil */
-@media (max-width: 768px) {
-    .gallery-item p:first-of-type {
-        font-size: 10px; /* Kecilkan font di layar kecil */
-        max-width: calc(100% - 35px); /* Sesuaikan lebar */
-        top: 5px; /* Tetap sejajar dengan tombol X */
-    }
-}
 
-@media (max-width: 480px) {
-    .gallery-item p:first-of-type {
-        font-size: 8px; /* Kecilkan lebih lanjut */
-        max-width: calc(100% - 30px); /* Sesuaikan lebar */
-        top: 5px; /* Tetap sejajar dengan tombol X */
-    }
-}
 /* Perbaikan: Batasi tinggi caption, tambahkan scroll, dan pastikan terlihat */
 .gallery-item .caption-text {
     font-size: 12px;
@@ -985,8 +970,10 @@ body.dark-mode .caption-editor .editor-buttons button:first-child:hover {
     /* Sesuaikan nama file di layar kecil */
     .gallery-item p:first-of-type {
         font-size: 10px; /* Kecilkan font di layar kecil */
-        max-width: calc(100% - 40px); /* Sesuaikan lebar */
-        top: 25px; /* Sesuaikan posisi */
+        max-width: calc(100% - 35px); /* Sesuaikan lebar */
+        top: 5px; /* Pastikan tetap sejajar dengan tombol X */
+        left: 5px; /* Pastikan tetap di tepi kiri */
+        padding: 1px 4px; /* Kurangi padding agar lebih pas */
     }
 }
 
@@ -1088,7 +1075,9 @@ body.dark-mode .caption-editor .editor-buttons button:first-child:hover {
     .gallery-item p:first-of-type {
         font-size: 8px; /* Kecilkan lebih lanjut */
         max-width: calc(100% - 30px); /* Sesuaikan lebar */
-        top: 20px; /* Sesuaikan posisi */
+        top: 5px; /* Pastikan tetap sejajar dengan tombol X */
+        left: 5px; /* Pastikan tetap di tepi kiri */
+        padding: 1px 3px; /* Kurangi padding lebih lanjut */
     }
 }
 
