@@ -1551,12 +1551,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         displayedSchedules = 0;
+        scheduleTableBody.innerHTML = ''; // Kosongkan tabel sebelum render
 
-        // Tampilkan 20 jadwal pertama sebagai default
+        // Tampilkan hanya 20 jadwal pertama sebagai default
         const initialSchedules = filteredSchedules.slice(0, ITEMS_PER_PAGE);
-        scheduleTableBody.innerHTML = ''; // Kosongkan setelah memuat data
         renderSchedules(initialSchedules, 0);
         displayedSchedules = initialSchedules.length;
+
+        // Perbarui total jadwal
+        totalSchedules.textContent = `Total: ${filteredSchedules.length} jadwal`;
 
         // Perbarui visibilitas elemen berdasarkan filteredSchedules
         updateScheduleVisibility(filteredSchedules);
@@ -1573,19 +1576,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 loadMoreBtn.classList.add('hidden');
             }
 
-            selectAll.addEventListener('change', () => {
-                const checkboxes = document.querySelectorAll('.schedule-checkbox');
-                checkboxes.forEach(checkbox => {
-                    checkbox.checked = selectAll.checked;
-                });
-            });
+            // Event listener untuk "Select All"
+            selectAll.removeEventListener('change', handleSelectAll); // Hapus listener lama
+            selectAll.addEventListener('change', handleSelectAll);
 
-            deleteSelected.addEventListener('click', async () => {
-                const confirmed = await showConfirmModal('Apakah Anda yakin ingin menghapus jadwal yang dipilih?');
-                if (confirmed) {
-                    deleteSelectedSchedules();
-                }
-            });
+            // Event listener untuk "Delete Selected"
+            deleteSelected.removeEventListener('click', handleDeleteSelected); // Hapus listener lama
+            deleteSelected.addEventListener('click', handleDeleteSelected);
         } else {
             loadMoreBtn.classList.add('hidden');
         }
