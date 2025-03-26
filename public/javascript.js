@@ -1562,7 +1562,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateScheduleVisibility(filteredSchedules);
 
         if (filteredSchedules.length > 0) {
-            // Tambahkan event listener untuk Load More
+            // Reset event listener untuk menghindari duplikat
             loadMoreBtn.removeEventListener('click', loadMoreSchedules);
             loadMoreBtn.addEventListener('click', loadMoreSchedules);
 
@@ -1586,8 +1586,6 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 loadMoreBtn.classList.add('hidden');
             }
-        } else {
-            loadMoreBtn.classList.add('hidden');
         }
     } catch (error) {
         showFloatingNotification(`Error loading schedules: ${error.message}`, true);
