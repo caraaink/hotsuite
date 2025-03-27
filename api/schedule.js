@@ -64,6 +64,13 @@ async function runScheduledPosts() {
             return;
         }
 
+        // Log semua jadwal untuk debugging
+        console.log('All schedules in KV:', schedules.map(s => ({
+            username: s.username,
+            time: s.time,
+            completed: s.completed
+        })));
+
         // Urutkan jadwal berdasarkan waktu (time) dari terbaru ke lama
         const sortedSchedules = schedules
             .map(schedule => ({
