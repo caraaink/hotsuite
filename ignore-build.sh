@@ -1,15 +1,9 @@
 #!/bin/bash
-# Pastikan git tersedia
-if ! command -v git &> /dev/null; then
-    echo "Error: Git tidak ditemukan. Pastikan git terinstall."
-    exit 1
-fi
-
-# Memeriksa apakah ada perubahan di folder 'ig' pada commit terakhir
-if [ -n "$(git log -1 --name-only --pretty=format: | grep '^ig/')" ]; then
-    echo "Perubahan terdeteksi di folder 'ig', build dibatalkan."
-    exit 0  # Exit 0 untuk melewati build
+# Periksa apakah ada perubahan di folder 'ig'
+if git diff --name-only HEAD^ HEAD | grep -q "^ig/"; then
+  echo "Perubahan terdeteksi di folder 'ig', build dibatalkan."
+  exit 0 # 0 berarti build dilewati
 else
-    echo "Tidak ada perubahan di folder 'ig', lanjutkan build."
-    exit 1  # Exit 1 untuk melanjutkan build
+  echo "Tidak ada perubahan di folder 'ig', lanjutkan build."
+  exit 1 # 1 berarti build dilanjutkan
 fi
