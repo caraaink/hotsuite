@@ -54,7 +54,7 @@ async function runScheduledPosts() {
             return;
         }
 
-        // Tampilkan jadwal paling terbaru
+        // Ambil jadwal paling terbaru
         const latestSchedule = schedules[schedules.length - 1];
         console.log('Latest schedule fetched:', {
             username: latestSchedule.username,
@@ -69,6 +69,7 @@ async function runScheduledPosts() {
 
         const updatedSchedules = [];
         let checkLogCount = 0;
+        let notProcessedLogCount = 0;
 
         for (const schedule of schedules) {
             if (schedule.completed) {
@@ -94,16 +95,20 @@ async function runScheduledPosts() {
                 );
                 if (result.success) {
                     schedule.completed = true;
-                    console.log(`Post successful for ${schedule.username}: ${result.creationId}`);
+                    console.log(`Post successful for ${latestSchedule.username}: ${result.creationId}`);
                     updatedSchedules.push(schedule);
                     await kv.set(SCHEDULE_KEY, [...updatedSchedules, ...schedules.filter(s => s !== schedule)]);
                 } else {
-                    console.error(`Failed to post for ${schedule.username}: ${result.error}`);
+                    console.error(`Failed to post for ${latestSchedule.username}: ${result.error}`);
                     schedule.error = result.error;
                     updatedSchedules.push(schedule);
                 }
             } else {
-                console.log(`Schedule not processed: ${now >= scheduledTimeUTC ? 'Already completed' : 'Time not yet reached'}`);
+                // Batasi log "Schedule not processed" hanya untuk 2 jadwal pertama
+                if (notProcessedLogCount < 2) {
+                    console.log(`Schedule not processed for ${latestSchedule.username}: ${now >= scheduledTimeUTC ? 'Already completed' : 'Time not yet reached'}`);
+                    notProcessedLogCount++;
+                }
                 updatedSchedules.push(schedule);
             }
         }
