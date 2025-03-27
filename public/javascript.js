@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let scheduledTimes = {};
     let allSchedules = [];
     let currentPage = 1;
-    const ITEMS_PER_PAGE = 10;
+    const ITEMS_PER_PAGE = 20;
     let isLoadingSchedules = false;
 
     // Fungsi untuk mengonversi waktu dari UTC ke WIB
