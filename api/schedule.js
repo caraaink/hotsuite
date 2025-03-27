@@ -4,20 +4,6 @@ const { v4: uuidv4 } = require('uuid');
 
 const SCHEDULE_KEY = 'schedules';
 
-// Fungsi untuk memformat tanggal dan jam dari schedule.time ke format DD/MM/YYYY HH.MM
-function formatScheduleTime(timeString) {
-    const pad = (num) => String(num).padStart(2, '0');
-    const date = new Date(timeString); // Langsung gunakan waktu asli dari schedule.time
-    return `${pad(date.getUTCDate())}/${pad(date.getUTCMonth() + 1)}/${pad(date.getUTCFullYear())} ${pad(date.getUTCHours())}.${pad(date.getUTCMinutes())}`;
-}
-
-// Fungsi untuk memformat waktu saat ini ke WIB dalam format DD/MM/YYYY HH.MM
-function formatDateTimeWIBSimple(date) {
-    const pad = (num) => String(num).padStart(2, '0');
-    const wibDate = new Date(date.getTime() + 7 * 60 * 60 * 1000); // Konversi ke WIB (UTC+7)
-    return `${pad(wibDate.getDate())}/${pad(wibDate.getMonth() + 1)}/${wibDate.getFullYear()} ${pad(wibDate.getHours())}.${pad(wibDate.getMinutes())}`;
-}
-
 // Fungsi untuk memposting ke Instagram
 async function postToInstagram(igAccountId, mediaUrl, caption, userToken) {
     try {
@@ -68,38 +54,27 @@ async function runScheduledPosts() {
             return;
         }
 
-        // Urutkan pendingSchedules berdasarkan waktu terdekat (paling baru) dan ambil 2 pertama
-        const sortedPendingSchedules = pendingSchedules.sort((a, b) => {
-            const timeA = new Date(a.time + ':00').getTime();
-            const timeB = new Date(b.time + ':00').getTime();
-            return timeA - timeB; // Urutkan dari waktu terdekat ke waktu terjauh
-        });
-        const limitedPendingSchedules = sortedPendingSchedules.slice(0, 2);
+        // Batasi log hanya untuk 2 jadwal pertama yang pending, tampilkan username alih-alih accountId, tanpa scheduleId
+        const limitedPendingSchedules = pendingSchedules.slice(0, 2);
         console.log('Pending schedules fetched (showing top 2):', limitedPendingSchedules.map(s => ({
             username: s.username,
-            time: s.time, // Gunakan format asli dari schedule.time
+            time: s.time,
             completed: s.completed
         })));
 
         const now = new Date();
         console.log('Current time (UTC):', now.toISOString());
 
-        // Urutkan semua schedules berdasarkan waktu terdekat sebelum diproses
-        const sortedSchedules = schedules.sort((a, b) => {
-            const timeA = new Date(a.time + ':00').getTime();
-            const timeB = new Date(b.time + ':00').getTime();
-            return timeA - timeB; // Urutkan dari waktu terdekat ke waktu terjauh
-        });
-
         const updatedSchedules = [];
 
-        for (const schedule of sortedSchedules) {
+        for (const schedule of schedules) {
             if (schedule.completed) {
                 continue;
             }
 
-            const scheduledTimeUTC = new Date(schedule.time + ':00');
-            console.log(`Checking schedule: ${schedule.username}, Scheduled Time (WIB): ${formatScheduleTime(schedule.time)}, Now: ${formatDateTimeWIBSimple(now)}`);
+            const scheduledTimeWIB = new Date(schedule.time + ':00');
+            const scheduledTimeUTC = new Date(scheduledTimeWIB.getTime() - 7 * 60 * 60 * 1000);
+            console.log(`Checking schedule: ${schedule.username}, Scheduled Time (WIB): ${scheduledTimeWIB.toISOString()}, Scheduled Time (UTC): ${scheduledTimeUTC.toISOString()}, Now: ${now.toISOString()}`);
 
             if (now >= scheduledTimeUTC && !schedule.completed) {
                 console.log(`Processing schedule for account ${schedule.username}`);
@@ -113,7 +88,7 @@ async function runScheduledPosts() {
                     schedule.completed = true;
                     console.log(`Post successful for ${schedule.username}: ${result.creationId}`);
                     updatedSchedules.push(schedule);
-                    await kv.set(SCHEDULE_KEY, [...updatedSchedules, ...sortedSchedules.filter(s => s !== schedule)]);
+                    await kv.set(SCHEDULE_KEY, [...updatedSchedules, ...schedules.filter(s => s !== schedule)]);
                 } else {
                     console.error(`Failed to post for ${schedule.username}: ${result.error}`);
                     schedule.error = result.error;
