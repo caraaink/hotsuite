@@ -4,6 +4,13 @@ const { v4: uuidv4 } = require('uuid');
 
 const SCHEDULE_KEY = 'schedules';
 
+// Fungsi untuk memformat tanggal dan jam ke WIB dalam format DD/MM/YYYY HH.MM
+function formatDateTimeWIB(date) {
+    const pad = (num) => String(num).padStart(2, '0');
+    const wibDate = new Date(date.getTime() + 7 * 60 * 60 * 1000); // Konversi ke WIB (UTC+7)
+    return `${pad(wibDate.getDate())}/${pad(wibDate.getMonth() + 1)}/${wibDate.getFullYear()} ${pad(wibDate.getHours())}.${pad(wibDate.getMinutes())}`;
+}
+
 // Fungsi untuk memposting ke Instagram
 async function postToInstagram(igAccountId, mediaUrl, caption, userToken) {
     try {
@@ -36,16 +43,6 @@ async function postToInstagram(igAccountId, mediaUrl, caption, userToken) {
     }
 }
 
-// Fungsi untuk memformat tanggal dan waktu ke format DD/MM/YYYY HH.MM
-function formatDateTime(date) {
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = date.getFullYear();
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    return `${day}/${month}/${year} ${hours}.${minutes}`;
-}
-
 // Fungsi untuk menjalankan jadwal
 async function runScheduledPosts() {
     try {
@@ -64,13 +61,16 @@ async function runScheduledPosts() {
             return;
         }
 
-        // Urutkan pendingSchedules berdasarkan tanggal terbaru dan ambil 2 teratas
-        const sortedPendingSchedules = pendingSchedules
-            .sort((a, b) => new Date(b.time) - new Date(a.time))
-            .slice(0, 2);
-        console.log('Pending schedules fetched (showing top 2):', sortedPendingSchedules.map(s => ({
+        // Urutkan pendingSchedules berdasarkan waktu terdekat (paling baru) dan ambil 2 pertama
+        const sortedPendingSchedules = pendingSchedules.sort((a, b) => {
+            const timeA = new Date(a.time + ':00').getTime();
+            const timeB = new Date(b.time + ':00').getTime();
+            return timeA - timeB; // Urutkan dari waktu terdekat ke waktu terjauh
+        });
+        const limitedPendingSchedules = sortedPendingSchedules.slice(0, 2);
+        console.log('Pending schedules fetched (showing top 2):', limitedPendingSchedules.map(s => ({
             username: s.username,
-            time: s.time,
+            time: formatDateTimeWIB(new Date(s.time + ':00')),
             completed: s.completed
         })));
 
@@ -86,7 +86,7 @@ async function runScheduledPosts() {
 
             const scheduledTimeWIB = new Date(schedule.time + ':00');
             const scheduledTimeUTC = new Date(scheduledTimeWIB.getTime() - 7 * 60 * 60 * 1000);
-            console.log(`Checking schedule: ${schedule.username}, Scheduled Time (WIB): ${formatDateTime(scheduledTimeWIB)}, Now: ${formatDateTime(now)}`);
+            console.log(`Checking schedule: ${schedule.username}, Scheduled Time (WIB): ${formatDateTimeWIB(scheduledTimeWIB)}, Now: ${formatDateTimeWIB(now)}`);
 
             if (now >= scheduledTimeUTC && !schedule.completed) {
                 console.log(`Processing schedule for account ${schedule.username}`);
