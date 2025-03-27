@@ -10,6 +10,7 @@ body {
     background-color: #f7f9fc;
     color: #333;
     line-height: 1.6;
+    overflow-x: hidden; /* Cegah scroll horizontal yang tidak diinginkan */
 }
 
 .container {
@@ -20,7 +21,6 @@ body {
     border-radius: 10px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
     will-change: transform, box-shadow; /* Optimasi rendering */
-    transition: box-shadow 0.3s ease; /* Pastikan transisi hanya untuk box-shadow */
 }
 
 /* Header */
@@ -1486,30 +1486,15 @@ body.dark-mode .no-schedule-message {
     margin-top: 10px;
 }
 
-/* Perbaikan untuk menghilangkan shadow hitam saat scroll awal */
-body:not(.loaded) .container,
-body:not(.loaded) .gallery,
-body:not(.loaded) .schedule-list {
-    box-shadow: none !important; /* Hilangkan shadow selama pemuatan */
-    transition: none !important; /* Nonaktifkan transisi selama pemuatan */
-}
-
-/* Pastikan elemen utama tidak memiliki efek transisi yang mengganggu saat pemuatan */
-body:not(.loaded) .container {
-    opacity: 0; /* Sembunyikan sementara hingga halaman dimuat */
-}
-
-body.loaded .container {
-    opacity: 1; /* Tampilkan setelah halaman dimuat */
-    transition: opacity 0.3s ease; /* Animasi opacity setelah pemuatan */
-}
-
 /* Optimasi scroll untuk mencegah glitch shadow */
 html {
     scroll-behavior: smooth; /* Pastikan scroll mulus */
     overflow-x: hidden; /* Cegah scroll horizontal yang tidak diinginkan */
 }
 
-body {
-    overflow-x: hidden; /* Cegah scroll horizontal yang tidak diinginkan */
+/* Perbaikan untuk menghilangkan shadow hitam saat scroll awal */
+.container,
+.gallery,
+.schedule-list {
+    transition: none; /* Nonaktifkan transisi untuk mencegah glitch */
 }
