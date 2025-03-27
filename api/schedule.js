@@ -54,7 +54,13 @@ async function runScheduledPosts() {
             return;
         }
 
-        console.log('Pending schedules fetched:', pendingSchedules);
+        // Batasi log hanya untuk 2 jadwal pertama yang pending, tampilkan username alih-alih accountId, tanpa scheduleId
+        const limitedPendingSchedules = pendingSchedules.slice(0, 2);
+        console.log('Pending schedules fetched (showing top 2):', limitedPendingSchedules.map(s => ({
+            username: s.username,
+            time: s.time,
+            completed: s.completed
+        })));
 
         const now = new Date();
         console.log('Current time (UTC):', now.toISOString());
@@ -95,7 +101,7 @@ async function runScheduledPosts() {
         }
 
         await kv.set(SCHEDULE_KEY, updatedSchedules);
-        console.log('Updated schedules (completed schedules removed):', updatedSchedules);
+        console.log('Updated schedules count:', updatedSchedules.length);
     } catch (error) {
         console.error('Error running scheduled posts:', error);
     }
@@ -103,14 +109,12 @@ async function runScheduledPosts() {
 
 // Vercel Serverless Function
 module.exports = async (req, res) => {
-    // Pastikan header Content-Type selalu JSON
     res.setHeader('Content-Type', 'application/json');
 
     if (req.method === 'POST') {
         const { accountId, username, mediaUrl, time, userToken, accountNum, completed } = req.body;
         const caption = req.body.caption || '';
 
-        // Validasi input
         if (!accountId || !mediaUrl || !time || !userToken || !accountNum || !username) {
             console.error('Validation failed: Missing required fields', { accountId, mediaUrl, time, userToken, accountNum, username });
             return res.status(400).json({ error: 'Missing required fields (accountId, mediaUrl, time, userToken, accountNum, username)' });
