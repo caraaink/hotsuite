@@ -64,6 +64,9 @@ async function runScheduledPosts() {
             return;
         }
 
+        const now = new Date();
+        const nowUTC = now.getTime();
+
         // Urutkan semua jadwal berdasarkan waktu (time) dari terlama ke terbaru
         const sortedSchedules = schedules
             .map(schedule => ({
@@ -72,18 +75,13 @@ async function runScheduledPosts() {
             }))
             .sort((a, b) => a.timeUTC - b.timeUTC); // Terlama ke terbaru
 
-        // Ambil tanggal saat ini sebagai titik awal filter
-        const now = new Date();
-        const startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const startDateUTC = startDate.getTime() - 7 * 60 * 60 * 1000; // Konversi ke UTC (WIB - 7 jam)
-
-        // Filter jadwal yang dimulai dari tanggal saat ini dan seterusnya
+        // Filter jadwal yang waktunya sudah tercapai atau sedang berlangsung (now >= waktu jadwal)
         const filteredSchedules = sortedSchedules
-            .filter(schedule => schedule.timeUTC >= startDateUTC)
+            .filter(schedule => nowUTC >= schedule.timeUTC && !schedule.completed)
             .slice(0, 2); // Ambil 2 jadwal teratas
 
-        // Log hanya 2 jadwal teratas (terlama ke terbaru, mulai dari tanggal saat ini)
-        console.log(`Top 2 schedules by date (oldest to latest, starting from ${startDate.toISOString().split('T')[0]}):`, filteredSchedules.map(s => ({
+        // Log hanya 2 jadwal yang akan diproses sekarang (terlama ke terbaru)
+        console.log('Top 2 schedules to process now (oldest to latest):', filteredSchedules.map(s => ({
             username: s.username,
             time: s.time,
             completed: s.completed
