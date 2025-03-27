@@ -77,9 +77,16 @@ async function runScheduledPosts() {
         const now = new Date();
         console.log('Current time (UTC):', now.toISOString());
 
+        // Urutkan semua schedules berdasarkan waktu terdekat sebelum diproses
+        const sortedSchedules = schedules.sort((a, b) => {
+            const timeA = new Date(a.time + ':00').getTime();
+            const timeB = new Date(b.time + ':00').getTime();
+            return timeA - timeB; // Urutkan dari waktu terdekat ke waktu terjauh
+        });
+
         const updatedSchedules = [];
 
-        for (const schedule of schedules) {
+        for (const schedule of sortedSchedules) {
             if (schedule.completed) {
                 continue;
             }
@@ -100,7 +107,7 @@ async function runScheduledPosts() {
                     schedule.completed = true;
                     console.log(`Post successful for ${schedule.username}: ${result.creationId}`);
                     updatedSchedules.push(schedule);
-                    await kv.set(SCHEDULE_KEY, [...updatedSchedules, ...schedules.filter(s => s !== schedule)]);
+                    await kv.set(SCHEDULE_KEY, [...updatedSchedules, ...sortedSchedules.filter(s => s !== schedule)]);
                 } else {
                     console.error(`Failed to post for ${schedule.username}: ${result.error}`);
                     schedule.error = result.error;
