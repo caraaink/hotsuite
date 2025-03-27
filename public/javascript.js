@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let scheduledTimes = {};
     let allSchedules = [];
     let currentPage = 1;
-    const ITEMS_PER_PAGE = 10;
+    const ITEMS_PER_PAGE = 20;
     let isLoadingSchedules = false;
 
     // Fungsi untuk mengonversi waktu dari UTC ke WIB
@@ -880,35 +880,35 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function saveCaptionToGithub(file, caption, commitMessage) {
-        try {
-            const folderPath = file.path.substring(0, file.path.lastIndexOf('/'));
-            const metaFileName = `${file.name}.meta.json`;
-            const metaPath = `${folderPath}/${metaFileName}`;
-            const metaContent = JSON.stringify({ caption: caption }, null, 2);
-            const base64Content = btoa(unescape(encodeURIComponent(metaContent)));
+    try {
+        const folderPath = file.path.substring(0, file.path.lastIndexOf('/'));
+        const metaFileName = `${file.name}.meta.json`;
+        const metaPath = `${folderPath}/${metaFileName}`;
+        const metaContent = JSON.stringify({ caption: caption }, null, 2); // Diperbaiki di sini
+        const base64Content = btoa(unescape(encodeURIComponent(metaContent)));
 
-            const response = await fetch('/api/upload_to_github', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    fileName: metaPath,
-                    content: base64Content,
-                    message: commitMessage,
-                }),
-            });
+        const response = await fetch('/api/upload_to_github', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                fileName: metaPath,
+                content: base64Content,
+                message: commitMessage,
+            }),
+        });
 
-            if (!response.ok) {
-                throw new Error(`HTTP error uploading meta to GitHub! status: ${response.status}`);
-            }
-
-            console.log(`Meta file ${metaPath} saved to GitHub`);
-            return true;
-        } catch (error) {
-            console.error(`Error saving meta file for ${file.name}:`, error);
-            showFloatingNotification(`Error saving meta file for ${file.name}: ${error.message}`, true);
-            return false;
+        if (!response.ok) {
+            throw new Error(`HTTP error uploading meta to GitHub! status: ${response.status}`);
         }
+
+        console.log(`Meta file ${metaPath} saved to GitHub`);
+        return true;
+    } catch (error) {
+        console.error(`Error saving meta file for ${file.name}:`, error);
+        showFloatingNotification(`Error saving meta file for ${file.name}: ${error.message}`, true);
+        return false;
     }
+}
 
     async function displayGallery(files) {
         gallery.innerHTML = '';
@@ -1423,15 +1423,45 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function renderSchedules(schedulesToRender, startIndex) {
-        // Clear the table body
-        scheduleTableBody.innerHTML = '';
+    // Define event handler functions outside renderSchedules to prevent redefinition
+    const handleCaptionBlur = async (e) => {
+        const scheduleId = e.target.dataset.scheduleId;
+        const newCaption = e.target.textContent.trim();
+        await updateSchedule(scheduleId, { caption: newCaption });
+    };
 
-        // Remove existing event listeners by cloning the table body
-        const oldTableBody = scheduleTableBody;
-        const newTableBody = oldTableBody.cloneNode(false);
-        oldTableBody.parentNode.replaceChild(newTableBody, oldTableBody);
-        scheduleTableBody.innerHTML = ''; // Ensure it's empty
+    const handleTimeChange = async (e) => {
+        const scheduleId = e.target.parentElement.dataset.scheduleId;
+        const newTime = e.target.value;
+        await updateSchedule(scheduleId, { time: newTime });
+    };
+
+    const handleDeleteClick = async (e) => {
+        const scheduleId = e.target.getAttribute('data-schedule-id');
+        const confirmed = await showConfirmModal('Apakah Anda yakin ingin menghapus jadwal ini?');
+        if (confirmed) {
+            deleteSchedule(scheduleId);
+        }
+    };
+
+    function renderSchedules(schedulesToRender, startIndex) {
+        scheduleTableBody.innerHTML = ''; // Kosongkan tabel sebelum render
+
+        // Remove existing event listeners from previous elements
+        const oldCaptionCells = document.querySelectorAll('.editable-caption');
+        oldCaptionCells.forEach(cell => {
+            cell.removeEventListener('blur', handleCaptionBlur);
+        });
+
+        const oldTimeInputs = document.querySelectorAll('.editable-time .time-input');
+        oldTimeInputs.forEach(input => {
+            input.removeEventListener('change', handleTimeChange);
+        });
+
+        const oldDeleteButtons = document.querySelectorAll('.delete-btn');
+        oldDeleteButtons.forEach(button => {
+            button.removeEventListener('click', handleDeleteClick);
+        });
 
         // Render new rows
         schedulesToRender.forEach((schedule, idx) => {
@@ -1457,45 +1487,18 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         // Attach event listeners to new elements
-        const captionCells = document.querySelectorAll('.editable-caption');
-        captionCells.forEach(cell => {
-            cell.removeEventListener('blur', handleCaptionBlur); // Ensure no duplicates
+        document.querySelectorAll('.editable-caption').forEach(cell => {
             cell.addEventListener('blur', handleCaptionBlur);
         });
 
-        const timeInputs = document.querySelectorAll('.editable-time .time-input');
-        timeInputs.forEach(input => {
-            input.removeEventListener('change', handleTimeChange); // Ensure no duplicates
+        document.querySelectorAll('.editable-time .time-input').forEach(input => {
             input.addEventListener('change', handleTimeChange);
         });
 
-        const deleteButtons = document.querySelectorAll('.delete-btn');
-        deleteButtons.forEach(button => {
-            button.removeEventListener('click', handleDeleteClick); // Ensure no duplicates
+        document.querySelectorAll('.delete-btn').forEach(button => {
             button.addEventListener('click', debounce(handleDeleteClick, 300));
         });
     }
-
-    // Event handler functions defined outside renderSchedules to prevent redefinition
-    const handleCaptionBlur = async (e) => {
-        const scheduleId = e.target.dataset.scheduleId;
-        const newCaption = e.target.textContent.trim();
-        await updateSchedule(scheduleId, { caption: newCaption });
-    };
-
-    const handleTimeChange = async (e) => {
-        const scheduleId = e.target.parentElement.dataset.scheduleId;
-        const newTime = e.target.value;
-        await updateSchedule(scheduleId, { time: newTime });
-    };
-
-    const handleDeleteClick = async (e) => {
-        const scheduleId = e.target.getAttribute('data-schedule-id');
-        const confirmed = await showConfirmModal('Apakah Anda yakin ingin menghapus jadwal ini?');
-        if (confirmed) {
-            await deleteSchedule(scheduleId);
-        }
-    };
 
     function renderPagination(schedules) {
         const totalPages = Math.ceil(schedules.length / ITEMS_PER_PAGE);
@@ -1554,6 +1557,21 @@ document.addEventListener('DOMContentLoaded', () => {
         renderPagination(schedules); // Perbarui pagination setelah memuat halaman
     }
 
+    // Define event handlers for selectAll and deleteSelected
+    const handleSelectAllChange = () => {
+        const checkboxes = document.querySelectorAll('.schedule-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = selectAll.checked;
+        });
+    };
+
+    const handleDeleteSelectedClick = async () => {
+        const confirmed = await showConfirmModal('Apakah Anda yakin ingin menghapus jadwal yang dipilih?');
+        if (confirmed) {
+            deleteSelectedSchedules();
+        }
+    };
+
     async function loadSchedules() {
         if (isLoadingSchedules) {
             console.log('loadSchedules already in progress, skipping...');
@@ -1586,25 +1604,12 @@ document.addEventListener('DOMContentLoaded', () => {
             updateScheduleVisibility(filteredSchedules);
 
             // Remove existing event listeners for selectAll and deleteSelected
-            const newSelectAll = selectAll.cloneNode(true);
-            selectAll.parentNode.replaceChild(newSelectAll, selectAll);
-            const newDeleteSelected = deleteSelected.cloneNode(true);
-            deleteSelected.parentNode.replaceChild(newDeleteSelected, deleteSelected);
+            selectAll.removeEventListener('change', handleSelectAllChange);
+            deleteSelected.removeEventListener('click', handleDeleteSelectedClick);
 
             if (filteredSchedules.length > 0) {
-                newSelectAll.addEventListener('change', () => {
-                    const checkboxes = document.querySelectorAll('.schedule-checkbox');
-                    checkboxes.forEach(checkbox => {
-                        checkbox.checked = newSelectAll.checked;
-                    });
-                });
-
-                newDeleteSelected.addEventListener('click', async () => {
-                    const confirmed = await showConfirmModal('Apakah Anda yakin ingin menghapus jadwal yang dipilih?');
-                    if (confirmed) {
-                        await deleteSelectedSchedules();
-                    }
-                });
+                selectAll.addEventListener('change', handleSelectAllChange);
+                deleteSelected.addEventListener('click', handleDeleteSelectedClick);
             }
         } catch (error) {
             showFloatingNotification(`Error loading schedules: ${error.message}`, true);
