@@ -64,23 +64,30 @@ async function runScheduledPosts() {
             return;
         }
 
-        // Urutkan jadwal berdasarkan waktu (time) dari terbaru ke lama, lalu ambil 2 teratas
+        // Urutkan jadwal berdasarkan waktu (time) dari terlama ke terbaru, lalu ambil 2 teratas
         const sortedSchedules = schedules
             .map(schedule => ({
                 ...schedule,
                 timeUTC: new Date(schedule.time + ':00').getTime() - 7 * 60 * 60 * 1000
             }))
-            .sort((a, b) => b.timeUTC - a.timeUTC)
+            .sort((a, b) => a.timeUTC - b.timeUTC) // Urutkan dari terlama ke terbaru
             .slice(0, 2);
 
-        // Log hanya 2 jadwal teratas
-        console.log('Top 2 schedules by date (latest to oldest):', sortedSchedules.map(s => ({
+        // Log hanya 2 jadwal teratas (terlama ke terbaru)
+        console.log('Top 2 schedules by date (oldest to latest):', sortedSchedules.map(s => ({
             username: s.username,
             time: s.time,
             completed: s.completed
         })));
 
-        const latestSchedule = sortedSchedules[0];
+        // Ambil jadwal terbaru (waktu paling akhir) untuk "Latest schedule fetched"
+        const latestSchedule = schedules
+            .map(schedule => ({
+                ...schedule,
+                timeUTC: new Date(schedule.time + ':00').getTime() - 7 * 60 * 60 * 1000
+            }))
+            .sort((a, b) => b.timeUTC - a.timeUTC)[0]; // Ambil yang terbaru
+
         console.log('Latest schedule fetched:', {
             username: latestSchedule.username,
             time: latestSchedule.time,
