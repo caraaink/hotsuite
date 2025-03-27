@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let captions = {};
     let scheduledTimes = {};
     let allSchedules = [];
-    let displayedSchedules = 0;
+    let currentPage = 1;
     const ITEMS_PER_PAGE = 20;
     let isLoadingSchedules = false;
 
@@ -261,25 +261,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const deleteContainer = document.getElementById('deleteContainer');
         const noScheduleMessage = document.getElementById('noScheduleMessage');
         const scheduleTableBody = document.getElementById('scheduleTableBody');
+        const loadMoreContainer = document.querySelector('.load-more-container');
 
         if (!schedules || schedules.length === 0) {
             deleteContainer.style.display = 'none';
             noScheduleMessage.classList.remove('hidden');
             scheduleTableBody.innerHTML = '';
             totalSchedules.textContent = 'Total: 0 jadwal';
-            loadMoreBtn.classList.add('hidden');
+            loadMoreContainer.innerHTML = ''; // Kosongkan container pagination
         } else {
             deleteContainer.style.display = 'flex';
             noScheduleMessage.classList.add('hidden');
             totalSchedules.textContent = `Total: ${schedules.length} jadwal`;
-            renderSchedules(schedules.slice(0, ITEMS_PER_PAGE), 0); // Tampilkan 20 jadwal pertama
-            displayedSchedules = ITEMS_PER_PAGE;
-
-            if (schedules.length > ITEMS_PER_PAGE) {
-                loadMoreBtn.classList.remove('hidden');
-            } else {
-                loadMoreBtn.classList.add('hidden');
-            }
+            renderSchedules(schedules.slice(0, ITEMS_PER_PAGE), 0); // Tampilkan halaman pertama
+            currentPage = 1;
+            renderPagination(schedules);
         }
     }
 
@@ -888,7 +884,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const folderPath = file.path.substring(0, file.path.lastIndexOf('/'));
             const metaFileName = `${file.name}.meta.json`;
             const metaPath = `${folderPath}/${metaFileName}`;
-            const metaContent = JSON.stringify({ caption }, null, 2);
+            const metaContent = JSON.stringify({ caption methods null, 2);
             const base64Content = btoa(unescape(encodeURIComponent(metaContent)));
 
             const response = await fetch('/api/upload_to_github', {
@@ -1478,6 +1474,63 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    function renderPagination(schedules) {
+        const totalPages = Math.ceil(schedules.length / ITEMS_PER_PAGE);
+        const loadMoreContainer = document.querySelector('.load-more-container');
+        loadMoreContainer.innerHTML = ''; // Kosongkan container sebelum render
+
+        if (totalPages <= 1) return; // Tidak perlu pagination jika hanya 1 halaman
+
+        // Tombol Prev
+        const prevBtn = document.createElement('button');
+        prevBtn.textContent = 'Prev';
+        prevBtn.className = 'load-more-btn';
+        prevBtn.disabled = currentPage === 1;
+        prevBtn.addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                loadSchedulesPage(schedules);
+            }
+        });
+        loadMoreContainer.appendChild(prevBtn);
+
+        // Nomor halaman
+        for (let i = 1; i <= totalPages; i++) {
+            const pageBtn = document.createElement('button');
+            pageBtn.textContent = i;
+            pageBtn.className = 'load-more-btn';
+            if (i === currentPage) {
+                pageBtn.style.backgroundColor = '#357abd'; // Warna aktif
+            }
+            pageBtn.addEventListener('click', () => {
+                currentPage = i;
+                loadSchedulesPage(schedules);
+            });
+            loadMoreContainer.appendChild(pageBtn);
+        }
+
+        // Tombol Next
+        const nextBtn = document.createElement('button');
+        nextBtn.textContent = 'Next';
+        nextBtn.className = 'load-more-btn';
+        nextBtn.disabled = currentPage === totalPages;
+        nextBtn.addEventListener('click', () => {
+            if (currentPage < totalPages) {
+                currentPage++;
+                loadSchedulesPage(schedules);
+            }
+        });
+        loadMoreContainer.appendChild(nextBtn);
+    }
+
+    function loadSchedulesPage(schedules) {
+        const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+        const endIndex = startIndex + ITEMS_PER_PAGE;
+        const pageSchedules = schedules.slice(startIndex, endIndex);
+        renderSchedules(pageSchedules, startIndex);
+        renderPagination(schedules); // Perbarui pagination setelah memuat halaman
+    }
+
     async function loadSchedules() {
         if (isLoadingSchedules) {
             console.log('loadSchedules already in progress, skipping...');
@@ -1506,13 +1559,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 filteredSchedules = filteredSchedules.filter(schedule => schedule.accountId === selectedAccountId);
             }
 
-            displayedSchedules = 0;
+            currentPage = 1;
             updateScheduleVisibility(filteredSchedules);
 
             if (filteredSchedules.length > 0) {
-                loadMoreBtn.removeEventListener('click', loadMoreSchedules); // Hapus listener lama
-                loadMoreBtn.addEventListener('click', loadMoreSchedules);
-
                 selectAll.addEventListener('change', () => {
                     const checkboxes = document.querySelectorAll('.schedule-checkbox');
                     checkboxes.forEach(checkbox => {
@@ -1532,26 +1582,9 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Error fetching schedules:', error);
             scheduleTableBody.innerHTML = '<tr><td colspan="8">Gagal memuat jadwal.</td></tr>';
             totalSchedules.textContent = 'Total: 0 jadwal';
-            loadMoreBtn.classList.add('hidden');
             updateScheduleVisibility([]);
         } finally {
             isLoadingSchedules = false;
-        }
-    }
-
-    function loadMoreSchedules() {
-        const filteredSchedules = allSchedules.filter(schedule => {
-            if (selectedAccountNum && schedule.accountNum !== selectedAccountNum) return false;
-            if (selectedAccountId && schedule.accountId !== selectedAccountId) return false;
-            return true;
-        });
-
-        const nextSchedules = filteredSchedules.slice(displayedSchedules, displayedSchedules + ITEMS_PER_PAGE);
-        renderSchedules(nextSchedules, displayedSchedules);
-        displayedSchedules += nextSchedules.length;
-
-        if (displayedSchedules >= filteredSchedules.length) {
-            loadMoreBtn.classList.add('hidden');
         }
     }
 
