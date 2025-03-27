@@ -8,20 +8,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const toggleDarkMode = document.getElementById('toggleDarkMode');
 
     // Fungsi untuk mengonversi waktu dari UTC ke WIB
-    window.convertToWIB = function(utcTime) {
+    function convertToWIB(utcTime) {
         const date = new Date(utcTime);
         const wibOffset = 7 * 60 * 60 * 1000;
         const wibTime = new Date(date.getTime() + wibOffset);
         return wibTime;
-    };
+    }
 
-    // Fungsi untuk memformat waktu dalam WIB ke format datetime-local
-    window.formatToDatetimeLocal = function(wibTime) {
+    // Fungsi untuk memformat waktu dalam WIB ke format datetime-local (YYYY-MM-DDThh:mm)
+    function formatToDatetimeLocal(wibTime) {
         return wibTime.toISOString().slice(0, 16);
-    };
+    }
 
-    // Fungsi untuk memformat waktu dalam WIB ke format lokal
-    window.formatToLocaleString = function(wibTime) {
+    // Fungsi untuk memformat waktu dalam WIB ke format lokal (dd/mm/yyyy hh:mm)
+    function formatToLocaleString(wibTime) {
         return wibTime.toLocaleString('id-ID', {
             timeZone: 'Asia/Jakarta',
             day: '2-digit',
@@ -31,19 +31,19 @@ document.addEventListener('DOMContentLoaded', () => {
             minute: '2-digit',
             hour12: false
         }).replace(',', '');
-    };
+    }
 
-    // Fungsi debounce
-    window.debounce = function(func, wait) {
+    // Fungsi debounce untuk mencegah klik berulang
+    function debounce(func, wait) {
         let timeout;
         return function (...args) {
             clearTimeout(timeout);
             timeout = setTimeout(() => func.apply(this, args), wait);
         };
-    };
+    }
 
     // Fungsi untuk menampilkan modal konfirmasi
-    window.showConfirmModal = function(message) {
+    function showConfirmModal(message) {
         return new Promise((resolve) => {
             const modal = document.getElementById('confirmModal');
             const confirmMessage = document.getElementById('confirmMessage');
@@ -63,14 +63,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 resolve(false);
             };
         });
-    };
+    }
 
-    // Fungsi untuk menampilkan notifikasi
-    window.showFloatingNotification = function(message, isError = false, duration = 3000) {
-        if (!status || !floatingNotification || !spinner) {
-            console.error('Elemen notifikasi tidak ditemukan!');
-            return;
-        }
+    // Function to show floating notification with customizable duration
+    function showFloatingNotification(message, isError = false, duration = 3000) {
         status.textContent = message;
         floatingNotification.classList.remove('hidden');
         if (isError) {
@@ -84,14 +80,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 floatingNotification.classList.add('hidden');
             }, duration);
         }
-    };
+    }
 
-    // Load dark mode preference
+    // Load dark mode preference from localStorage
     if (localStorage.getItem('theme') === 'dark') {
         document.body.classList.add('dark-mode');
     }
 
-    // Toggle theme menu
+    // Toggle theme menu visibility
     themeToggle.addEventListener('click', () => {
         themeMenu.classList.toggle('hidden');
     });
@@ -104,8 +100,18 @@ document.addEventListener('DOMContentLoaded', () => {
         themeMenu.classList.add('hidden');
     });
 
-    // Prevent form from adding parameters to URL
+    // Prevent form from adding parameters to URL on submit
     form.addEventListener('submit', (e) => {
         e.preventDefault();
     });
+
+    // Ekspor fungsi untuk digunakan di file lain
+    window.core = {
+        convertToWIB,
+        formatToDatetimeLocal,
+        formatToLocaleString,
+        debounce,
+        showConfirmModal,
+        showFloatingNotification
+    };
 });
