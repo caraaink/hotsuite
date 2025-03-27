@@ -5,7 +5,7 @@ const { v4: uuidv4 } = require('uuid');
 const SCHEDULE_KEY = 'schedules';
 
 // Fungsi untuk memformat tanggal dan jam ke WIB dalam format DD/MM/YYYY HH.MM
-function formatDateTimeWIB(date) {
+function formatDateTimeWIBSimple(date) {
     const pad = (num) => String(num).padStart(2, '0');
     const wibDate = new Date(date.getTime() + 7 * 60 * 60 * 1000); // Konversi ke WIB (UTC+7)
     return `${pad(wibDate.getDate())}/${pad(wibDate.getMonth() + 1)}/${wibDate.getFullYear()} ${pad(wibDate.getHours())}.${pad(wibDate.getMinutes())}`;
@@ -70,7 +70,7 @@ async function runScheduledPosts() {
         const limitedPendingSchedules = sortedPendingSchedules.slice(0, 2);
         console.log('Pending schedules fetched (showing top 2):', limitedPendingSchedules.map(s => ({
             username: s.username,
-            time: formatDateTimeWIB(new Date(s.time + ':00')),
+            time: s.time, // Gunakan format asli dari schedule.time
             completed: s.completed
         })));
 
@@ -93,7 +93,7 @@ async function runScheduledPosts() {
 
             const scheduledTimeWIB = new Date(schedule.time + ':00');
             const scheduledTimeUTC = new Date(scheduledTimeWIB.getTime() - 7 * 60 * 60 * 1000);
-            console.log(`Checking schedule: ${schedule.username}, Scheduled Time (WIB): ${formatDateTimeWIB(scheduledTimeWIB)}, Now: ${formatDateTimeWIB(now)}`);
+            console.log(`Checking schedule: ${schedule.username}, Scheduled Time (WIB): ${formatDateTimeWIBSimple(scheduledTimeWIB)}, Now: ${formatDateTimeWIBSimple(now)}`);
 
             if (now >= scheduledTimeUTC && !schedule.completed) {
                 console.log(`Processing schedule for account ${schedule.username}`);
