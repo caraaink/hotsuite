@@ -64,17 +64,26 @@ async function runScheduledPosts() {
             return;
         }
 
-        // Urutkan jadwal berdasarkan waktu (time) dari terlama ke terbaru, lalu ambil 2 teratas
+        // Urutkan semua jadwal berdasarkan waktu (time) dari terlama ke terbaru
         const sortedSchedules = schedules
             .map(schedule => ({
                 ...schedule,
                 timeUTC: new Date(schedule.time + ':00').getTime() - 7 * 60 * 60 * 1000
             }))
-            .sort((a, b) => a.timeUTC - b.timeUTC) // Urutkan dari terlama ke terbaru
-            .slice(0, 2);
+            .sort((a, b) => a.timeUTC - b.timeUTC); // Terlama ke terbaru
 
-        // Log hanya 2 jadwal teratas (terlama ke terbaru)
-        console.log('Top 2 schedules by date (oldest to latest):', sortedSchedules.map(s => ({
+        // Ambil tanggal saat ini sebagai titik awal filter
+        const now = new Date();
+        const startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const startDateUTC = startDate.getTime() - 7 * 60 * 60 * 1000; // Konversi ke UTC (WIB - 7 jam)
+
+        // Filter jadwal yang dimulai dari tanggal saat ini dan seterusnya
+        const filteredSchedules = sortedSchedules
+            .filter(schedule => schedule.timeUTC >= startDateUTC)
+            .slice(0, 2); // Ambil 2 jadwal teratas
+
+        // Log hanya 2 jadwal teratas (terlama ke terbaru, mulai dari tanggal saat ini)
+        console.log(`Top 2 schedules by date (oldest to latest, starting from ${startDate.toISOString().split('T')[0]}):`, filteredSchedules.map(s => ({
             username: s.username,
             time: s.time,
             completed: s.completed
@@ -96,7 +105,6 @@ async function runScheduledPosts() {
             completed: latestSchedule.completed
         });
 
-        const now = new Date();
         console.log('Current time (UTC):', now.toISOString());
 
         // Ambil container ID yang tersimpan dari cronjob sebelumnya
