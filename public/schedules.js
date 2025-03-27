@@ -30,11 +30,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (imageFiles.length === 0) {
             gallery.innerHTML = '<p>Tidak ada gambar untuk ditampilkan.</p>';
-            scheduleAllContainer.style.display = 'none';
+            if (scheduleAllContainer) scheduleAllContainer.style.display = 'none';
             return;
         }
 
-        scheduleAllContainer.style.display = 'flex';
+        if (scheduleAllContainer) scheduleAllContainer.style.display = 'flex';
 
         let schedules = [];
         try {
@@ -585,22 +585,24 @@ document.addEventListener('DOMContentLoaded', () => {
         const scheduleTableBody = document.getElementById('scheduleTableBody');
 
         if (!schedules || schedules.length === 0) {
-            deleteContainer.style.display = 'none';
-            noScheduleMessage.classList.remove('hidden');
-            scheduleTableBody.innerHTML = '';
-            totalSchedules.textContent = 'Total: 0 jadwal';
-            loadMoreBtn.classList.add('hidden');
+            if (deleteContainer) deleteContainer.style.display = 'none';
+            if (noScheduleMessage) noScheduleMessage.classList.remove('hidden');
+            if (scheduleTableBody) scheduleTableBody.innerHTML = '';
+            if (totalSchedules) totalSchedules.textContent = 'Total: 0 jadwal';
+            if (loadMoreBtn) loadMoreBtn.classList.add('hidden');
         } else {
-            deleteContainer.style.display = 'flex';
-            noScheduleMessage.classList.add('hidden');
-            totalSchedules.textContent = `Total: ${schedules.length} jadwal`;
-            renderSchedules(schedules.slice(0, ITEMS_PER_PAGE), 0);
+            if (deleteContainer) deleteContainer.style.display = 'flex';
+            if (noScheduleMessage) noScheduleMessage.classList.add('hidden');
+            if (totalSchedules) totalSchedules.textContent = `Total: ${schedules.length} jadwal`;
+            if (scheduleTableBody) renderSchedules(schedules.slice(0, ITEMS_PER_PAGE), 0);
             displayedSchedules = ITEMS_PER_PAGE;
 
-            if (schedules.length > ITEMS_PER_PAGE) {
-                loadMoreBtn.classList.remove('hidden');
-            } else {
-                loadMoreBtn.classList.add('hidden');
+            if (loadMoreBtn) {
+                if (schedules.length > ITEMS_PER_PAGE) {
+                    loadMoreBtn.classList.remove('hidden');
+                } else {
+                    loadMoreBtn.classList.add('hidden');
+                }
             }
         }
     }
@@ -613,7 +615,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         isLoadingSchedules = true;
         try {
-            scheduleTableBody.innerHTML = '<tr><td colspan="8">Memuat jadwal...</td></tr>';
+            if (scheduleTableBody) {
+                scheduleTableBody.innerHTML = '<tr><td colspan="8">Memuat jadwal...</td></tr>';
+            }
             const res = await fetch('/api/get_schedules');
             if (!res.ok) {
                 throw new Error(`HTTP error fetching schedules! status: ${res.status}`);
@@ -637,29 +641,37 @@ document.addEventListener('DOMContentLoaded', () => {
             updateScheduleVisibility(filteredSchedules);
 
             if (filteredSchedules.length > 0) {
-                loadMoreBtn.removeEventListener('click', loadMoreSchedules);
-                loadMoreBtn.addEventListener('click', loadMoreSchedules);
+                if (loadMoreBtn) {
+                    loadMoreBtn.removeEventListener('click', loadMoreSchedules);
+                    loadMoreBtn.addEventListener('click', loadMoreSchedules);
+                }
 
-                selectAll.addEventListener('change', () => {
-                    const checkboxes = document.querySelectorAll('.schedule-checkbox');
-                    checkboxes.forEach(checkbox => {
-                        checkbox.checked = selectAll.checked;
+                if (selectAll) {
+                    selectAll.addEventListener('change', () => {
+                        const checkboxes = document.querySelectorAll('.schedule-checkbox');
+                        checkboxes.forEach(checkbox => {
+                            checkbox.checked = selectAll.checked;
+                        });
                     });
-                });
+                }
 
-                deleteSelected.addEventListener('click', async () => {
-                    const confirmed = await core.showConfirmModal('Apakah Anda yakin ingin menghapus jadwal yang dipilih?');
-                    if (confirmed) {
-                        deleteSelectedSchedules();
-                    }
-                });
+                if (deleteSelected) {
+                    deleteSelected.addEventListener('click', async () => {
+                        const confirmed = await core.showConfirmModal('Apakah Anda yakin ingin menghapus jadwal yang dipilih?');
+                        if (confirmed) {
+                            deleteSelectedSchedules();
+                        }
+                    });
+                }
             }
         } catch (error) {
             core.showFloatingNotification(`Error loading schedules: ${error.message}`, true);
             console.error('Error fetching schedules:', error);
-            scheduleTableBody.innerHTML = '<tr><td colspan="8">Gagal memuat jadwal.</td></tr>';
-            totalSchedules.textContent = 'Total: 0 jadwal';
-            loadMoreBtn.classList.add('hidden');
+            if (scheduleTableBody) {
+                scheduleTableBody.innerHTML = '<tr><td colspan="8">Gagal memuat jadwal.</td></tr>';
+            }
+            if (totalSchedules) totalSchedules.textContent = 'Total: 0 jadwal';
+            if (loadMoreBtn) loadMoreBtn.classList.add('hidden');
             updateScheduleVisibility([]);
         } finally {
             isLoadingSchedules = false;
@@ -677,7 +689,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderSchedules(nextSchedules, displayedSchedules);
         displayedSchedules += nextSchedules.length;
 
-        if (displayedSchedules >= filteredSchedules.length) {
+        if (loadMoreBtn && displayedSchedules >= filteredSchedules.length) {
             loadMoreBtn.classList.add('hidden');
         }
     }
@@ -751,7 +763,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     loadSchedules();
 
-    // Ekspor fungsi dan variabel untuk digunakan di file lain
     window.schedules = {
         scheduledTimes,
         displayGallery,
