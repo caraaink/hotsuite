@@ -64,20 +64,21 @@ async function runScheduledPosts() {
             return;
         }
 
-        // Log semua jadwal untuk debugging
-        console.log('All schedules in KV:', schedules.map(s => ({
-            username: s.username,
-            time: s.time,
-            completed: s.completed
-        })));
-
-        // Urutkan jadwal berdasarkan waktu (time) dari terbaru ke lama
+        // Urutkan jadwal berdasarkan waktu (time) dari terbaru ke lama, lalu ambil 2 teratas
         const sortedSchedules = schedules
             .map(schedule => ({
                 ...schedule,
                 timeUTC: new Date(schedule.time + ':00').getTime() - 7 * 60 * 60 * 1000
             }))
-            .sort((a, b) => b.timeUTC - a.timeUTC);
+            .sort((a, b) => b.timeUTC - a.timeUTC)
+            .slice(0, 2);
+
+        // Log hanya 2 jadwal teratas
+        console.log('Top 2 schedules by date (latest to oldest):', sortedSchedules.map(s => ({
+            username: s.username,
+            time: s.time,
+            completed: s.completed
+        })));
 
         const latestSchedule = sortedSchedules[0];
         console.log('Latest schedule fetched:', {
