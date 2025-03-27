@@ -75,6 +75,7 @@ async function runScheduledPosts() {
         const updatedSchedules = [];
         let checkLogCount = 0;
         let notProcessedLogCount = 0;
+        let hasProcessedSchedule = false; // Untuk melacak apakah ada jadwal yang diproses
 
         for (const schedule of schedules) {
             if (schedule.completed) {
@@ -103,10 +104,12 @@ async function runScheduledPosts() {
                     console.log(`Post successful for ${latestSchedule.username}: ${result.creationId}`);
                     updatedSchedules.push(schedule);
                     await kv.set(SCHEDULE_KEY, [...updatedSchedules, ...schedules.filter(s => s !== schedule)]);
+                    hasProcessedSchedule = true; // Tandai bahwa ada jadwal yang diproses
                 } else {
                     console.error(`Failed to post for ${latestSchedule.username}: ${result.error}`);
                     schedule.error = result.error;
                     updatedSchedules.push(schedule);
+                    hasProcessedSchedule = true; // Tandai bahwa ada jadwal yang diproses meskipun gagal
                 }
             } else {
                 // Batasi log "Schedule not processed" hanya untuk 2 jadwal pertama
@@ -116,6 +119,13 @@ async function runScheduledPosts() {
                 }
                 updatedSchedules.push(schedule);
             }
+        }
+
+        // Tambahkan notifikasi berdasarkan apakah ada jadwal yang diproses
+        if (hasProcessedSchedule) {
+            console.log('Notification: One or more schedules were processed.');
+        } else {
+            console.log('Notification: No schedules were processed as the current time does not match any scheduled time.');
         }
 
         await kv.set(SCHEDULE_KEY, updatedSchedules);
