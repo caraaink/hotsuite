@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "scripts": {
     "dev": "vercel dev",
-    "deploy": "vercel deploy"
+    "deploy": "vercel deploy",
+    "prebuild": "bash ignore-build.sh",
+    "build": "echo 'Build step (if needed)'"
   },
   "dependencies": {
     "axios": "^1.6.8",
