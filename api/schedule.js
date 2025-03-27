@@ -23,7 +23,7 @@ async function createMediaContainer(igAccountId, mediaUrl, caption, userToken) {
         return { success: true, creationId: mediaResponse.data.id };
     } catch (error) {
         console.error('Error creating media container:', error.response?.data || error.message);
-        return { success: false, error: error.message };
+        throw new Error(`Failed to create media container: ${error.message}`);
     }
 }
 
@@ -42,7 +42,7 @@ async function publishToInstagram(igAccountId, creationId, userToken) {
         return { success: true, creationId: publishResponse.data.id };
     } catch (error) {
         console.error('Error publishing to Instagram:', error.response?.data || error.message);
-        return { success: false, error: error.message };
+        throw new Error(`Failed to publish to Instagram: ${error.message}`);
     }
 }
 
@@ -140,7 +140,8 @@ async function runScheduledPosts() {
             await kv.set(SCHEDULE_KEY, updatedSchedules);
         }
     } catch (error) {
-        console.error('Error running scheduled posts:', error);
+        console.error('Error running scheduled posts:', error.message);
+        throw new Error(`Failed to run scheduled posts: ${error.message}`);
     }
 }
 
@@ -162,7 +163,7 @@ module.exports = async (req, res) => {
             const newSchedule = {
                 scheduleId: uuidv4(),
                 accountId,
-:                username,
+                username,
                 mediaUrl,
                 caption,
                 time,
@@ -174,7 +175,7 @@ module.exports = async (req, res) => {
             await kv.set(SCHEDULE_KEY, schedules);
             return res.status(200).json({ message: 'Post scheduled successfully', scheduleId: newSchedule.scheduleId });
         } catch (error) {
-            console.error('Error saving schedule:', error);
+            console.error('Error saving schedule:', error.message);
             return res.status(500).json({ error: `Failed to save schedule: ${error.message}` });
         }
     }
@@ -184,7 +185,7 @@ module.exports = async (req, res) => {
             await runScheduledPosts();
             return res.status(200).json({ message: 'Scheduler running' });
         } catch (error) {
-            console.error('Error running scheduler:', error);
+            console.error('Error running scheduler:', error.message);
             return res.status(500).json({ error: `Failed to run scheduler: ${error.message}` });
         }
     }
