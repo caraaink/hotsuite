@@ -36,6 +36,16 @@ async function postToInstagram(igAccountId, mediaUrl, caption, userToken) {
     }
 }
 
+// Fungsi untuk memformat tanggal dan waktu ke format DD/MM/YYYY HH.MM
+function formatDateTime(date) {
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${day}/${month}/${year} ${hours}.${minutes}`;
+}
+
 // Fungsi untuk menjalankan jadwal
 async function runScheduledPosts() {
     try {
@@ -54,9 +64,11 @@ async function runScheduledPosts() {
             return;
         }
 
-        // Batasi log hanya untuk 2 jadwal pertama yang pending, tampilkan username alih-alih accountId, tanpa scheduleId
-        const limitedPendingSchedules = pendingSchedules.slice(0, 2);
-        console.log('Pending schedules fetched (showing top 2):', limitedPendingSchedules.map(s => ({
+        // Urutkan pendingSchedules berdasarkan tanggal terbaru dan ambil 2 teratas
+        const sortedPendingSchedules = pendingSchedules
+            .sort((a, b) => new Date(b.time) - new Date(a.time))
+            .slice(0, 2);
+        console.log('Pending schedules fetched (showing top 2):', sortedPendingSchedules.map(s => ({
             username: s.username,
             time: s.time,
             completed: s.completed
@@ -74,7 +86,7 @@ async function runScheduledPosts() {
 
             const scheduledTimeWIB = new Date(schedule.time + ':00');
             const scheduledTimeUTC = new Date(scheduledTimeWIB.getTime() - 7 * 60 * 60 * 1000);
-            console.log(`Checking schedule: ${schedule.username}, Scheduled Time (WIB): ${scheduledTimeWIB.toISOString()}, Scheduled Time (UTC): ${scheduledTimeUTC.toISOString()}, Now: ${now.toISOString()}`);
+            console.log(`Checking schedule: ${schedule.username}, Scheduled Time (WIB): ${formatDateTime(scheduledTimeWIB)}, Now: ${formatDateTime(now)}`);
 
             if (now >= scheduledTimeUTC && !schedule.completed) {
                 console.log(`Processing schedule for account ${schedule.username}`);
