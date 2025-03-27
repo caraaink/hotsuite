@@ -74,10 +74,10 @@ async function runScheduledPosts() {
 
             const scheduledTimeWIB = new Date(schedule.time + ':00');
             const scheduledTimeUTC = new Date(scheduledTimeWIB.getTime() - 7 * 60 * 60 * 1000);
-            console.log(`Checking schedule: ${schedule.accountId}, Scheduled Time (WIB): ${scheduledTimeWIB.toISOString()}, Scheduled Time (UTC): ${scheduledTimeUTC.toISOString()}, Now: ${now.toISOString()}`);
+            console.log(`Checking schedule: ${schedule.username}, Scheduled Time (WIB): ${scheduledTimeWIB.toISOString()}, Scheduled Time (UTC): ${scheduledTimeUTC.toISOString()}, Now: ${now.toISOString()}`);
 
             if (now >= scheduledTimeUTC && !schedule.completed) {
-                console.log(`Processing schedule for account ${schedule.accountId}`);
+                console.log(`Processing schedule for account ${schedule.username}`);
                 const result = await postToInstagram(
                     schedule.accountId,
                     schedule.mediaUrl,
@@ -86,11 +86,11 @@ async function runScheduledPosts() {
                 );
                 if (result.success) {
                     schedule.completed = true;
-                    console.log(`Post successful for ${schedule.accountId}: ${result.creationId}`);
+                    console.log(`Post successful for ${schedule.username}: ${result.creationId}`);
                     updatedSchedules.push(schedule);
                     await kv.set(SCHEDULE_KEY, [...updatedSchedules, ...schedules.filter(s => s !== schedule)]);
                 } else {
-                    console.error(`Failed to post for ${schedule.accountId}: ${result.error}`);
+                    console.error(`Failed to post for ${schedule.username}: ${result.error}`);
                     schedule.error = result.error;
                     updatedSchedules.push(schedule);
                 }
