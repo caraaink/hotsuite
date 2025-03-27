@@ -54,8 +54,13 @@ async function runScheduledPosts() {
             return;
         }
 
-        // Ambil jadwal paling terbaru
-        const latestSchedule = schedules[schedules.length - 1];
+        // Urutkan jadwal berdasarkan waktu (time) dan ambil yang paling terbaru
+        const latestSchedule = schedules
+            .map(schedule => ({
+                ...schedule,
+                timeUTC: new Date(schedule.time + ':00').getTime() - 7 * 60 * 60 * 1000
+            }))
+            .sort((a, b) => b.timeUTC - a.timeUTC)[0];
         console.log('Latest schedule fetched:', {
             username: latestSchedule.username,
             time: latestSchedule.time,
