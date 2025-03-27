@@ -10,7 +10,6 @@ body {
     background-color: #f7f9fc;
     color: #333;
     line-height: 1.6;
-    overflow-x: hidden; /* Cegah scroll horizontal yang tidak diinginkan */
 }
 
 .container {
@@ -20,7 +19,6 @@ body {
     background: #fff;
     border-radius: 10px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-    will-change: transform, box-shadow; /* Optimasi rendering */
 }
 
 /* Header */
@@ -314,7 +312,7 @@ body.dark-mode .skip-day-option label {
     display: flex;
     align-items: center;
     gap: 10px;
-    z-index: 2000; /* Tingkatkan z-index agar selalu di atas elemen lain */
+    z-index: 1000;
     max-width: 90%;
     animation: fadeIn 0.3s ease-in-out;
 }
@@ -380,7 +378,6 @@ body.dark-mode .skip-day-option label {
 /* Schedule List */
 .schedule-list {
     margin-top: 30px;
-    will-change: transform, box-shadow; /* Optimasi rendering */
 }
 
 .schedule-list table {
@@ -462,7 +459,6 @@ body.dark-mode .skip-day-option label {
     padding: 10px;
     background: #f9f9f9;
     border-radius: 8px;
-    will-change: transform, box-shadow; /* Optimasi rendering */
 }
 
 /* Pastikan semua gallery-item memiliki tinggi yang seragam */
@@ -1484,17 +1480,4 @@ body.dark-mode .no-schedule-message {
     align-items: flex-start;
     gap: 5px;
     margin-top: 10px;
-}
-
-/* Optimasi scroll untuk mencegah glitch shadow */
-html {
-    scroll-behavior: smooth; /* Pastikan scroll mulus */
-    overflow-x: hidden; /* Cegah scroll horizontal yang tidak diinginkan */
-}
-
-/* Perbaikan untuk menghilangkan shadow hitam saat scroll awal */
-.container,
-.gallery,
-.schedule-list {
-    transition: none; /* Nonaktifkan transisi untuk mencegah glitch */
 }
