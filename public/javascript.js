@@ -880,35 +880,35 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function saveCaptionToGithub(file, caption, commitMessage) {
-        try {
-            const folderPath = file.path.substring(0, file.path.lastIndexOf('/'));
-            const metaFileName = `${file.name}.meta.json`;
-            const metaPath = `${folderPath}/${metaFileName}`;
-            const metaContent = JSON.stringify({ caption methods null, 2);
-            const base64Content = btoa(unescape(encodeURIComponent(metaContent)));
+    try {
+        const folderPath = file.path.substring(0, file.path.lastIndexOf('/'));
+        const metaFileName = `${file.name}.meta.json`;
+        const metaPath = `${folderPath}/${metaFileName}`;
+        const metaContent = JSON.stringify({ caption: caption }, null, 2); // Diperbaiki di sini
+        const base64Content = btoa(unescape(encodeURIComponent(metaContent)));
 
-            const response = await fetch('/api/upload_to_github', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    fileName: metaPath,
-                    content: base64Content,
-                    message: commitMessage,
-                }),
-            });
+        const response = await fetch('/api/upload_to_github', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                fileName: metaPath,
+                content: base64Content,
+                message: commitMessage,
+            }),
+        });
 
-            if (!response.ok) {
-                throw new Error(`HTTP error uploading meta to GitHub! status: ${response.status}`);
-            }
-
-            console.log(`Meta file ${metaPath} saved to GitHub`);
-            return true;
-        } catch (error) {
-            console.error(`Error saving meta file for ${file.name}:`, error);
-            showFloatingNotification(`Error saving meta file for ${file.name}: ${error.message}`, true);
-            return false;
+        if (!response.ok) {
+            throw new Error(`HTTP error uploading meta to GitHub! status: ${response.status}`);
         }
+
+        console.log(`Meta file ${metaPath} saved to GitHub`);
+        return true;
+    } catch (error) {
+        console.error(`Error saving meta file for ${file.name}:`, error);
+        showFloatingNotification(`Error saving meta file for ${file.name}: ${error.message}`, true);
+        return false;
     }
+}
 
     async function displayGallery(files) {
         gallery.innerHTML = '';
