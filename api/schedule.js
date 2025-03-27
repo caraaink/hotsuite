@@ -6,9 +6,9 @@ const SCHEDULE_KEY = 'schedules';
 const CONTAINER_KEY = 'pending_container';
 
 // Fungsi untuk membuat container ID tanpa langsung memposting
-async function createMediaContainer(igAccountId, mediaUrl, caption, userToken) {
+async function createMediaContainer(igAccountId, mediaUrl, caption, userToken, username) {
     try {
-        console.log('Creating media container with params:', { igAccountId, mediaUrl, caption });
+        console.log(`Creating media container for ${username} with params:`, { igAccountId, mediaUrl, caption });
         const isVideo = mediaUrl.toLowerCase().endsWith('.mp4');
         const mediaEndpoint = `https://graph.facebook.com/v19.0/${igAccountId}/media`;
         const params = {
@@ -19,18 +19,18 @@ async function createMediaContainer(igAccountId, mediaUrl, caption, userToken) {
         };
 
         const mediaResponse = await axios.post(mediaEndpoint, params);
-        console.log('Media container created:', mediaResponse.data);
+        console.log(`Media container created for ${username}:`, mediaResponse.data);
         return { success: true, creationId: mediaResponse.data.id };
     } catch (error) {
-        console.error('Error creating media container:', error.response?.data || error.message);
-        throw new Error(`Failed to create media container: ${error.message}`);
+        console.error(`Error creating media container for ${username}:`, error.response?.data || error.message);
+        throw new Error(`Failed to create media container for ${username}: ${error.message}`);
     }
 }
 
 // Fungsi untuk memposting ke Instagram menggunakan container ID
-async function publishToInstagram(igAccountId, creationId, userToken) {
+async function publishToInstagram(igAccountId, creationId, userToken, username) {
     try {
-        console.log('Publishing to Instagram with creationId:', creationId);
+        console.log(`Publishing to Instagram for ${username} with creationId:`, creationId);
         const publishEndpoint = `https://graph.facebook.com/v19.0/${igAccountId}/media_publish`;
         const publishParams = {
             creation_id: creationId,
@@ -38,11 +38,11 @@ async function publishToInstagram(igAccountId, creationId, userToken) {
         };
 
         const publishResponse = await axios.post(publishEndpoint, publishParams);
-        console.log('Instagram API publish response:', publishResponse.data);
+        console.log(`Instagram API publish response for ${username}:`, publishResponse.data);
         return { success: true, creationId: publishResponse.data.id };
     } catch (error) {
-        console.error('Error publishing to Instagram:', error.response?.data || error.message);
-        throw new Error(`Failed to publish to Instagram: ${error.message}`);
+        console.error(`Error publishing to Instagram for ${username}:`, error.response?.data || error.message);
+        throw new Error(`Failed to publish to Instagram for ${username}: ${error.message}`);
     }
 }
 
@@ -52,12 +52,14 @@ async function runScheduledPosts() {
         let schedules = (await kv.get(SCHEDULE_KEY)) || [];
         
         if (!schedules || schedules.length === 0) {
+            console.log('No schedules available to process.');
             return;
         }
 
         const pendingSchedules = schedules.filter(schedule => !schedule.completed);
         
         if (pendingSchedules.length === 0) {
+            console.log('All schedules have been completed. Clearing schedules.');
             await kv.set(SCHEDULE_KEY, []);
             return;
         }
@@ -84,7 +86,8 @@ async function runScheduledPosts() {
             const publishResult = await publishToInstagram(
                 pendingContainer.accountId,
                 pendingContainer.creationId,
-                pendingContainer.userToken
+                pendingContainer.userToken,
+                pendingContainer.username
             );
             if (publishResult.success) {
                 // Tandai jadwal sebagai selesai
@@ -101,6 +104,7 @@ async function runScheduledPosts() {
         }
 
         // Langkah 2: Proses jadwal baru untuk membuat container ID
+        let foundMatchingSchedule = false;
         for (const schedule of sortedSchedules) {
             if (schedule.completed) {
                 continue;
@@ -109,11 +113,13 @@ async function runScheduledPosts() {
             const scheduledTimeUTC = new Date(schedule.time + ':00').getTime() - 7 * 60 * 60 * 1000;
 
             if (nowUTC >= scheduledTimeUTC && !schedule.completed) {
+                foundMatchingSchedule = true;
                 const containerResult = await createMediaContainer(
                     schedule.accountId,
                     schedule.mediaUrl,
                     schedule.caption,
-                    schedule.userToken
+                    schedule.userToken,
+                    schedule.username
                 );
                 if (containerResult.success) {
                     // Simpan container ID untuk diposting di cronjob berikutnya
@@ -134,6 +140,17 @@ async function runScheduledPosts() {
             } else {
                 updatedSchedules.push(schedule);
             }
+        }
+
+        if (!foundMatchingSchedule && pendingSchedules.length > 0) {
+            // Ambil jadwal berikutnya yang belum waktunya
+            const nextSchedule = pendingSchedules
+                .map(schedule => ({
+                    ...schedule,
+                    timeUTC: new Date(schedule.time + ':00').getTime() - 7 * 60 * 60 * 1000
+                }))
+                .sort((a, b) => a.timeUTC - b.timeUTC)[0];
+            console.log(`No schedules match the current time for processing. Next schedule for ${nextSchedule.username} at ${nextSchedule.time}.`);
         }
 
         if (updatedSchedules.length > 0) {
