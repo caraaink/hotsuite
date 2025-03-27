@@ -54,18 +54,21 @@ async function runScheduledPosts() {
             return;
         }
 
-        // Batasi log hanya untuk 2 jadwal pertama yang pending, tampilkan username alih-alih accountId, tanpa scheduleId
-        const limitedPendingSchedules = pendingSchedules.slice(0, 2);
-        console.log('Pending schedules fetched (showing top 2):', limitedPendingSchedules.map(s => ({
-            username: s.username,
-            time: s.time,
-            completed: s.completed
-        })));
+        // Tampilkan jadwal paling terbaru
+        const latestSchedule = schedules[schedules.length - 1];
+        console.log('Latest schedule fetched:', {
+            username: latestSchedule.username,
+            time: latestSchedule.time,
+            mediaUrl: latestSchedule.mediaUrl,
+            caption: latestSchedule.caption,
+            completed: latestSchedule.completed
+        });
 
         const now = new Date();
         console.log('Current time (UTC):', now.toISOString());
 
         const updatedSchedules = [];
+        let checkLogCount = 0;
 
         for (const schedule of schedules) {
             if (schedule.completed) {
@@ -74,7 +77,12 @@ async function runScheduledPosts() {
 
             const scheduledTimeWIB = new Date(schedule.time + ':00');
             const scheduledTimeUTC = new Date(scheduledTimeWIB.getTime() - 7 * 60 * 60 * 1000);
-            console.log(`Checking schedule: ${schedule.username}, Scheduled Time (WIB): ${scheduledTimeWIB.toISOString()}, Scheduled Time (UTC): ${scheduledTimeUTC.toISOString()}, Now: ${now.toISOString()}`);
+            
+            // Batasi log "Checking schedule" hanya untuk 2 jadwal pertama
+            if (checkLogCount < 2) {
+                console.log(`Checking schedule: ${schedule.username}, Scheduled Time (WIB): ${scheduledTimeWIB.toISOString()}, Scheduled Time (UTC): ${scheduledTimeUTC.toISOString()}, Now: ${now.toISOString()}`);
+                checkLogCount++;
+            }
 
             if (now >= scheduledTimeUTC && !schedule.completed) {
                 console.log(`Processing schedule for account ${schedule.username}`);
