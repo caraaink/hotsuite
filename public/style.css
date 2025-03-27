@@ -314,7 +314,7 @@ body.dark-mode .skip-day-option label {
     display: flex;
     align-items: center;
     gap: 10px;
-    z-index: 1000;
+    z-index: 2000; /* Tingkatkan z-index agar selalu di atas elemen lain */
     max-width: 90%;
     animation: fadeIn 0.3s ease-in-out;
 }
