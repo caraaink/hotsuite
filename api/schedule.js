@@ -4,7 +4,14 @@ const { v4: uuidv4 } = require('uuid');
 
 const SCHEDULE_KEY = 'schedules';
 
-// Fungsi untuk memformat tanggal dan jam ke WIB dalam format DD/MM/YYYY HH.MM
+// Fungsi untuk memformat tanggal dan jam dari schedule.time ke format DD/MM/YYYY HH.MM
+function formatScheduleTime(timeString) {
+    const pad = (num) => String(num).padStart(2, '0');
+    const date = new Date(timeString); // Langsung gunakan waktu asli dari schedule.time
+    return `${pad(date.getUTCDate())}/${pad(date.getUTCMonth() + 1)}/${pad(date.getUTCFullYear())} ${pad(date.getUTCHours())}.${pad(date.getUTCMinutes())}`;
+}
+
+// Fungsi untuk memformat waktu saat ini ke WIB dalam format DD/MM/YYYY HH.MM
 function formatDateTimeWIBSimple(date) {
     const pad = (num) => String(num).padStart(2, '0');
     const wibDate = new Date(date.getTime() + 7 * 60 * 60 * 1000); // Konversi ke WIB (UTC+7)
@@ -91,9 +98,8 @@ async function runScheduledPosts() {
                 continue;
             }
 
-            const scheduledTimeWIB = new Date(schedule.time + ':00');
-            const scheduledTimeUTC = new Date(scheduledTimeWIB.getTime() - 7 * 60 * 60 * 1000);
-            console.log(`Checking schedule: ${schedule.username}, Scheduled Time (WIB): ${formatDateTimeWIBSimple(scheduledTimeWIB)}, Now: ${formatDateTimeWIBSimple(now)}`);
+            const scheduledTimeUTC = new Date(schedule.time + ':00');
+            console.log(`Checking schedule: ${schedule.username}, Scheduled Time (WIB): ${formatScheduleTime(schedule.time)}, Now: ${formatDateTimeWIBSimple(now)}`);
 
             if (now >= scheduledTimeUTC && !schedule.completed) {
                 console.log(`Processing schedule for account ${schedule.username}`);
