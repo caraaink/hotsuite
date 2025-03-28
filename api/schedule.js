@@ -56,10 +56,19 @@ async function runScheduledPosts() {
             return;
         }
 
+        // Hapus jadwal yang sudah selesai (completed: true) dari database
+        const completedSchedules = schedules.filter(schedule => schedule.completed);
+        if (completedSchedules.length > 0) {
+            const completedUsernames = completedSchedules.map(schedule => schedule.username).join(', ');
+            console.log(`Removing ${completedSchedules.length} completed schedules for users: ${completedUsernames}.`);
+            schedules = schedules.filter(schedule => !schedule.completed);
+            await kv.set(SCHEDULE_KEY, schedules);
+        }
+
         const pendingSchedules = schedules.filter(schedule => !schedule.completed);
         
         if (pendingSchedules.length === 0) {
-            console.log('No pending schedules to process.');
+            console.log('No pending schedules to process after removing completed ones.');
             return;
         }
 
@@ -77,7 +86,7 @@ async function runScheduledPosts() {
         // Ambil container ID yang tersimpan dari cronjob sebelumnya
         const pendingContainer = (await kv.get(CONTAINER_KEY)) || null;
 
-        let updatedSchedules = [];
+        let updatedSchedules = [...schedules]; // Salin semua jadwal untuk memastikan tidak ada yang hilang
         let hasProcessedSchedule = false;
         let lastProcessedTime = null;
 
@@ -90,10 +99,13 @@ async function runScheduledPosts() {
                 pendingContainer.username
             );
             if (publishResult.success) {
-                // Hapus jadwal yang baru saja diposting dari schedules
-                schedules = schedules.filter(schedule => schedule.scheduleId !== pendingContainer.scheduleId);
-                console.log(`Removed completed schedule for ${pendingContainer.username} after posting.`);
-                await kv.set(SCHEDULE_KEY, schedules);
+                // Tandai jadwal sebagai selesai
+                updatedSchedules = updatedSchedules.map(schedule => {
+                    if (schedule.scheduleId === pendingContainer.scheduleId) {
+                        return { ...schedule, completed: true };
+                    }
+                    return schedule;
+                });
                 // Simpan waktu jadwal yang baru saja diposting
                 lastProcessedTime = sortedSchedules.find(schedule => schedule.scheduleId === pendingContainer.scheduleId)?.timeUTC || nowUTC;
             }
@@ -121,12 +133,12 @@ async function runScheduledPosts() {
 
                     if (timeDifference < minTimeDifference) {
                         console.log(`Skipping container creation for ${schedule.username}: Next schedule at ${schedule.time} is too close (less than 1 minute) to the last processed schedule.`);
-                        updatedSchedules.push(schedule);
+                        updatedSchedules = updatedSchedules.map(s => s.scheduleId === schedule.scheduleId ? schedule : s);
                         continue;
                     }
                     if (timeDifference > maxTimeDifference) {
                         console.log(`Skipping container creation for ${schedule.username}: Next schedule at ${schedule.time} is too far (more than 5 minutes) from the last processed schedule.`);
-                        updatedSchedules.push(schedule);
+                        updatedSchedules = updatedSchedules.map(s => s.scheduleId === schedule.scheduleId ? schedule : s);
                         continue;
                     }
                 }
@@ -151,11 +163,10 @@ async function runScheduledPosts() {
                     hasProcessedSchedule = true;
                     break; // Hanya proses satu jadwal per cronjob
                 } else {
-                    schedule.error = containerResult.error;
-                    updatedSchedules.push(schedule);
+                    updatedSchedules = updatedSchedules.map(s => s.scheduleId === schedule.scheduleId ? { ...s, error: containerResult.error } : s);
                 }
             } else {
-                updatedSchedules.push(schedule);
+                updatedSchedules = updatedSchedules.map(s => s.scheduleId === schedule.scheduleId ? schedule : s);
             }
         }
 
@@ -170,8 +181,17 @@ async function runScheduledPosts() {
             console.log(`No schedules match the current time for processing. Next schedule for ${nextSchedule.username} at ${nextSchedule.time}.`);
         }
 
-        if (updatedSchedules.length > 0) {
-            await kv.set(SCHEDULE_KEY, updatedSchedules);
+        // Simpan semua jadwal yang sudah diperbarui (termasuk yang baru selesai)
+        await kv.set(SCHEDULE_KEY, updatedSchedules);
+
+        // Pengecekan ulang: hapus jadwal yang completed: true setelah semua proses selesai
+        const finalSchedules = (await kv.get(SCHEDULE_KEY)) || [];
+        const remainingCompletedSchedules = finalSchedules.filter(schedule => schedule.completed);
+        if (remainingCompletedSchedules.length > 0) {
+            const remainingCompletedUsernames = remainingCompletedSchedules.map(schedule => schedule.username).join(', ');
+            console.log(`Final cleanup: Removing ${remainingCompletedSchedules.length} completed schedules for users: ${remainingCompletedUsernames}.`);
+            const finalPendingSchedules = finalSchedules.filter(schedule => !schedule.completed);
+            await kv.set(SCHEDULE_KEY, finalPendingSchedules);
         }
     } catch (error) {
         console.error('Error running scheduled posts:', error.message);
