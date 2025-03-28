@@ -59,8 +59,7 @@ async function runScheduledPosts() {
         const pendingSchedules = schedules.filter(schedule => !schedule.completed);
         
         if (pendingSchedules.length === 0) {
-            console.log('All schedules have been completed. Clearing schedules.');
-            await kv.set(SCHEDULE_KEY, []);
+            console.log('No pending schedules to process.');
             return;
         }
 
@@ -91,14 +90,10 @@ async function runScheduledPosts() {
                 pendingContainer.username
             );
             if (publishResult.success) {
-                // Tandai jadwal sebagai selesai
-                updatedSchedules = schedules.map(schedule => {
-                    if (schedule.scheduleId === pendingContainer.scheduleId) {
-                        return { ...schedule, completed: true };
-                    }
-                    return schedule;
-                });
-                await kv.set(SCHEDULE_KEY, updatedSchedules);
+                // Hapus jadwal yang baru saja diposting dari schedules
+                schedules = schedules.filter(schedule => schedule.scheduleId !== pendingContainer.scheduleId);
+                console.log(`Removed completed schedule for ${pendingContainer.username} after posting.`);
+                await kv.set(SCHEDULE_KEY, schedules);
                 // Simpan waktu jadwal yang baru saja diposting
                 lastProcessedTime = sortedSchedules.find(schedule => schedule.scheduleId === pendingContainer.scheduleId)?.timeUTC || nowUTC;
             }
