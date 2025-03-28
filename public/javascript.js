@@ -567,128 +567,144 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     async function loadUploadFolders() {
-        try {
-            const res = await fetch('/api/get_github_files?path=ig');
-            if (!res.ok) {
-                throw new Error(`HTTP error! status: ${res.status}`);
-            }
-            const data = await res.json();
-            const folders = data.files.filter(item => item.type === 'dir');
-            folders.sort(naturalSort);
-
-            uploadFolderSelect.innerHTML = '<option value="">-- Pilih Folder --</option>';
-            
-            const defaultOption = document.createElement('option');
-            defaultOption.value = 'ig/image';
-            defaultOption.textContent = 'ig/image';
-            uploadFolderSelect.appendChild(defaultOption);
-
-            folders.forEach(item => {
-                if (item.path !== 'ig/image') {
-                    const option = document.createElement('option');
-                    option.value = item.path;
-                    option.textContent = item.name;
-                    uploadFolderSelect.appendChild(option);
-                }
-            });
-
-            const customOption = document.createElement('option');
-            customOption.value = 'custom';
-            customOption.textContent = 'Tambah Folder Baru';
-            uploadFolderSelect.appendChild(customOption);
-
-            // Reset ke default saat halaman dimuat ulang
-            uploadFolderSelect.value = '';
-            uploadSubfolderSelect.style.display = 'none';
-            uploadSubfolderSelect.innerHTML = '<option value="">-- Pilih Subfolder --</option>';
-            uploadFolderInput.style.display = 'none';
-            uploadFolderInput.value = '';
-
-            // Jika ada pilihan sebelumnya setelah unggah, kembalikan
-            if (currentFolder) {
-                uploadFolderSelect.value = currentFolder;
-                if (currentFolder === 'custom' && currentCustomFolder) {
-                    uploadFolderInput.style.display = 'block';
-                    uploadFolderInput.value = currentCustomFolder;
-                } else if (currentFolder) {
-                    const subfolders = await fetchSubfolders(currentFolder);
-                    if (subfolders.length > 0) {
-                        uploadSubfolderSelect.style.display = 'block';
-                        uploadSubfolderSelect.innerHTML = '<option value="">-- Pilih Subfolder --</option>';
-                        subfolders.forEach(subfolder => {
-                            const option = document.createElement('option');
-                            option.value = subfolder.path;
-                            option.textContent = subfolder.name;
-                            uploadSubfolderSelect.appendChild(option);
-                        });
-                        if (currentSubfolder) {
-                            uploadSubfolderSelect.value = currentSubfolder;
-                        }
-                    } else if (currentCustomFolder) {
-                        uploadFolderInput.style.display = 'block';
-                        uploadFolderInput.value = currentCustomFolder;
-                    }
-                }
-            }
-        } catch (error) {
-            console.error('Error loading upload folders:', error);
-            showFloatingNotification(`Error loading upload folders: ${error.message}`, true);
+    try {
+        const res = await fetch('/api/get_github_files?path=ig');
+        if (!res.ok) {
+            throw new Error(`HTTP error! status: ${res.status}`);
         }
-    }
+        const data = await res.json();
+        const folders = data.files.filter(item => item.type === 'dir');
+        folders.sort(naturalSort);
 
-    uploadFolderSelect.addEventListener('change', async () => {
-        const folderPath = uploadFolderSelect.value;
-        currentFolder = folderPath;
-        currentSubfolder = '';
-        currentCustomFolder = '';
+        uploadFolderSelect.innerHTML = '<option value="">-- Pilih Folder --</option>';
+        
+        const defaultOption = document.createElement('option');
+        defaultOption.value = 'ig/image';
+        defaultOption.textContent = 'ig/image';
+        uploadFolderSelect.appendChild(defaultOption);
 
+        folders.forEach(item => {
+            if (item.path !== 'ig/image') {
+                const option = document.createElement('option');
+                option.value = item.path;
+                option.textContent = item.name;
+                uploadFolderSelect.appendChild(option);
+            }
+        });
+
+        const customOption = document.createElement('option');
+        customOption.value = 'custom';
+        customOption.textContent = 'Tambah Folder Baru';
+        uploadFolderSelect.appendChild(customOption);
+
+        // Reset ke default saat halaman dimuat ulang
+        uploadFolderSelect.value = '';
         uploadSubfolderSelect.style.display = 'none';
         uploadSubfolderSelect.innerHTML = '<option value="">-- Pilih Subfolder --</option>';
         uploadFolderInput.style.display = 'none';
         uploadFolderInput.value = '';
 
-        if (folderPath === 'custom') {
-            uploadFolderInput.style.display = 'block';
-            uploadFolderInput.focus();
-        } else if (folderPath) {
-            try {
-                const subfolders = await fetchSubfolders(folderPath);
+        // Jika ada pilihan sebelumnya setelah unggah, kembalikan
+        if (currentFolder) {
+            uploadFolderSelect.value = currentFolder;
+            if (currentFolder === 'custom' && currentCustomFolder) {
+                uploadFolderInput.style.display = 'block';
+                uploadFolderInput.value = currentCustomFolder;
+            } else if (currentFolder) {
+                const subfolders = await fetchSubfolders(currentFolder);
                 if (subfolders.length > 0) {
                     uploadSubfolderSelect.style.display = 'block';
+                    uploadSubfolderSelect.innerHTML = '<option value="">-- Pilih Subfolder --</option>';
                     subfolders.forEach(subfolder => {
                         const option = document.createElement('option');
                         option.value = subfolder.path;
                         option.textContent = subfolder.name;
                         uploadSubfolderSelect.appendChild(option);
                     });
-                } else {
+                    // Tambahkan opsi "Tambah Folder Baru" di dropdown subfolder
+                    const customSubfolderOption = document.createElement('option');
+                    customSubfolderOption.value = 'custom';
+                    customSubfolderOption.textContent = 'Tambah Folder Baru';
+                    uploadSubfolderSelect.appendChild(customSubfolderOption);
+
+                    if (currentSubfolder) {
+                        uploadSubfolderSelect.value = currentSubfolder;
+                    }
+                } else if (currentCustomFolder) {
                     uploadFolderInput.style.display = 'block';
-                    uploadFolderInput.placeholder = 'Masukkan subfolder (opsional)';
+                    uploadFolderInput.value = currentCustomFolder;
                 }
-            } catch (error) {
-                showFloatingNotification(`Error loading subfolders: ${error.message}`, true);
-                console.error('Error fetching subfolders:', error);
             }
         }
-    });
+    } catch (error) {
+        console.error('Error loading upload folders:', error);
+        showFloatingNotification(`Error loading upload folders: ${error.message}`, true);
+    }
+}
 
-    uploadSubfolderSelect.addEventListener('change', () => {
-        const subfolderPath = uploadSubfolderSelect.value;
-        currentSubfolder = subfolderPath;
-        if (subfolderPath) {
-            uploadFolderInput.style.display = 'none';
-            uploadFolderInput.value = '';
-            currentCustomFolder = '';
-        } else {
-            uploadFolderInput.style.display = 'block';
-            uploadFolderInput.placeholder = 'Masukkan subfolder (opsional)';
-            currentCustomFolder = '';
+    uploadFolderSelect.addEventListener('change', async () => {
+    const folderPath = uploadFolderSelect.value;
+    currentFolder = folderPath;
+    currentSubfolder = '';
+    currentCustomFolder = '';
+
+    uploadSubfolderSelect.style.display = 'none';
+    uploadSubfolderSelect.innerHTML = '<option value="">-- Pilih Subfolder --</option>';
+    uploadFolderInput.style.display = 'none';
+    uploadFolderInput.value = '';
+
+    if (folderPath === 'custom') {
+        uploadFolderInput.style.display = 'block';
+        uploadFolderInput.focus();
+    } else if (folderPath) {
+        try {
+            const subfolders = await fetchSubfolders(folderPath);
+            if (subfolders.length > 0) {
+                uploadSubfolderSelect.style.display = 'block';
+                subfolders.forEach(subfolder => {
+                    const option = document.createElement('option');
+                    option.value = subfolder.path;
+                    option.textContent = subfolder.name;
+                    uploadSubfolderSelect.appendChild(option);
+                });
+                // Tambahkan opsi "Tambah Folder Baru" di dropdown subfolder
+                const customSubfolderOption = document.createElement('option');
+                customSubfolderOption.value = 'custom';
+                customSubfolderOption.textContent = 'Tambah Folder Baru';
+                uploadSubfolderSelect.appendChild(customSubfolderOption);
+            } else {
+                uploadFolderInput.style.display = 'block';
+                uploadFolderInput.placeholder = 'Masukkan subfolder (opsional)';
+            }
+        } catch (error) {
+            showFloatingNotification(`Error loading subfolders: ${error.message}`, true);
+            console.error('Error fetching subfolders:', error);
         }
-    });
+    }
+});
 
-    uploadFolderInput.addEventListener('input', () => {
-        currentCustomFolder = uploadFolderInput.value.trim();
-    });
+uploadSubfolderSelect.addEventListener('change', () => {
+    const subfolderPath = uploadSubfolderSelect.value;
+    currentSubfolder = subfolderPath;
+    if (subfolderPath === 'custom') {
+        uploadFolderInput.style.display = 'block';
+        uploadFolderInput.placeholder = 'Masukkan nama subfolder baru';
+        uploadFolderInput.value = '';
+        currentCustomFolder = '';
+    } else if (subfolderPath) {
+        uploadFolderInput.style.display = 'none';
+        uploadFolderInput.value = '';
+        currentCustomFolder = '';
+    } else {
+        uploadFolderInput.style.display = 'block';
+        uploadFolderInput.placeholder = 'Masukkan subfolder (opsional)';
+        currentCustomFolder = '';
+    }
+});
+
+uploadFolderInput.addEventListener('input', () => {
+    currentCustomFolder = uploadFolderInput.value.trim();
+});
 
     loadUploadFolders();
 
