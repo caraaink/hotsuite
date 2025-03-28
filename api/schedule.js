@@ -28,13 +28,9 @@ async function createMediaContainer(igAccountId, mediaUrl, caption, userToken, u
 }
 
 // Fungsi untuk memposting ke Instagram menggunakan container ID
-async function publishToInstagram(igAccountId, creationId, userToken, username, nextContainerInfo) {
+async function publishToInstagram(igAccountId, creationId, userToken, username) {
     try {
-        let logMessage = `Publishing to Instagram for ${username}`;
-        if (nextContainerInfo) {
-            logMessage += ` [Next for ${nextContainerInfo.username} Creatid: ${nextContainerInfo.creationId}]`;
-        }
-        console.log(logMessage);
+        console.log(`Publishing to Instagram for ${username} with creationId:`, creationId);
         const publishEndpoint = `https://graph.facebook.com/v19.0/${igAccountId}/media_publish`;
         const publishParams = {
             creation_id: creationId,
@@ -93,18 +89,14 @@ async function runScheduledPosts() {
         let updatedSchedules = [];
         let hasProcessedSchedule = false;
         let lastProcessedTime = null;
-        let nextContainerInfo = null;
 
         // Langkah 1: Jika ada container ID dari cronjob sebelumnya, posting sekarang
         if (pendingContainer) {
-            // Ambil informasi container berikutnya (jika ada) untuk ditampilkan di log
-            nextContainerInfo = await kv.get(CONTAINER_KEY);
             const publishResult = await publishToInstagram(
                 pendingContainer.accountId,
                 pendingContainer.creationId,
                 pendingContainer.userToken,
-                pendingContainer.username,
-                nextContainerInfo
+                pendingContainer.username
             );
             if (publishResult.success) {
                 // Hapus jadwal yang baru saja diposting dari database
@@ -157,6 +149,16 @@ async function runScheduledPosts() {
                     schedule.username
                 );
                 if (containerResult.success) {
+                    // Tandai jadwal sebagai selesai (completed: true)
+                    schedules = schedules.map(s => {
+                        if (s.scheduleId === schedule.scheduleId) {
+                            return { ...s, completed: true };
+                        }
+                        return s;
+                    });
+                    console.log(`Marked schedule as completed for ${schedule.username} with scheduleId: ${schedule.scheduleId}.`);
+                    await kv.set(SCHEDULE_KEY, schedules);
+
                     // Simpan container ID untuk diposting di cronjob berikutnya
                     const containerData = {
                         scheduleId: schedule.scheduleId,
