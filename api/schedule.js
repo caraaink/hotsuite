@@ -86,7 +86,7 @@ async function runScheduledPosts() {
         // Ambil container ID yang tersimpan dari cronjob sebelumnya
         const pendingContainer = (await kv.get(CONTAINER_KEY)) || null;
 
-        let updatedSchedules = [...schedules]; // Salin semua jadwal untuk memastikan tidak ada yang hilang
+        let updatedSchedules = [];
         let hasProcessedSchedule = false;
         let lastProcessedTime = null;
 
@@ -99,13 +99,10 @@ async function runScheduledPosts() {
                 pendingContainer.username
             );
             if (publishResult.success) {
-                // Tandai jadwal sebagai selesai
-                updatedSchedules = updatedSchedules.map(schedule => {
-                    if (schedule.scheduleId === pendingContainer.scheduleId) {
-                        return { ...schedule, completed: true };
-                    }
-                    return schedule;
-                });
+                // Hapus jadwal yang baru saja diposting dari database
+                schedules = schedules.filter(schedule => schedule.scheduleId !== pendingContainer.scheduleId);
+                console.log(`Removed posted schedule for ${pendingContainer.username} with scheduleId: ${pendingContainer.scheduleId}.`);
+                await kv.set(SCHEDULE_KEY, schedules);
                 // Simpan waktu jadwal yang baru saja diposting
                 lastProcessedTime = sortedSchedules.find(schedule => schedule.scheduleId === pendingContainer.scheduleId)?.timeUTC || nowUTC;
             }
@@ -133,12 +130,12 @@ async function runScheduledPosts() {
 
                     if (timeDifference < minTimeDifference) {
                         console.log(`Skipping container creation for ${schedule.username}: Next schedule at ${schedule.time} is too close (less than 1 minute) to the last processed schedule.`);
-                        updatedSchedules = updatedSchedules.map(s => s.scheduleId === schedule.scheduleId ? schedule : s);
+                        updatedSchedules.push(schedule);
                         continue;
                     }
                     if (timeDifference > maxTimeDifference) {
                         console.log(`Skipping container creation for ${schedule.username}: Next schedule at ${schedule.time} is too far (more than 5 minutes) from the last processed schedule.`);
-                        updatedSchedules = updatedSchedules.map(s => s.scheduleId === schedule.scheduleId ? schedule : s);
+                        updatedSchedules.push(schedule);
                         continue;
                     }
                 }
@@ -163,10 +160,11 @@ async function runScheduledPosts() {
                     hasProcessedSchedule = true;
                     break; // Hanya proses satu jadwal per cronjob
                 } else {
-                    updatedSchedules = updatedSchedules.map(s => s.scheduleId === schedule.scheduleId ? { ...s, error: containerResult.error } : s);
+                    schedule.error = containerResult.error;
+                    updatedSchedules.push(schedule);
                 }
             } else {
-                updatedSchedules = updatedSchedules.map(s => s.scheduleId === schedule.scheduleId ? schedule : s);
+                updatedSchedules.push(schedule);
             }
         }
 
@@ -181,17 +179,8 @@ async function runScheduledPosts() {
             console.log(`No schedules match the current time for processing. Next schedule for ${nextSchedule.username} at ${nextSchedule.time}.`);
         }
 
-        // Simpan semua jadwal yang sudah diperbarui (termasuk yang baru selesai)
-        await kv.set(SCHEDULE_KEY, updatedSchedules);
-
-        // Pengecekan ulang: hapus jadwal yang completed: true setelah semua proses selesai
-        const finalSchedules = (await kv.get(SCHEDULE_KEY)) || [];
-        const remainingCompletedSchedules = finalSchedules.filter(schedule => schedule.completed);
-        if (remainingCompletedSchedules.length > 0) {
-            const remainingCompletedUsernames = remainingCompletedSchedules.map(schedule => schedule.username).join(', ');
-            console.log(`Final cleanup: Removing ${remainingCompletedSchedules.length} completed schedules for users: ${remainingCompletedUsernames}.`);
-            const finalPendingSchedules = finalSchedules.filter(schedule => !schedule.completed);
-            await kv.set(SCHEDULE_KEY, finalPendingSchedules);
+        if (updatedSchedules.length > 0) {
+            await kv.set(SCHEDULE_KEY, updatedSchedules);
         }
     } catch (error) {
         console.error('Error running scheduled posts:', error.message);
