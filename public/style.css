@@ -1400,7 +1400,10 @@ body.dark-mode .select-group select {
     border-color: #3498db;
     outline: none;
 }
-
+.processing-dots {
+    display: inline-block;
+    min-width: 60px; /* Menjaga lebar agar tidak bergoyang */
+}
 /* Sembunyikan label tertentu secara default */
 .select-group label[for="accountId"],
 .select-group label[for="githubSubfolder"] {

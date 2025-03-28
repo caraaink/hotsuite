@@ -40,10 +40,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const ITEMS_PER_PAGE = 15;
     let isLoadingSchedules = false;
 
-    // Load last selected folder from localStorage
-    const lastSelectedFolder = localStorage.getItem('lastSelectedFolder') || '';
-    const lastSelectedSubfolder = localStorage.getItem('lastSelectedSubfolder') || '';
-
     // Fungsi untuk mengonversi waktu dari UTC ke WIB
     function convertToWIB(utcTime) {
         const date = new Date(utcTime);
@@ -320,13 +316,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 githubFolder.appendChild(option);
             });
 
-            // Set last selected folder if available
-            if (lastSelectedFolder && Array.from(githubFolder.options).some(opt => opt.value === lastSelectedFolder)) {
-                githubFolder.value = lastSelectedFolder;
-                // Trigger change event to load subfolders
-                githubFolder.dispatchEvent(new Event('change'));
-            }
-
             if (githubFolder.options.length === 1) {
                 showFloatingNotification('No subfolders found in ig directory.', true);
             } else {
@@ -472,10 +461,6 @@ document.addEventListener('DOMContentLoaded', () => {
         gallery.innerHTML = '';
         mediaUrl.value = '';
 
-        // Save selected folder to localStorage
-        localStorage.setItem('lastSelectedFolder', folderPath);
-        localStorage.removeItem('lastSelectedSubfolder');
-
         const subfolderContainer = document.getElementById('subfolderContainer');
         const subfolderLabel = document.querySelector('label[for="githubSubfolder"]');
         const scheduleAllContainer = document.querySelector('.schedule-all-container');
@@ -528,13 +513,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         githubSubfolder.appendChild(option);
                     });
 
-                    // Set last selected subfolder if available
-                    if (lastSelectedSubfolder && Array.from(githubSubfolder.options).some(opt => opt.value === lastSelectedSubfolder)) {
-                        githubSubfolder.value = lastSelectedSubfolder;
-                        // Trigger change event to load files
-                        githubSubfolder.dispatchEvent(new Event('change'));
-                    }
-
                     if (githubSubfolder.options.length === 1) {
                         showFloatingNotification('No subfolders found in this folder.', true);
                     } else {
@@ -557,9 +535,6 @@ document.addEventListener('DOMContentLoaded', () => {
         scheduledTimes = {};
         gallery.innerHTML = '';
         mediaUrl.value = '';
-
-        // Save selected subfolder to localStorage
-        localStorage.setItem('lastSelectedSubfolder', subfolderPath);
 
         const scheduleAllContainer = document.querySelector('.schedule-all-container');
         scheduleAllContainer.style.display = 'none';
@@ -616,6 +591,37 @@ document.addEventListener('DOMContentLoaded', () => {
             customOption.value = 'custom';
             customOption.textContent = 'Tambah Folder Baru';
             uploadFolderSelect.appendChild(customOption);
+
+            // Memuat pilihan terakhir dari localStorage
+            const lastFolder = localStorage.getItem('lastUploadFolder');
+            const lastSubfolder = localStorage.getItem('lastUploadSubfolder');
+            const lastCustomFolder = localStorage.getItem('lastCustomFolder');
+
+            if (lastFolder) {
+                uploadFolderSelect.value = lastFolder;
+                if (lastFolder === 'custom' && lastCustomFolder) {
+                    uploadFolderInput.style.display = 'block';
+                    uploadFolderInput.value = lastCustomFolder;
+                } else if (lastFolder) {
+                    const subfolders = await fetchSubfolders(lastFolder);
+                    if (subfolders.length > 0) {
+                        uploadSubfolderSelect.style.display = 'block';
+                        uploadSubfolderSelect.innerHTML = '<option value="">-- Pilih Subfolder --</option>';
+                        subfolders.forEach(subfolder => {
+                            const option = document.createElement('option');
+                            option.value = subfolder.path;
+                            option.textContent = subfolder.name;
+                            uploadSubfolderSelect.appendChild(option);
+                        });
+                        if (lastSubfolder) {
+                            uploadSubfolderSelect.value = lastSubfolder;
+                        }
+                    } else if (lastCustomFolder) {
+                        uploadFolderInput.style.display = 'block';
+                        uploadFolderInput.value = lastCustomFolder;
+                    }
+                }
+            }
         } catch (error) {
             console.error('Error loading upload folders:', error);
             showFloatingNotification(`Error loading upload folders: ${error.message}`, true);
@@ -629,6 +635,10 @@ document.addEventListener('DOMContentLoaded', () => {
         uploadSubfolderSelect.innerHTML = '<option value="">-- Pilih Subfolder --</option>';
         uploadFolderInput.style.display = 'none';
         uploadFolderInput.value = '';
+
+        localStorage.setItem('lastUploadFolder', folderPath);
+        localStorage.removeItem('lastUploadSubfolder');
+        localStorage.removeItem('lastCustomFolder');
 
         if (folderPath === 'custom') {
             uploadFolderInput.style.display = 'block';
@@ -656,13 +666,21 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     uploadSubfolderSelect.addEventListener('change', () => {
-        if (uploadSubfolderSelect.value) {
+        const subfolderPath = uploadSubfolderSelect.value;
+        if (subfolderPath) {
             uploadFolderInput.style.display = 'none';
             uploadFolderInput.value = '';
+            localStorage.setItem('lastUploadSubfolder', subfolderPath);
+            localStorage.removeItem('lastCustomFolder');
         } else {
             uploadFolderInput.style.display = 'block';
             uploadFolderInput.placeholder = 'Masukkan subfolder (opsional)';
+            localStorage.removeItem('lastUploadSubfolder');
         }
+    });
+
+    uploadFolderInput.addEventListener('input', () => {
+        localStorage.setItem('lastCustomFolder', uploadFolderInput.value.trim());
     });
 
     loadUploadFolders();
@@ -909,7 +927,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const folderPath = file.path.substring(0, file.path.lastIndexOf('/'));
             const metaFileName = `${file.name}.meta.json`;
             const metaPath = `${folderPath}/${metaFileName}`;
-            const metaContent = JSON.stringify({ caption: caption }, null, 2); // Diperbaiki di sini
+            const metaContent = JSON.stringify({ caption: caption }, null, 2);
             const base64Content = btoa(unescape(encodeURIComponent(metaContent)));
 
             const response = await fetch('/api/upload_to_github', {
@@ -980,10 +998,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         const sortedImageFiles = [...withSchedule, ...withoutSchedule];
-
-        console.log('Sorted image files:', sortedImageFiles.map(file => file.name));
-
-        function format [...withSchedule, ...withoutSchedule];
 
         console.log('Sorted image files:', sortedImageFiles.map(file => file.name));
 
@@ -1507,7 +1521,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td class="editable-time" data-schedule-id="${schedule.scheduleId}">
                     <input type="datetime-local" class="time-input" value="${formattedWibTime}">
                 </td>
-                <td>${schedule.completed ? 'proses...' : 'Menunggu'}</td>
+                <td class="${schedule.completed ? 'processing' : ''}">${schedule.completed ? '<span class="processing-dots">Proses</span>' : 'Menunggu'}</td>
                 <td>
                     <button class="delete-btn" data-schedule-id="${schedule.scheduleId}">Hapus</button>
                 </td>
@@ -1526,6 +1540,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.querySelectorAll('.delete-btn').forEach(button => {
             button.addEventListener('click', debounce(handleDeleteClick, 300));
+        });
+
+        // Start dot animation for "Proses..."
+        animateProcessingDots();
+    }
+
+    function animateProcessingDots() {
+        const processingElements = document.querySelectorAll('.processing-dots');
+        processingElements.forEach(el => {
+            let dotCount = 0;
+            setInterval(() => {
+                dotCount = (dotCount + 1) % 4;
+                el.textContent = 'Proses' + '.'.repeat(dotCount);
+            }, 500);
         });
     }
 
