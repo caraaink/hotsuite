@@ -99,10 +99,20 @@ async function runScheduledPosts() {
                 pendingContainer.username
             );
             if (publishResult.success) {
+                // Tandai jadwal sebagai selesai (completed: true) sebelum menghapus
+                schedules = schedules.map(schedule => {
+                    if (schedule.scheduleId === pendingContainer.scheduleId) {
+                        return { ...schedule, completed: true };
+                    }
+                    return schedule;
+                });
+                console.log(`Marked schedule as completed for ${pendingContainer.username} with scheduleId: ${pendingContainer.scheduleId}.`);
+
                 // Hapus jadwal yang baru saja diposting dari database
                 schedules = schedules.filter(schedule => schedule.scheduleId !== pendingContainer.scheduleId);
                 console.log(`Removed posted schedule for ${pendingContainer.username} with scheduleId: ${pendingContainer.scheduleId}.`);
                 await kv.set(SCHEDULE_KEY, schedules);
+
                 // Simpan waktu jadwal yang baru saja diposting
                 lastProcessedTime = sortedSchedules.find(schedule => schedule.scheduleId === pendingContainer.scheduleId)?.timeUTC || nowUTC;
             }
