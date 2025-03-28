@@ -28,9 +28,13 @@ async function createMediaContainer(igAccountId, mediaUrl, caption, userToken, u
 }
 
 // Fungsi untuk memposting ke Instagram menggunakan container ID
-async function publishToInstagram(igAccountId, creationId, userToken, username) {
+async function publishToInstagram(igAccountId, creationId, userToken, username, nextContainer = null) {
     try {
-        console.log(`Publishing to Instagram for ${username} with creationId:`, creationId);
+        let logMessage = `Publishing to Instagram for ${username} with creationId: ${creationId}`;
+        if (nextContainer) {
+            logMessage += ` [Next for ${nextContainer.username} Creatid: ${nextContainer.creationId}]`;
+        }
+        console.log(logMessage);
         const publishEndpoint = `https://graph.facebook.com/v19.0/${igAccountId}/media_publish`;
         const publishParams = {
             creation_id: creationId,
@@ -84,19 +88,60 @@ async function runScheduledPosts() {
             .sort((a, b) => a.timeUTC - b.timeUTC); // Terlama ke terbaru
 
         // Ambil container ID yang tersimpan dari cronjob sebelumnya
-        const pendingContainer = (await kv.get(CONTAINER_KEY)) || null;
+        let pendingContainer = (await kv.get(CONTAINER_KEY)) || null;
 
         let updatedSchedules = [];
         let hasProcessedSchedule = false;
         let lastProcessedTime = null;
+        let nextContainer = null;
 
         // Langkah 1: Jika ada container ID dari cronjob sebelumnya, posting sekarang
         if (pendingContainer) {
+            // Simpan container ID yang akan dibuat di langkah berikutnya (jika ada)
+            // Ini akan digunakan untuk log informasi jadwal berikutnya
+            for (const schedule of sortedSchedules) {
+                if (!schedules.some(s => s.scheduleId === schedule.scheduleId)) {
+                    continue;
+                }
+
+                const scheduledTimeUTC = new Date(schedule.time + ':00').getTime() - 7 * 60 * 60 * 1000;
+
+                if (nowUTC >= scheduledTimeUTC && !schedule.completed) {
+                    const timeDifference = lastProcessedTime ? scheduledTimeUTC - lastProcessedTime : Infinity;
+                    const minTimeDifference = 60 * 1000; // 1 menit dalam milidetik
+                    const maxTimeDifference = 5 * 60 * 1000; // 5 menit dalam milidetik
+
+                    if (lastProcessedTime && (timeDifference < minTimeDifference || timeDifference > maxTimeDifference)) {
+                        continue;
+                    }
+
+                    const containerResult = await createMediaContainer(
+                        schedule.accountId,
+                        schedule.mediaUrl,
+                        schedule.caption,
+                        schedule.userToken,
+                        schedule.username
+                    );
+                    if (containerResult.success) {
+                        nextContainer = {
+                            scheduleId: schedule.scheduleId,
+                            accountId: schedule.accountId,
+                            username: schedule.username,
+                            creationId: containerResult.creationId,
+                            userToken: schedule.userToken
+                        };
+                    }
+                    break;
+                }
+            }
+
+            // Posting jadwal saat ini dengan informasi jadwal berikutnya (jika ada)
             const publishResult = await publishToInstagram(
                 pendingContainer.accountId,
                 pendingContainer.creationId,
                 pendingContainer.userToken,
-                pendingContainer.username
+                pendingContainer.username,
+                nextContainer
             );
             if (publishResult.success) {
                 // Hapus jadwal yang baru saja diposting dari database
