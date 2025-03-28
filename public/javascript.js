@@ -40,6 +40,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const ITEMS_PER_PAGE = 15;
     let isLoadingSchedules = false;
 
+    // Load last selected folder from localStorage
+    const lastSelectedFolder = localStorage.getItem('lastSelectedFolder') || '';
+    const lastSelectedSubfolder = localStorage.getItem('lastSelectedSubfolder') || '';
+
     // Fungsi untuk mengonversi waktu dari UTC ke WIB
     function convertToWIB(utcTime) {
         const date = new Date(utcTime);
@@ -316,6 +320,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 githubFolder.appendChild(option);
             });
 
+            // Set last selected folder if available
+            if (lastSelectedFolder && Array.from(githubFolder.options).some(opt => opt.value === lastSelectedFolder)) {
+                githubFolder.value = lastSelectedFolder;
+                // Trigger change event to load subfolders
+                githubFolder.dispatchEvent(new Event('change'));
+            }
+
             if (githubFolder.options.length === 1) {
                 showFloatingNotification('No subfolders found in ig directory.', true);
             } else {
@@ -461,6 +472,10 @@ document.addEventListener('DOMContentLoaded', () => {
         gallery.innerHTML = '';
         mediaUrl.value = '';
 
+        // Save selected folder to localStorage
+        localStorage.setItem('lastSelectedFolder', folderPath);
+        localStorage.removeItem('lastSelectedSubfolder');
+
         const subfolderContainer = document.getElementById('subfolderContainer');
         const subfolderLabel = document.querySelector('label[for="githubSubfolder"]');
         const scheduleAllContainer = document.querySelector('.schedule-all-container');
@@ -513,6 +528,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         githubSubfolder.appendChild(option);
                     });
 
+                    // Set last selected subfolder if available
+                    if (lastSelectedSubfolder && Array.from(githubSubfolder.options).some(opt => opt.value === lastSelectedSubfolder)) {
+                        githubSubfolder.value = lastSelectedSubfolder;
+                        // Trigger change event to load files
+                        githubSubfolder.dispatchEvent(new Event('change'));
+                    }
+
                     if (githubSubfolder.options.length === 1) {
                         showFloatingNotification('No subfolders found in this folder.', true);
                     } else {
@@ -535,6 +557,9 @@ document.addEventListener('DOMContentLoaded', () => {
         scheduledTimes = {};
         gallery.innerHTML = '';
         mediaUrl.value = '';
+
+        // Save selected subfolder to localStorage
+        localStorage.setItem('lastSelectedSubfolder', subfolderPath);
 
         const scheduleAllContainer = document.querySelector('.schedule-all-container');
         scheduleAllContainer.style.display = 'none';
@@ -880,35 +905,35 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function saveCaptionToGithub(file, caption, commitMessage) {
-    try {
-        const folderPath = file.path.substring(0, file.path.lastIndexOf('/'));
-        const metaFileName = `${file.name}.meta.json`;
-        const metaPath = `${folderPath}/${metaFileName}`;
-        const metaContent = JSON.stringify({ caption: caption }, null, 2); // Diperbaiki di sini
-        const base64Content = btoa(unescape(encodeURIComponent(metaContent)));
+        try {
+            const folderPath = file.path.substring(0, file.path.lastIndexOf('/'));
+            const metaFileName = `${file.name}.meta.json`;
+            const metaPath = `${folderPath}/${metaFileName}`;
+            const metaContent = JSON.stringify({ caption: caption }, null, 2); // Diperbaiki di sini
+            const base64Content = btoa(unescape(encodeURIComponent(metaContent)));
 
-        const response = await fetch('/api/upload_to_github', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                fileName: metaPath,
-                content: base64Content,
-                message: commitMessage,
-            }),
-        });
+            const response = await fetch('/api/upload_to_github', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    fileName: metaPath,
+                    content: base64Content,
+                    message: commitMessage,
+                }),
+            });
 
-        if (!response.ok) {
-            throw new Error(`HTTP error uploading meta to GitHub! status: ${response.status}`);
+            if (!response.ok) {
+                throw new Error(`HTTP error uploading meta to GitHub! status: ${response.status}`);
+            }
+
+            console.log(`Meta file ${metaPath} saved to GitHub`);
+            return true;
+        } catch (error) {
+            console.error(`Error saving meta file for ${file.name}:`, error);
+            showFloatingNotification(`Error saving meta file for ${file.name}: ${error.message}`, true);
+            return false;
         }
-
-        console.log(`Meta file ${metaPath} saved to GitHub`);
-        return true;
-    } catch (error) {
-        console.error(`Error saving meta file for ${file.name}:`, error);
-        showFloatingNotification(`Error saving meta file for ${file.name}: ${error.message}`, true);
-        return false;
     }
-}
 
     async function displayGallery(files) {
         gallery.innerHTML = '';
@@ -955,6 +980,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         const sortedImageFiles = [...withSchedule, ...withoutSchedule];
+
+        console.log('Sorted image files:', sortedImageFiles.map(file => file.name));
+
+        function format [...withSchedule, ...withoutSchedule];
 
         console.log('Sorted image files:', sortedImageFiles.map(file => file.name));
 
@@ -1478,7 +1507,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td class="editable-time" data-schedule-id="${schedule.scheduleId}">
                     <input type="datetime-local" class="time-input" value="${formattedWibTime}">
                 </td>
-                <td>${schedule.completed ? 'Selesai' : 'Menunggu'}</td>
+                <td>${schedule.completed ? 'proses...' : 'Menunggu'}</td>
                 <td>
                     <button class="delete-btn" data-schedule-id="${schedule.scheduleId}">Hapus</button>
                 </td>
