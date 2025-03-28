@@ -114,12 +114,14 @@ async function runScheduledPosts() {
                     const minTimeDifference = 60 * 1000; // 1 menit dalam milidetik
                     const maxTimeDifference = 5 * 60 * 1000; // 5 menit dalam milidetik
 
-                    if (timeDifference < minTimeDifference) {
+                    // Jika waktu sama (timeDifference === 0), izinkan pemrosesan
+                    if (timeDifference === 0) {
+                        console.log(`Processing schedule for ${schedule.username} at the same time as the last processed schedule: ${schedule.time}.`);
+                    } else if (timeDifference < minTimeDifference) {
                         console.log(`Skipping container creation for ${schedule.username}: Next schedule at ${schedule.time} is too close (less than 1 minute) to the last processed schedule.`);
                         updatedSchedules.push(schedule);
                         continue;
-                    }
-                    if (timeDifference > maxTimeDifference) {
+                    } else if (timeDifference > maxTimeDifference) {
                         console.log(`Skipping container creation for ${schedule.username}: Next schedule at ${schedule.time} is too far (more than 5 minutes) from the last processed schedule.`);
                         updatedSchedules.push(schedule);
                         continue;
