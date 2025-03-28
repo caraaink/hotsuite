@@ -80,6 +80,7 @@ async function runScheduledPosts() {
 
         let updatedSchedules = [];
         let hasProcessedSchedule = false;
+        let lastProcessedTime = null;
 
         // Langkah 1: Jika ada container ID dari cronjob sebelumnya, posting sekarang
         if (pendingContainer) {
@@ -98,6 +99,8 @@ async function runScheduledPosts() {
                     return schedule;
                 });
                 await kv.set(SCHEDULE_KEY, updatedSchedules);
+                // Simpan waktu jadwal yang baru saja diposting
+                lastProcessedTime = sortedSchedules.find(schedule => schedule.scheduleId === pendingContainer.scheduleId)?.timeUTC || nowUTC;
             }
             // Hapus container ID setelah diproses
             await kv.set(CONTAINER_KEY, null);
@@ -114,6 +117,25 @@ async function runScheduledPosts() {
 
             if (nowUTC >= scheduledTimeUTC && !schedule.completed) {
                 foundMatchingSchedule = true;
+
+                // Jika ada jadwal sebelumnya yang baru saja diposting, periksa jeda waktu
+                if (lastProcessedTime) {
+                    const timeDifference = scheduledTimeUTC - lastProcessedTime;
+                    const minTimeDifference = 60 * 1000; // 1 menit dalam milidetik
+                    const maxTimeDifference = 5 * 60 * 1000; // 5 menit dalam milidetik
+
+                    if (timeDifference < minTimeDifference) {
+                        console.log(`Skipping container creation for ${schedule.username}: Next schedule at ${schedule.time} is too close (less than 1 minute) to the last processed schedule.`);
+                        updatedSchedules.push(schedule);
+                        continue;
+                    }
+                    if (timeDifference > maxTimeDifference) {
+                        console.log(`Skipping container creation for ${schedule.username}: Next schedule at ${schedule.time} is too far (more than 5 minutes) from the last processed schedule.`);
+                        updatedSchedules.push(schedule);
+                        continue;
+                    }
+                }
+
                 const containerResult = await createMediaContainer(
                     schedule.accountId,
                     schedule.mediaUrl,
