@@ -198,16 +198,6 @@ async function runScheduledPosts() {
                 }))
                 .sort((a, b) => a.timeUTC - b.timeUTC)[0];
             console.log(`No schedules match the current time for processing. Next schedule for ${nextSchedule.username} at ${nextSchedule.time}.`);
-
-            // Tandai jadwal berikutnya sebagai completed: true
-            schedules = schedules.map(schedule => {
-                if (schedule.scheduleId === nextSchedule.scheduleId) {
-                    return { ...schedule, completed: true };
-                }
-                return schedule;
-            });
-            console.log(`Marked next schedule as completed for ${nextSchedule.username} with scheduleId: ${nextSchedule.scheduleId}.`);
-            await kv.set(SCHEDULE_KEY, schedules);
         }
 
         // Pastikan updatedSchedules hanya berisi jadwal yang belum diposting
