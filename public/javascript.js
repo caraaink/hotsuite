@@ -592,36 +592,12 @@ document.addEventListener('DOMContentLoaded', () => {
             customOption.textContent = 'Tambah Folder Baru';
             uploadFolderSelect.appendChild(customOption);
 
-            // Memuat pilihan terakhir dari localStorage
-            const lastFolder = localStorage.getItem('lastUploadFolder');
-            const lastSubfolder = localStorage.getItem('lastUploadSubfolder');
-            const lastCustomFolder = localStorage.getItem('lastCustomFolder');
-
-            if (lastFolder) {
-                uploadFolderSelect.value = lastFolder;
-                if (lastFolder === 'custom' && lastCustomFolder) {
-                    uploadFolderInput.style.display = 'block';
-                    uploadFolderInput.value = lastCustomFolder;
-                } else if (lastFolder) {
-                    const subfolders = await fetchSubfolders(lastFolder);
-                    if (subfolders.length > 0) {
-                        uploadSubfolderSelect.style.display = 'block';
-                        uploadSubfolderSelect.innerHTML = '<option value="">-- Pilih Subfolder --</option>';
-                        subfolders.forEach(subfolder => {
-                            const option = document.createElement('option');
-                            option.value = subfolder.path;
-                            option.textContent = subfolder.name;
-                            uploadSubfolderSelect.appendChild(option);
-                        });
-                        if (lastSubfolder) {
-                            uploadSubfolderSelect.value = lastSubfolder;
-                        }
-                    } else if (lastCustomFolder) {
-                        uploadFolderInput.style.display = 'block';
-                        uploadFolderInput.value = lastCustomFolder;
-                    }
-                }
-            }
+            // Reset ke default saat halaman dimuat ulang
+            uploadFolderSelect.value = '';
+            uploadSubfolderSelect.style.display = 'none';
+            uploadSubfolderSelect.innerHTML = '<option value="">-- Pilih Subfolder --</option>';
+            uploadFolderInput.style.display = 'none';
+            uploadFolderInput.value = '';
         } catch (error) {
             console.error('Error loading upload folders:', error);
             showFloatingNotification(`Error loading upload folders: ${error.message}`, true);
@@ -635,10 +611,6 @@ document.addEventListener('DOMContentLoaded', () => {
         uploadSubfolderSelect.innerHTML = '<option value="">-- Pilih Subfolder --</option>';
         uploadFolderInput.style.display = 'none';
         uploadFolderInput.value = '';
-
-        localStorage.setItem('lastUploadFolder', folderPath);
-        localStorage.removeItem('lastUploadSubfolder');
-        localStorage.removeItem('lastCustomFolder');
 
         if (folderPath === 'custom') {
             uploadFolderInput.style.display = 'block';
@@ -666,21 +638,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     uploadSubfolderSelect.addEventListener('change', () => {
-        const subfolderPath = uploadSubfolderSelect.value;
-        if (subfolderPath) {
+        if (uploadSubfolderSelect.value) {
             uploadFolderInput.style.display = 'none';
             uploadFolderInput.value = '';
-            localStorage.setItem('lastUploadSubfolder', subfolderPath);
-            localStorage.removeItem('lastCustomFolder');
         } else {
             uploadFolderInput.style.display = 'block';
             uploadFolderInput.placeholder = 'Masukkan subfolder (opsional)';
-            localStorage.removeItem('lastUploadSubfolder');
         }
-    });
-
-    uploadFolderInput.addEventListener('input', () => {
-        localStorage.setItem('lastCustomFolder', uploadFolderInput.value.trim());
     });
 
     loadUploadFolders();
