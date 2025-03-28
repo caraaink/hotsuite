@@ -40,6 +40,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const ITEMS_PER_PAGE = 15;
     let isLoadingSchedules = false;
 
+    // Variabel untuk menyimpan pilihan folder sementara
+    let currentFolder = '';
+    let currentSubfolder = '';
+    let currentCustomFolder = '';
+
     // Fungsi untuk mengonversi waktu dari UTC ke WIB
     function convertToWIB(utcTime) {
         const date = new Date(utcTime);
@@ -598,6 +603,33 @@ document.addEventListener('DOMContentLoaded', () => {
             uploadSubfolderSelect.innerHTML = '<option value="">-- Pilih Subfolder --</option>';
             uploadFolderInput.style.display = 'none';
             uploadFolderInput.value = '';
+
+            // Jika ada pilihan sebelumnya setelah unggah, kembalikan
+            if (currentFolder) {
+                uploadFolderSelect.value = currentFolder;
+                if (currentFolder === 'custom' && currentCustomFolder) {
+                    uploadFolderInput.style.display = 'block';
+                    uploadFolderInput.value = currentCustomFolder;
+                } else if (currentFolder) {
+                    const subfolders = await fetchSubfolders(currentFolder);
+                    if (subfolders.length > 0) {
+                        uploadSubfolderSelect.style.display = 'block';
+                        uploadSubfolderSelect.innerHTML = '<option value="">-- Pilih Subfolder --</option>';
+                        subfolders.forEach(subfolder => {
+                            const option = document.createElement('option');
+                            option.value = subfolder.path;
+                            option.textContent = subfolder.name;
+                            uploadSubfolderSelect.appendChild(option);
+                        });
+                        if (currentSubfolder) {
+                            uploadSubfolderSelect.value = currentSubfolder;
+                        }
+                    } else if (currentCustomFolder) {
+                        uploadFolderInput.style.display = 'block';
+                        uploadFolderInput.value = currentCustomFolder;
+                    }
+                }
+            }
         } catch (error) {
             console.error('Error loading upload folders:', error);
             showFloatingNotification(`Error loading upload folders: ${error.message}`, true);
@@ -606,6 +638,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     uploadFolderSelect.addEventListener('change', async () => {
         const folderPath = uploadFolderSelect.value;
+        currentFolder = folderPath;
+        currentSubfolder = '';
+        currentCustomFolder = '';
 
         uploadSubfolderSelect.style.display = 'none';
         uploadSubfolderSelect.innerHTML = '<option value="">-- Pilih Subfolder --</option>';
@@ -638,13 +673,21 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     uploadSubfolderSelect.addEventListener('change', () => {
-        if (uploadSubfolderSelect.value) {
+        const subfolderPath = uploadSubfolderSelect.value;
+        currentSubfolder = subfolderPath;
+        if (subfolderPath) {
             uploadFolderInput.style.display = 'none';
             uploadFolderInput.value = '';
+            currentCustomFolder = '';
         } else {
             uploadFolderInput.style.display = 'block';
             uploadFolderInput.placeholder = 'Masukkan subfolder (opsional)';
+            currentCustomFolder = '';
         }
+    });
+
+    uploadFolderInput.addEventListener('input', () => {
+        currentCustomFolder = uploadFolderInput.value.trim();
     });
 
     loadUploadFolders();
@@ -838,13 +881,14 @@ document.addEventListener('DOMContentLoaded', () => {
             showFloatingNotification(`${mediaFiles.length} file media berhasil diunggah ke GitHub!`);
             displayGallery(allMediaFiles);
 
-            await loadUploadFolders();
-            await loadGithubFolders();
+            // Pertahankan pilihan folder setelah unggah
+            await loadUploadFolders(); // Memuat ulang daftar folder sambil mempertahankan pilihan
         } catch (error) {
             showFloatingNotification(`Error uploading to GitHub: ${error.message}`, true);
             console.error('Error uploading to GitHub:', error);
         } finally {
             spinner.classList.add('hidden');
+            uploadFile.value = ''; // Reset input file setelah unggah
         }
     });
 
@@ -1485,7 +1529,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td class="editable-time" data-schedule-id="${schedule.scheduleId}">
                     <input type="datetime-local" class="time-input" value="${formattedWibTime}">
                 </td>
-                <td class="${schedule.completed ? 'processing' : ''}">${schedule.completed ? '<span class="processing-dots">Proses</span>' : 'Menunggu'}</td>
+                <td class="${schedule.completed ? 'processing' : ''}">${schedule.completed ? '<span class="processing-dots">Process</span>' : 'Menunggu'}</td>
                 <td>
                     <button class="delete-btn" data-schedule-id="${schedule.scheduleId}">Hapus</button>
                 </td>
@@ -1506,7 +1550,7 @@ document.addEventListener('DOMContentLoaded', () => {
             button.addEventListener('click', debounce(handleDeleteClick, 300));
         });
 
-        // Start dot animation for "Proses..."
+        // Start dot animation for "Process..."
         animateProcessingDots();
     }
 
@@ -1516,7 +1560,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let dotCount = 0;
             setInterval(() => {
                 dotCount = (dotCount + 1) % 4;
-                el.textContent = 'Proses' + '.'.repeat(dotCount);
+                el.textContent = 'Process' + '.'.repeat(dotCount);
             }, 500);
         });
     }
