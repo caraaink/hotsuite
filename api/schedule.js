@@ -56,22 +56,6 @@ async function runScheduledPosts() {
             return;
         }
 
-        // Hapus jadwal yang sudah selesai (completed: true) dari database
-        const completedSchedules = schedules.filter(schedule => schedule.completed);
-        if (completedSchedules.length > 0) {
-            const completedUsernames = completedSchedules.map(schedule => schedule.username).join(', ');
-            console.log(`Removing ${completedSchedules.length} completed schedules for users: ${completedUsernames}.`);
-            schedules = schedules.filter(schedule => !schedule.completed);
-            await kv.set(SCHEDULE_KEY, schedules);
-        }
-
-        const pendingSchedules = schedules.filter(schedule => !schedule.completed);
-        
-        if (pendingSchedules.length === 0) {
-            console.log('No pending schedules to process after removing completed ones.');
-            return;
-        }
-
         const now = new Date();
         const nowUTC = now.getTime();
 
@@ -99,15 +83,6 @@ async function runScheduledPosts() {
                 pendingContainer.username
             );
             if (publishResult.success) {
-                // Tandai jadwal sebagai selesai (completed: true) sebelum menghapus
-                schedules = schedules.map(schedule => {
-                    if (schedule.scheduleId === pendingContainer.scheduleId) {
-                        return { ...schedule, completed: true };
-                    }
-                    return schedule;
-                });
-                console.log(`Marked schedule as completed for ${pendingContainer.username} with scheduleId: ${pendingContainer.scheduleId}.`);
-
                 // Hapus jadwal yang baru saja diposting dari database
                 schedules = schedules.filter(schedule => schedule.scheduleId !== pendingContainer.scheduleId);
                 console.log(`Removed posted schedule for ${pendingContainer.username} with scheduleId: ${pendingContainer.scheduleId}.`);
@@ -189,9 +164,9 @@ async function runScheduledPosts() {
             }
         }
 
-        if (!foundMatchingSchedule && pendingSchedules.length > 0) {
+        if (!foundMatchingSchedule && schedules.length > 0) {
             // Ambil jadwal berikutnya yang belum waktunya
-            const nextSchedule = pendingSchedules
+            const nextSchedule = schedules
                 .map(schedule => ({
                     ...schedule,
                     timeUTC: new Date(schedule.time + ':00').getTime() - 7 * 60 * 60 * 1000
