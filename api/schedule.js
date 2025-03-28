@@ -113,7 +113,8 @@ async function runScheduledPosts() {
         // Langkah 2: Proses jadwal baru untuk membuat container ID
         let foundMatchingSchedule = false;
         for (const schedule of sortedSchedules) {
-            if (schedule.completed) {
+            // Skip jika jadwal sudah tidak ada di schedules (misalnya sudah diposting)
+            if (!schedules.some(s => s.scheduleId === schedule.scheduleId)) {
                 continue;
             }
 
@@ -178,6 +179,9 @@ async function runScheduledPosts() {
                 .sort((a, b) => a.timeUTC - b.timeUTC)[0];
             console.log(`No schedules match the current time for processing. Next schedule for ${nextSchedule.username} at ${nextSchedule.time}.`);
         }
+
+        // Pastikan updatedSchedules hanya berisi jadwal yang belum diposting
+        updatedSchedules = updatedSchedules.filter(schedule => schedules.some(s => s.scheduleId === schedule.scheduleId));
 
         if (updatedSchedules.length > 0) {
             await kv.set(SCHEDULE_KEY, updatedSchedules);
