@@ -1,61 +1,288 @@
-async function loadSchedules() {
-    if (isLoadingSchedules) {
-        console.log('loadSchedules already in progress, skipping...');
-        return;
-    }
+const axios = require('axios');
+const { kv } = require('@vercel/kv');
+const { v4: uuidv4 } = require('uuid');
 
-    isLoadingSchedules = true;
+const SCHEDULE_KEY = 'schedules';
+const CONTAINER_KEY = 'pending_container';
+
+// Fungsi untuk membuat container ID tanpa langsung memposting
+async function createMediaContainer(igAccountId, mediaUrl, caption, userToken, username) {
     try {
-        scheduleTableBody.innerHTML = '<tr><td colspan="8">Memuat jadwal...</td></tr>';
-        const res = await fetch('/api/get_schedules');
-        if (!res.ok) {
-            throw new Error(`HTTP error fetching schedules! status: ${res.status}`);
+        console.log(`Creating media container for ${username} with params:`, { igAccountId, mediaUrl, caption });
+        const isVideo = mediaUrl.toLowerCase().endsWith('.mp4');
+        const mediaEndpoint = `https://graph.facebook.com/v19.0/${igAccountId}/media`;
+        const params = {
+            [isVideo ? 'video_url' : 'image_url']: mediaUrl,
+            caption: caption || '',
+            access_token: userToken,
+            ...(isVideo && { media_type: 'REELS' }),
+        };
+
+        const mediaResponse = await axios.post(mediaEndpoint, params);
+        console.log(`Media container created for ${username}:`, mediaResponse.data);
+        return { success: true, creationId: mediaResponse.data.id };
+    } catch (error) {
+        console.error(`Error creating media container for ${username}:`, error.response?.data || error.message);
+        throw new Error(`Failed to create media container for ${username}: ${error.message}`);
+    }
+}
+
+// Fungsi untuk memposting ke Instagram menggunakan container ID
+async function publishToInstagram(igAccountId, creationId, userToken, username) {
+    try {
+        console.log(`Publishing to Instagram for ${username} with creationId:`, creationId);
+        const publishEndpoint = `https://graph.facebook.com/v19.0/${igAccountId}/media_publish`;
+        const publishParams = {
+            creation_id: creationId,
+            access_token: userToken,
+        };
+
+        const publishResponse = await axios.post(publishEndpoint, publishParams);
+        console.log(`Instagram API publish response for ${username}:`, publishResponse.data);
+        return { success: true, creationId: publishResponse.data.id };
+    } catch (error) {
+        console.error(`Error publishing to Instagram for ${username}:`, error.response?.data || error.message);
+        throw new Error(`Failed to publish to Instagram for ${username}: ${error.message}`);
+    }
+}
+
+// Fungsi untuk menjalankan jadwal
+async function runScheduledPosts() {
+    try {
+        let schedules = (await kv.get(SCHEDULE_KEY)) || [];
+        
+        if (!schedules || schedules.length === 0) {
+            console.log('No schedules available to process.');
+            return { message: 'No schedules available to process.' };
         }
-        const data = await res.json();
-        console.log('Schedules fetched:', data);
 
-        allSchedules = data.schedules || [];
+        const now = new Date();
+        const nowUTC = now.getTime();
 
-        allSchedules.sort((a, b) => new Date(a.time) - new Date(b.time));
+        // Urutkan semua jadwal berdasarkan waktu (time) dari terlama ke terbaru
+        const sortedSchedules = schedules
+            .map(schedule => ({
+                ...schedule,
+                timeUTC: new Date(schedule.time + ':00').getTime() - 7 * 60 * 60 * 1000
+            }))
+            .sort((a, b) => a.timeUTC - b.timeUTC); // Terlama ke terbaru
 
-        let filteredSchedules = allSchedules;
-        if (selectedAccountNum) {
-            filteredSchedules = filteredSchedules.filter(schedule => schedule.accountNum === selectedAccountNum);
+        // Ambil container ID yang tersimpan dari cronjob sebelumnya
+        const pendingContainer = (await kv.get(CONTAINER_KEY)) || null;
+
+        let updatedSchedules = [];
+        let hasProcessedSchedule = false;
+        let lastProcessedTime = null;
+
+        // Langkah 1: Jika ada container ID dari cronjob sebelumnya, posting sekarang
+        if (pendingContainer) {
+            const publishResult = await publishToInstagram(
+                pendingContainer.accountId,
+                pendingContainer.creationId,
+                pendingContainer.userToken,
+                pendingContainer.username
+            );
+            if (publishResult.success) {
+                // Cari jadwal yang sesuai untuk mendapatkan informasi tambahan
+                const publishedSchedule = sortedSchedules.find(schedule => schedule.scheduleId === pendingContainer.scheduleId);
+                const scheduleTime = publishedSchedule ? publishedSchedule.time : 'Unknown time';
+
+                // Update jadwal dengan published: true
+                schedules = schedules.map(schedule => {
+                    if (schedule.scheduleId === pendingContainer.scheduleId) {
+                        return { ...schedule, published: true };
+                    }
+                    return schedule;
+                });
+                console.log(`Marked schedule as published for ${pendingContainer.username} with scheduleId: ${pendingContainer.scheduleId}.`);
+
+                // Hapus jadwal yang baru saja diposting dari database
+                schedules = schedules.filter(schedule => schedule.scheduleId !== pendingContainer.scheduleId);
+                console.log(`Removed posted schedule for ${pendingContainer.username} with scheduleId: ${pendingContainer.scheduleId}.`);
+                await kv.set(SCHEDULE_KEY, schedules);
+
+                // Simpan waktu jadwal yang baru saja diposting
+                lastProcessedTime = sortedSchedules.find(schedule => schedule.scheduleId === pendingContainer.scheduleId)?.timeUTC || nowUTC;
+
+                // Kembalikan pesan dengan informasi detail
+                return {
+                    message: 'Scheduler running',
+                    details: {
+                        message: 'Published successfully, moving to remove step',
+                        username: pendingContainer.username,
+                        scheduleId: pendingContainer.scheduleId,
+                        scheduleTime: scheduleTime,
+                        creationId: publishResult.creationId
+                    }
+                };
+            }
+            // Hapus container ID setelah diproses
+            await kv.set(CONTAINER_KEY, null);
         }
-        if (selectedAccountId) {
-            filteredSchedules = filteredSchedules.filter(schedule => schedule.accountId === selectedAccountId);
-        }
 
-        currentPage = 1;
-        updateScheduleVisibility(filteredSchedules);
+        // Langkah 2: Proses jadwal baru untuk membuat container ID
+        let foundMatchingSchedule = false;
+        for (const schedule of sortedSchedules) {
+            // Skip jika jadwal sudah tidak ada di schedules (misalnya sudah diposting)
+            if (!schedules.some(s => s.scheduleId === schedule.scheduleId)) {
+                continue;
+            }
 
-        // Panggil /api/scheduler untuk memeriksa status terbaru
-        const schedulerRes = await fetch('/api/scheduler');
-        if (schedulerRes.ok) {
-            const schedulerData = await schedulerRes.json();
-            if (schedulerData.details && schedulerData.details.message === 'Published successfully, moving to remove step') {
-                const { username, scheduleId, scheduleTime } = schedulerData.details;
-                showFloatingNotification(`Berhasil mempublish untuk ${username} (ID: ${scheduleId}) pada ${scheduleTime}`);
-            } else if (schedulerData.details && schedulerData.details.message === 'Container created, waiting for next cron to publish') {
-                const { username, scheduleId, scheduleTime } = schedulerData.details;
-                showFloatingNotification(`Container dibuat untuk ${username} (ID: ${scheduleId}) pada ${scheduleTime}, menunggu publish berikutnya`);
-            } else if (schedulerData.details && schedulerData.details.message === 'No schedules match the current time for processing') {
-                const { username, scheduleId, scheduleTime } = schedulerData.details.nextSchedule;
-                showFloatingNotification(`Tidak ada jadwal untuk diproses. Jadwal berikutnya untuk ${username} (ID: ${scheduleId}) pada ${scheduleTime}`);
+            const scheduledTimeUTC = new Date(schedule.time + ':00').getTime() - 7 * 60 * 60 * 1000;
+
+            if (nowUTC >= scheduledTimeUTC && !schedule.completed) {
+                foundMatchingSchedule = true;
+
+                // Jika ada jadwal sebelumnya yang baru saja diposting, periksa jeda waktu
+                if (lastProcessedTime) {
+                    const timeDifference = scheduledTimeUTC - lastProcessedTime;
+                    const minTimeDifference = 60 * 1000; // 1 menit dalam milidetik
+                    const maxTimeDifference = 5 * 60 * 1000; // 5 menit dalam milidetik
+
+                    // Jika waktu sama (timeDifference === 0), izinkan pemrosesan
+                    if (timeDifference === 0) {
+                        console.log(`Processing schedule for ${schedule.username} at the same time as the last processed schedule: ${schedule.time}.`);
+                    } else if (timeDifference < minTimeDifference) {
+                        console.log(`Skipping container creation for ${schedule.username}: Next schedule at ${schedule.time} is too close (less than 1 minute) to the last processed schedule.`);
+                        updatedSchedules.push(schedule);
+                        continue;
+                    } else if (timeDifference > maxTimeDifference) {
+                        console.log(`Skipping container creation for ${schedule.username}: Next schedule at ${schedule.time} is too far (more than 5 minutes) from the last processed schedule.`);
+                        updatedSchedules.push(schedule);
+                        continue;
+                    }
+                }
+
+                const containerResult = await createMediaContainer(
+                    schedule.accountId,
+                    schedule.mediaUrl,
+                    schedule.caption,
+                    schedule.userToken,
+                    schedule.username
+                );
+                if (containerResult.success) {
+                    // Tandai jadwal sebagai selesai (completed: true)
+                    schedules = schedules.map(s => {
+                        if (s.scheduleId === schedule.scheduleId) {
+                            return { ...s, completed: true };
+                        }
+                        return s;
+                    });
+                    console.log(`Marked schedule as completed for ${schedule.username} with scheduleId: ${schedule.scheduleId}.`);
+                    await kv.set(SCHEDULE_KEY, schedules);
+
+                    // Simpan container ID untuk diposting di cronjob berikutnya
+                    const containerData = {
+                        scheduleId: schedule.scheduleId,
+                        accountId: schedule.accountId,
+                        username: schedule.username,
+                        creationId: containerResult.creationId,
+                        userToken: schedule.userToken
+                    };
+                    await kv.set(CONTAINER_KEY, containerData);
+                    hasProcessedSchedule = true;
+
+                    // Kembalikan pesan dengan informasi detail tentang container yang dibuat
+                    return {
+                        message: 'Scheduler running',
+                        details: {
+                            message: 'Container created, waiting for next cron to publish',
+                            username: schedule.username,
+                            scheduleId: schedule.scheduleId,
+                            scheduleTime: schedule.time,
+                            creationId: containerResult.creationId
+                        }
+                    };
+                } else {
+                    schedule.error = containerResult.error;
+                    updatedSchedules.push(schedule);
+                }
+            } else {
+                updatedSchedules.push(schedule);
             }
         }
 
-        if (filteredSchedules.length > 0) {
-            selectAll.addEventListener('change', handleSelectAllChange);
-            deleteSelected.addEventListener('click', handleDeleteSelectedClick);
+        if (!foundMatchingSchedule && schedules.length > 0) {
+            // Ambil jadwal berikutnya yang belum waktunya
+            const nextSchedule = schedules
+                .map(schedule => ({
+                    ...schedule,
+                    timeUTC: new Date(schedule.time + ':00').getTime() - 7 * 60 * 60 * 1000
+                }))
+                .sort((a, b) => a.timeUTC - b.timeUTC)[0];
+            console.log(`No schedules match the current time for processing. Next schedule for ${nextSchedule.username} at ${nextSchedule.time}.`);
+            return {
+                message: 'Scheduler running',
+                details: {
+                    message: 'No schedules match the current time for processing',
+                    nextSchedule: {
+                        username: nextSchedule.username,
+                        scheduleId: nextSchedule.scheduleId,
+                        scheduleTime: nextSchedule.time
+                    }
+                }
+            };
         }
+
+        // Pastikan updatedSchedules hanya berisi jadwal yang belum diposting
+        updatedSchedules = updatedSchedules.filter(schedule => schedules.some(s => s.scheduleId === schedule.scheduleId));
+
+        if (updatedSchedules.length > 0) {
+            await kv.set(SCHEDULE_KEY, updatedSchedules);
+        }
+
+        return { message: 'Scheduler running', details: { message: 'No action taken' } };
     } catch (error) {
-        showFloatingNotification(`Error loading schedules: ${error.message}`, true);
-        console.error('Error fetching schedules:', error);
-        scheduleTableBody.innerHTML = '<tr><td colspan="8">Gagal memuat jadwal.</td></tr>';
-        totalSchedules.textContent = 'Total: 0 jadwal';
-        updateScheduleVisibility([]);
-    } finally {
-        isLoadingSchedules = false;
+        console.error('Error running scheduled posts:', error.message);
+        throw new Error(`Failed to run scheduled posts: ${error.message}`);
     }
 }
+
+// Vercel Serverless Function
+module.exports = async (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+
+    if (req.method === 'POST') {
+        const { accountId, username, mediaUrl, time, userToken, accountNum, completed } = req.body;
+        const caption = req.body.caption || '';
+
+        if (!accountId || !mediaUrl || !time || !userToken || !accountNum || !username) {
+            console.error('Validation failed: Missing required fields', { accountId, mediaUrl, time, userToken, accountNum, username });
+            return res.status(400).json({ error: 'Missing required fields (accountId, mediaUrl, time, userToken, accountNum, username)' });
+        }
+
+        try {
+            let schedules = (await kv.get(SCHEDULE_KEY)) || [];
+            const newSchedule = {
+                scheduleId: uuidv4(),
+                accountId,
+                username,
+                mediaUrl,
+                caption,
+                time,
+                userToken,
+                accountNum,
+                completed: completed || false,
+                published: false,
+            };
+            schedules.push(newSchedule);
+            await kv.set(SCHEDULE_KEY, schedules);
+            return res.status(200).json({ message: 'Post scheduled successfully', scheduleId: newSchedule.scheduleId });
+        } catch (error) {
+            console.error('Error saving schedule:', error.message);
+            return res.status(500).json({ error: `Failed to save schedule: ${error.message}` });
+        }
+    }
+
+    if (req.method === 'GET') {
+        try {
+            const result = await runScheduledPosts();
+            return res.status(200).json(result);
+        } catch (error) {
+            console.error('Error running scheduler:', error.message);
+            return res.status(500).json({ error: `Failed to run scheduler: ${error.message}` });
+        }
+    }
+
+    return res.status(405).json({ error: 'Method not allowed' });
+};
