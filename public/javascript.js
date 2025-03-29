@@ -1546,6 +1546,26 @@ uploadFolderInput.addEventListener('input', () => {
             const wibTime = convertToWIB(schedule.time);
             const formattedWibTime = formatToDatetimeLocal(wibTime);
             const row = document.createElement('tr');
+            // Logika status: "Process" saat completed true (tahap create), "Selesai" saat tidak ada pendingContainer dan completed true (tahap publish selesai)
+            let statusText = 'Menunggu';
+            let statusClass = '';
+            if (schedule.completed) {
+                statusText = '<span class="processing-dots">Process</span>'; // Saat create container
+                statusClass = 'processing';
+            }
+            // Periksa apakah sudah dipublish dengan memanggil API untuk cek pendingContainer
+            fetch('/api/get_pending_container')
+                .then(res => res.json())
+                .then(data => {
+                    if (!data.pendingContainer && schedule.completed) {
+                        statusText = 'Selesai'; // Saat publish selesai
+                        statusClass = 'completed';
+                        row.cells[6].className = statusClass; // Update class pada kolom status
+                        row.cells[6].innerHTML = statusText; // Update teks status
+                    }
+                })
+                .catch(err => console.error('Error checking pending container:', err));
+
             row.innerHTML = `
                 <td>${globalIndex + 1}</td>
                 <td><input type="checkbox" class="schedule-checkbox" data-schedule-id="${schedule.scheduleId}"></td>
@@ -1555,7 +1575,7 @@ uploadFolderInput.addEventListener('input', () => {
                 <td class="editable-time" data-schedule-id="${schedule.scheduleId}">
                     <input type="datetime-local" class="time-input" value="${formattedWibTime}">
                 </td>
-                <td class="${schedule.completed ? 'processing' : ''}">${schedule.completed ? '<span class="processing-dots">Process</span>' : 'Menunggu'}</td>
+                <td class="${statusClass}">${statusText}</td>
                 <td>
                     <button class="delete-btn" data-schedule-id="${schedule.scheduleId}">Hapus</button>
                 </td>
@@ -1645,7 +1665,7 @@ uploadFolderInput.addEventListener('input', () => {
         const endIndex = startIndex + ITEMS_PER_PAGE;
         const pageSchedules = schedules.slice(startIndex, endIndex);
         renderSchedules(pageSchedules, startIndex);
-        renderPagination(schedules); // Perbarui pagination setelah memuat halaman
+        renderPagination(schedules); // Perbarui pagination setelah mem$1
     }
 
     // Define event handlers for selectAll and deleteSelected
