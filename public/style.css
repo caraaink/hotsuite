@@ -1404,10 +1404,6 @@ body.dark-mode .select-group select {
     display: inline-block;
     min-width: 60px; /* Menjaga lebar agar tidak bergoyang */
 }
-.completed {
-    color: green;
-    font-weight: bold;
-}
 /* Sembunyikan label tertentu secara default */
 .select-group label[for="accountId"],
 .select-group label[for="githubSubfolder"] {
