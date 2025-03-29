@@ -53,7 +53,7 @@ async function runScheduledPosts() {
         
         if (!schedules || schedules.length === 0) {
             console.log('No schedules available to process.');
-            return { message: 'No schedules available to process.' };
+            return;
         }
 
         const now = new Date();
@@ -83,19 +83,6 @@ async function runScheduledPosts() {
                 pendingContainer.username
             );
             if (publishResult.success) {
-                // Cari jadwal yang sesuai untuk mendapatkan informasi tambahan
-                const publishedSchedule = sortedSchedules.find(schedule => schedule.scheduleId === pendingContainer.scheduleId);
-                const scheduleTime = publishedSchedule ? publishedSchedule.time : 'Unknown time';
-
-                // Update jadwal dengan published: true
-                schedules = schedules.map(schedule => {
-                    if (schedule.scheduleId === pendingContainer.scheduleId) {
-                        return { ...schedule, published: true };
-                    }
-                    return schedule;
-                });
-                console.log(`Marked schedule as published for ${pendingContainer.username} with scheduleId: ${pendingContainer.scheduleId}.`);
-
                 // Hapus jadwal yang baru saja diposting dari database
                 schedules = schedules.filter(schedule => schedule.scheduleId !== pendingContainer.scheduleId);
                 console.log(`Removed posted schedule for ${pendingContainer.username} with scheduleId: ${pendingContainer.scheduleId}.`);
@@ -103,18 +90,6 @@ async function runScheduledPosts() {
 
                 // Simpan waktu jadwal yang baru saja diposting
                 lastProcessedTime = sortedSchedules.find(schedule => schedule.scheduleId === pendingContainer.scheduleId)?.timeUTC || nowUTC;
-
-                // Kembalikan pesan dengan informasi detail
-                return {
-                    message: 'Scheduler running',
-                    details: {
-                        message: 'Published successfully, moving to remove step',
-                        username: pendingContainer.username,
-                        scheduleId: pendingContainer.scheduleId,
-                        scheduleTime: scheduleTime,
-                        creationId: publishResult.creationId
-                    }
-                };
             }
             // Hapus container ID setelah diproses
             await kv.set(CONTAINER_KEY, null);
@@ -181,18 +156,7 @@ async function runScheduledPosts() {
                     };
                     await kv.set(CONTAINER_KEY, containerData);
                     hasProcessedSchedule = true;
-
-                    // Kembalikan pesan dengan informasi detail tentang container yang dibuat
-                    return {
-                        message: 'Scheduler running',
-                        details: {
-                            message: 'Container created, waiting for next cron to publish',
-                            username: schedule.username,
-                            scheduleId: schedule.scheduleId,
-                            scheduleTime: schedule.time,
-                            creationId: containerResult.creationId
-                        }
-                    };
+                    break; // Hanya proses satu jadwal per cronjob
                 } else {
                     schedule.error = containerResult.error;
                     updatedSchedules.push(schedule);
@@ -211,17 +175,6 @@ async function runScheduledPosts() {
                 }))
                 .sort((a, b) => a.timeUTC - b.timeUTC)[0];
             console.log(`No schedules match the current time for processing. Next schedule for ${nextSchedule.username} at ${nextSchedule.time}.`);
-            return {
-                message: 'Scheduler running',
-                details: {
-                    message: 'No schedules match the current time for processing',
-                    nextSchedule: {
-                        username: nextSchedule.username,
-                        scheduleId: nextSchedule.scheduleId,
-                        scheduleTime: nextSchedule.time
-                    }
-                }
-            };
         }
 
         // Pastikan updatedSchedules hanya berisi jadwal yang belum diposting
@@ -230,8 +183,6 @@ async function runScheduledPosts() {
         if (updatedSchedules.length > 0) {
             await kv.set(SCHEDULE_KEY, updatedSchedules);
         }
-
-        return { message: 'Scheduler running', details: { message: 'No action taken' } };
     } catch (error) {
         console.error('Error running scheduled posts:', error.message);
         throw new Error(`Failed to run scheduled posts: ${error.message}`);
@@ -263,7 +214,6 @@ module.exports = async (req, res) => {
                 userToken,
                 accountNum,
                 completed: completed || false,
-                published: false,
             };
             schedules.push(newSchedule);
             await kv.set(SCHEDULE_KEY, schedules);
@@ -276,8 +226,8 @@ module.exports = async (req, res) => {
 
     if (req.method === 'GET') {
         try {
-            const result = await runScheduledPosts();
-            return res.status(200).json(result);
+            await runScheduledPosts();
+            return res.status(200).json({ message: 'Scheduler running' });
         } catch (error) {
             console.error('Error running scheduler:', error.message);
             return res.status(500).json({ error: `Failed to run scheduler: ${error.message}` });

@@ -34,13 +34,6 @@ module.exports = async (req, res) => {
         }
     }
 
-    // Validasi published jika ada
-    if ('published' in updatedData) {
-        if (typeof updatedData.published !== 'boolean') {
-            return res.status(400).json({ error: 'Invalid published: Published must be a boolean' });
-        }
-    }
-
     try {
         let schedules = (await kv.get(SCHEDULE_KEY)) || [];
         if (!Array.isArray(schedules)) {

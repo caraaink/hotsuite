@@ -1,7 +1,5 @@
 const { kv } = require('@vercel/kv');
 
-const SCHEDULE_KEY = 'schedules';
-
 module.exports = async (req, res) => {
     const { accountId, mediaUrl, caption, userToken } = req.body;
 
@@ -53,22 +51,6 @@ module.exports = async (req, res) => {
         }
 
         const publishData = await publishResponse.json();
-
-        // Langkah 3: Periksa apakah ada jadwal terkait dan update published
-        let schedules = (await kv.get(SCHEDULE_KEY)) || [];
-        const scheduleIndex = schedules.findIndex(schedule => 
-            schedule.accountId === accountId && schedule.mediaUrl === mediaUrl && !schedule.published
-        );
-
-        if (scheduleIndex !== -1) {
-            schedules[scheduleIndex] = {
-                ...schedules[scheduleIndex],
-                published: true,
-            };
-            await kv.set(SCHEDULE_KEY, schedules);
-            console.log(`Marked schedule as published for mediaUrl: ${mediaUrl}`);
-        }
-
         res.status(200).json({ message: 'Berhasil dipublikasikan ke Instagram!', publishData });
     } catch (error) {
         console.error('Error publishing to Instagram:', error.message);
