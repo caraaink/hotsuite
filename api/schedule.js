@@ -153,13 +153,16 @@ module.exports = async (req, res) => {
     if (req.method === 'GET') {
         try {
             const result = await runScheduledPosts();
-            return res.status(200).json({ 
-                message: result.processed ? 'Processed successfully' : 'No tasks processed',
-                error: result.error || null
-            });
+            // Jika processed: true, kembalikan respons tanpa properti error
+            if (result.processed) {
+                return res.status(200).json({ message: 'Processed successfully' });
+            }
+            // Jika tidak ada yang diproses, tetap kembalikan tanpa error
+            return res.status(200).json({ message: 'No tasks processed' });
         } catch (error) {
             console.error('Scheduler failed:', error.message);
-            return res.status(500).json({ error: `Scheduler error: ${error.message}` });
+            // Hanya sertakan properti error jika benar-benar ada error
+            return res.status(500).json({ message: 'Scheduler failed', error: error.message });
         }
     }
 
