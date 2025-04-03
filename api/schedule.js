@@ -21,14 +21,14 @@ const axiosWithTimeout = async (url, params, timeoutMs = TIMEOUT_MS) => {
 };
 
 // Fungsi untuk membuat container
-async function createMediaContainer(igAccountId, mediaUrl, caption, userToken, username) {
-    const isVideo = mediaUrl.toLowerCase().endsWith('.mp4');
+async function createMediaContainer(igAccountId, mediaUrl, caption, userToken, username, mediaType) {
+    const isVideo = mediaType === 'video';
     const mediaEndpoint = `https://graph.facebook.com/v19.0/${igAccountId}/media`;
     const params = {
         [isVideo ? 'video_url' : 'image_url']: mediaUrl,
         caption: caption || '',
         access_token: userToken,
-        ...(isVideo && { media_type: 'REELS' }),
+        ...(isVideo && { media_type: 'REELS' }), // Gunakan REELS untuk video
     };
     const mediaResponse = await axiosWithTimeout(mediaEndpoint, params);
     return { success: true, creationId: mediaResponse.data.id };
@@ -92,7 +92,8 @@ async function runScheduledPosts() {
                     schedule.mediaUrl,
                     schedule.caption,
                     schedule.userToken,
-                    schedule.username
+                    schedule.username,
+                    schedule.mediaType // Tambahkan mediaType ke argumen
                 );
                 if (containerResult.success) {
                     const updatedSchedules = schedules.map(s =>
@@ -124,7 +125,7 @@ module.exports = async (req, res) => {
     res.setHeader('Content-Type', 'application/json');
 
     if (req.method === 'POST') {
-        const { accountId, username, mediaUrl, time, userToken, accountNum, caption = '' } = req.body;
+        const { accountId, username, mediaUrl, time, userToken, accountNum, caption = '', mediaType } = req.body;
         if (!accountId || !mediaUrl || !time || !userToken || !accountNum || !username) {
             return res.status(400).json({ error: 'Missing required fields' });
         }
@@ -141,6 +142,7 @@ module.exports = async (req, res) => {
                 userToken,
                 accountNum,
                 completed: false,
+                mediaType, // Simpan mediaType di jadwal
             };
             await kv.set(SCHEDULE_KEY, [...schedules, newSchedule]);
             return res.status(200).json({ message: 'Post scheduled', scheduleId: newSchedule.scheduleId });

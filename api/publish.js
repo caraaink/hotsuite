@@ -1,13 +1,19 @@
 const { kv } = require('@vercel/kv');
 
 module.exports = async (req, res) => {
-    const { accountId, mediaUrl, caption, userToken } = req.body;
+    const { accountId, mediaUrl, caption, userToken, mediaType } = req.body;
 
     if (!accountId || !mediaUrl || !userToken) {
         return res.status(400).json({ error: 'Missing required fields' });
     }
 
     try {
+        // Tentukan apakah ini gambar atau video berdasarkan mediaType
+        const isVideo = mediaType === 'video';
+        const mediaPayload = isVideo
+            ? { video_url: mediaUrl, caption: caption || '', media_type: 'VIDEO' }
+            : { image_url: mediaUrl, caption: caption || '' };
+
         // Langkah 1: Buat media container menggunakan Facebook Graph API untuk Instagram
         const response = await fetch(`https://graph.facebook.com/v20.0/${accountId}/media`, {
             method: 'POST',
@@ -15,10 +21,7 @@ module.exports = async (req, res) => {
                 'Authorization': `Bearer ${userToken}`,
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                image_url: mediaUrl,
-                caption: caption || '',
-            }),
+            body: JSON.stringify(mediaPayload),
         });
 
         if (!response.ok) {
