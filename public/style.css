@@ -175,7 +175,30 @@ body.dark-mode .gallery-item .schedule-time {
     background-color: #666;
     cursor: not-allowed;
 }
+/* Tambahkan gaya untuk video di galeri */
+.gallery-item video {
+    width: 100%;
+    height: 120px; /* Sesuaikan dengan tinggi gambar */
+    object-fit: cover;
+    border-radius: 6px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: border 0.3s ease;
+    position: relative;
+}
 
+.gallery-item video:hover,
+.gallery-item video.selected {
+    border: 2px solid #3498db;
+}
+
+/* Sesuaikan pratinjau media di tabel jadwal untuk video */
+.schedule-media-preview.video-preview {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: 4px;
+}
 /* Upload Form */
 .upload-form {
     display: grid;
