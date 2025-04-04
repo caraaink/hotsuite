@@ -8,10 +8,10 @@ module.exports = async (req, res) => {
     }
 
     try {
-        // Tentukan apakah ini gambar atau video berdasarkan mediaType
-        const isVideo = mediaType === 'video';
+        // Tentukan apakah ini gambar atau Reels berdasarkan mediaType
+        const isVideo = mediaType === 'REELS';
         const mediaPayload = isVideo
-            ? { video_url: mediaUrl, caption: caption || '', media_type: 'VIDEO' }
+            ? { video_url: mediaUrl, caption: caption || '', media_type: 'REELS' } // Ubah ke REELS untuk video
             : { image_url: mediaUrl, caption: caption || '' };
 
         // Langkah 1: Buat media container menggunakan Facebook Graph API untuk Instagram
