@@ -567,100 +567,54 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     async function loadUploadFolders() {
-        try {
-            const res = await fetch('/api/get_github_files?path=ig');
-            if (!res.ok) {
-                throw new Error(`HTTP error! status: ${res.status}`);
-            }
-            const data = await res.json();
-            const folders = data.files.filter(item => item.type === 'dir');
-            folders.sort(naturalSort);
-
-            uploadFolderSelect.innerHTML = '<option value="">-- Pilih Folder --</option>';
-            
-            const defaultOption = document.createElement('option');
-            defaultOption.value = 'ig/image';
-            defaultOption.textContent = 'ig/image';
-            uploadFolderSelect.appendChild(defaultOption);
-
-            folders.forEach(item => {
-                if (item.path !== 'ig/image') {
-                    const option = document.createElement('option');
-                    option.value = item.path;
-                    option.textContent = item.name;
-                    uploadFolderSelect.appendChild(option);
-                }
-            });
-
-            const customOption = document.createElement('option');
-            customOption.value = 'custom';
-            customOption.textContent = 'Tambah Folder Baru';
-            uploadFolderSelect.appendChild(customOption);
-
-            // Reset ke default saat halaman dimuat ulang
-            uploadFolderSelect.value = '';
-            uploadSubfolderSelect.style.display = 'none';
-            uploadSubfolderSelect.innerHTML = '<option value="">-- Pilih Subfolder --</option>';
-            uploadFolderInput.style.display = 'none';
-            uploadFolderInput.value = '';
-
-            // Jika ada pilihan sebelumnya setelah unggah, kembalikan
-            if (currentFolder) {
-                uploadFolderSelect.value = currentFolder;
-                if (currentFolder === 'custom' && currentCustomFolder) {
-                    uploadFolderInput.style.display = 'block';
-                    uploadFolderInput.value = currentCustomFolder;
-                } else if (currentFolder) {
-                    const subfolders = await fetchSubfolders(currentFolder);
-                    if (subfolders.length > 0) {
-                        uploadSubfolderSelect.style.display = 'block';
-                        uploadSubfolderSelect.innerHTML = '<option value="">-- Pilih Subfolder --</option>';
-                        subfolders.forEach(subfolder => {
-                            const option = document.createElement('option');
-                            option.value = subfolder.path;
-                            option.textContent = subfolder.name;
-                            uploadSubfolderSelect.appendChild(option);
-                        });
-                        // Tambahkan opsi "Tambah Folder Baru" di dropdown subfolder
-                        const customSubfolderOption = document.createElement('option');
-                        customSubfolderOption.value = 'custom';
-                        customSubfolderOption.textContent = 'Tambah Folder Baru';
-                        uploadSubfolderSelect.appendChild(customSubfolderOption);
-
-                        if (currentSubfolder) {
-                            uploadSubfolderSelect.value = currentSubfolder;
-                        }
-                    } else if (currentCustomFolder) {
-                        uploadFolderInput.style.display = 'block';
-                        uploadFolderInput.value = currentCustomFolder;
-                    }
-                }
-            }
-        } catch (error) {
-            console.error('Error loading upload folders:', error);
-            showFloatingNotification(`Error loading upload folders: ${error.message}`, true);
+    try {
+        const res = await fetch('/api/get_github_files?path=ig');
+        if (!res.ok) {
+            throw new Error(`HTTP error! status: ${res.status}`);
         }
-    }
+        const data = await res.json();
+        const folders = data.files.filter(item => item.type === 'dir');
+        folders.sort(naturalSort);
 
-    uploadFolderSelect.addEventListener('change', async () => {
-        const folderPath = uploadFolderSelect.value;
-        currentFolder = folderPath;
-        currentSubfolder = '';
-        currentCustomFolder = '';
+        uploadFolderSelect.innerHTML = '<option value="">-- Pilih Folder --</option>';
+        
+        const defaultOption = document.createElement('option');
+        defaultOption.value = 'ig/image';
+        defaultOption.textContent = 'ig/image';
+        uploadFolderSelect.appendChild(defaultOption);
 
+        folders.forEach(item => {
+            if (item.path !== 'ig/image') {
+                const option = document.createElement('option');
+                option.value = item.path;
+                option.textContent = item.name;
+                uploadFolderSelect.appendChild(option);
+            }
+        });
+
+        const customOption = document.createElement('option');
+        customOption.value = 'custom';
+        customOption.textContent = 'Tambah Folder Baru';
+        uploadFolderSelect.appendChild(customOption);
+
+        // Reset ke default saat halaman dimuat ulang
+        uploadFolderSelect.value = '';
         uploadSubfolderSelect.style.display = 'none';
         uploadSubfolderSelect.innerHTML = '<option value="">-- Pilih Subfolder --</option>';
         uploadFolderInput.style.display = 'none';
         uploadFolderInput.value = '';
 
-        if (folderPath === 'custom') {
-            uploadFolderInput.style.display = 'block';
-            uploadFolderInput.focus();
-        } else if (folderPath) {
-            try {
-                const subfolders = await fetchSubfolders(folderPath);
+        // Jika ada pilihan sebelumnya setelah unggah, kembalikan
+        if (currentFolder) {
+            uploadFolderSelect.value = currentFolder;
+            if (currentFolder === 'custom' && currentCustomFolder) {
+                uploadFolderInput.style.display = 'block';
+                uploadFolderInput.value = currentCustomFolder;
+            } else if (currentFolder) {
+                const subfolders = await fetchSubfolders(currentFolder);
                 if (subfolders.length > 0) {
                     uploadSubfolderSelect.style.display = 'block';
+                    uploadSubfolderSelect.innerHTML = '<option value="">-- Pilih Subfolder --</option>';
                     subfolders.forEach(subfolder => {
                         const option = document.createElement('option');
                         option.value = subfolder.path;
@@ -672,251 +626,297 @@ document.addEventListener('DOMContentLoaded', () => {
                     customSubfolderOption.value = 'custom';
                     customSubfolderOption.textContent = 'Tambah Folder Baru';
                     uploadSubfolderSelect.appendChild(customSubfolderOption);
-                } else {
+
+                    if (currentSubfolder) {
+                        uploadSubfolderSelect.value = currentSubfolder;
+                    }
+                } else if (currentCustomFolder) {
                     uploadFolderInput.style.display = 'block';
-                    uploadFolderInput.placeholder = 'Masukkan subfolder (opsional)';
+                    uploadFolderInput.value = currentCustomFolder;
                 }
-            } catch (error) {
-                showFloatingNotification(`Error loading subfolders: ${error.message}`, true);
-                console.error('Error fetching subfolders:', error);
             }
         }
-    });
+    } catch (error) {
+        console.error('Error loading upload folders:', error);
+        showFloatingNotification(`Error loading upload folders: ${error.message}`, true);
+    }
+}
 
-    uploadSubfolderSelect.addEventListener('change', () => {
-        const subfolderPath = uploadSubfolderSelect.value;
-        currentSubfolder = subfolderPath;
-        if (subfolderPath === 'custom') {
-            uploadFolderInput.style.display = 'block';
-            uploadFolderInput.placeholder = 'Masukkan nama subfolder baru';
-            uploadFolderInput.value = '';
-            currentCustomFolder = '';
-        } else if (subfolderPath) {
-            uploadFolderInput.style.display = 'none';
-            uploadFolderInput.value = '';
-            currentCustomFolder = '';
-        } else {
-            uploadFolderInput.style.display = 'block';
-            uploadFolderInput.placeholder = 'Masukkan subfolder (opsional)';
-            currentCustomFolder = '';
+    uploadFolderSelect.addEventListener('change', async () => {
+    const folderPath = uploadFolderSelect.value;
+    currentFolder = folderPath;
+    currentSubfolder = '';
+    currentCustomFolder = '';
+
+    uploadSubfolderSelect.style.display = 'none';
+    uploadSubfolderSelect.innerHTML = '<option value="">-- Pilih Subfolder --</option>';
+    uploadFolderInput.style.display = 'none';
+    uploadFolderInput.value = '';
+
+    if (folderPath === 'custom') {
+        uploadFolderInput.style.display = 'block';
+        uploadFolderInput.focus();
+    } else if (folderPath) {
+        try {
+            const subfolders = await fetchSubfolders(folderPath);
+            if (subfolders.length > 0) {
+                uploadSubfolderSelect.style.display = 'block';
+                subfolders.forEach(subfolder => {
+                    const option = document.createElement('option');
+                    option.value = subfolder.path;
+                    option.textContent = subfolder.name;
+                    uploadSubfolderSelect.appendChild(option);
+                });
+                // Tambahkan opsi "Tambah Folder Baru" di dropdown subfolder
+                const customSubfolderOption = document.createElement('option');
+                customSubfolderOption.value = 'custom';
+                customSubfolderOption.textContent = 'Tambah Folder Baru';
+                uploadSubfolderSelect.appendChild(customSubfolderOption);
+            } else {
+                uploadFolderInput.style.display = 'block';
+                uploadFolderInput.placeholder = 'Masukkan subfolder (opsional)';
+            }
+        } catch (error) {
+            showFloatingNotification(`Error loading subfolders: ${error.message}`, true);
+            console.error('Error fetching subfolders:', error);
         }
-    });
+    }
+});
 
-    uploadFolderInput.addEventListener('input', () => {
-        currentCustomFolder = uploadFolderInput.value.trim();
-    });
+uploadSubfolderSelect.addEventListener('change', () => {
+    const subfolderPath = uploadSubfolderSelect.value;
+    currentSubfolder = subfolderPath;
+    if (subfolderPath === 'custom') {
+        uploadFolderInput.style.display = 'block';
+        uploadFolderInput.placeholder = 'Masukkan nama subfolder baru';
+        uploadFolderInput.value = '';
+        currentCustomFolder = '';
+    } else if (subfolderPath) {
+        uploadFolderInput.style.display = 'none';
+        uploadFolderInput.value = '';
+        currentCustomFolder = '';
+    } else {
+        uploadFolderInput.style.display = 'block';
+        uploadFolderInput.placeholder = 'Masukkan subfolder (opsional)';
+        currentCustomFolder = '';
+    }
+});
+
+uploadFolderInput.addEventListener('input', () => {
+    currentCustomFolder = uploadFolderInput.value.trim();
+});
 
     loadUploadFolders();
 
     uploadToGithub.addEventListener('click', async () => {
-        if (!uploadFile.files || uploadFile.files.length === 0) {
-            showFloatingNotification('Pilih file terlebih dahulu.', true);
-            return;
-        }
+    if (!uploadFile.files || uploadFile.files.length === 0) {
+        showFloatingNotification('Pilih file terlebih dahulu.', true);
+        return;
+    }
 
-        let uploadFolderValue;
-        if (uploadFolderSelect.value === 'custom') {
-            uploadFolderValue = uploadFolderInput.value.trim();
-            if (!uploadFolderValue) {
-                showFloatingNotification('Masukkan path folder tujuan.', true);
-                return;
-            }
-        } else if (uploadFolderSelect.value) {
-            uploadFolderValue = uploadFolderSelect.value; // Ambil folder utama (misalnya: ig/IGV4-10)
-            if (uploadSubfolderSelect.value === 'custom') {
-                // Jika subfolder adalah "Tambah Folder Baru", gunakan input dari uploadFolderInput
-                const newSubfolder = uploadFolderInput.value.trim();
-                if (!newSubfolder) {
-                    showFloatingNotification('Masukkan nama subfolder baru.', true);
-                    return;
-                }
-                uploadFolderValue = `${uploadFolderValue}/${newSubfolder}`; // Gabungkan folder utama dengan subfolder baru (misalnya: ig/IGV4-10/9)
-            } else if (uploadSubfolderSelect.value) {
-                // Jika subfolder dipilih dari dropdown (bukan "Tambah Folder Baru"), gunakan nilai subfolder
-                uploadFolderValue = uploadSubfolderSelect.value;
-            } else if (uploadFolderInput.value.trim()) {
-                // Jika tidak ada subfolder yang dipilih tetapi ada input manual, gunakan input tersebut
-                uploadFolderValue = `${uploadFolderValue}/${uploadFolderInput.value.trim()}`;
-            }
-        }
-
+    let uploadFolderValue;
+    if (uploadFolderSelect.value === 'custom') {
+        uploadFolderValue = uploadFolderInput.value.trim();
         if (!uploadFolderValue) {
-            uploadFolderValue = 'ig/image'; // Default jika tidak ada folder yang dipilih
-        } else {
-            if (!uploadFolderValue.startsWith('ig/')) {
-                uploadFolderValue = `ig/${uploadFolderValue}`; // Pastikan path dimulai dengan 'ig/'
-            }
-
-            const invalidChars = /[<>:"|?*]/;
-            if (invalidChars.test(uploadFolderValue)) {
-                showFloatingNotification('Path folder tujuan mengandung karakter yang tidak diizinkan.', true);
-                return;
-            }
-        }
-
-        const files = Array.from(uploadFile.files);
-
-        const mediaFiles = files.filter(file => {
-            const fileName = file.name.toLowerCase();
-            return fileName.endsWith('.jpg') || 
-                   fileName.endsWith('.jpeg') || 
-                   fileName.endsWith('.png') || 
-                   fileName.endsWith('.mp4');
-        });
-
-        const metaFiles = files.filter(file => {
-            const fileName = file.name.toLowerCase();
-            return fileName.endsWith('.json');
-        });
-
-        if (mediaFiles.length === 0) {
-            showFloatingNotification('Pilih setidaknya satu file media (JPG, JPEG, PNG, atau MP4).', true);
+            showFloatingNotification('Masukkan path folder tujuan.', true);
             return;
         }
-
-        const metaFileMap = {};
-        metaFiles.forEach(metaFile => {
-            const baseName = metaFile.name.replace(/\.meta\.json$/i, '');
-            metaFileMap[baseName] = metaFile;
-        });
-
-        let uploadedCount = 0;
-        const totalFiles = mediaFiles.length;
-        showFloatingNotification(`Mengunggah file 1 dari ${totalFiles}...`);
-        spinner.classList.remove('hidden');
-
-        try {
-            for (const file of mediaFiles) {
-                const reader = new FileReader();
-                const result = await new Promise((resolve, reject) => {
-                    reader.readAsDataURL(file);
-                    reader.onload = async () => {
-                        try {
-                            const base64Content = reader.result.split(',')[1];
-                            let newFileName;
-
-                            if (uploadFolderValue && uploadFolderValue !== 'ig/image') {
-                                newFileName = file.name;
-                            } else {
-                                const randomNum = Math.floor(10000 + Math.random() * 90000);
-                                const extension = file.name.split('.').pop();
-                                newFileName = `${randomNum}.${extension}`;
-                            }
-
-                            const filePath = `${uploadFolderValue}/${newFileName}`;
-                            const commitMessage = uploadFolderValue.startsWith('ig/') 
-                                ? `Upload ${newFileName} to ${uploadFolderValue} [vercel-skip]` 
-                                : `Upload ${newFileName} to ${uploadFolderValue}`;
-
-                            console.log(`Uploading file: ${filePath}`);
-
-                            const fileResponse = await fetch('/api/upload_to_github', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    fileName: filePath,
-                                    content: base64Content,
-                                    message: commitMessage,
-                                }),
-                            });
-
-                            if (!fileResponse.ok) {
-                                const errorData = await fileResponse.json();
-                                throw new Error(`HTTP error uploading file ${newFileName}! status: ${fileResponse.status}, details: ${errorData.error}`);
-                            }
-
-                            const fileResult = await fileResponse.json();
-                            const newFile = {
-                                name: newFileName,
-                                path: filePath,
-                                download_url: fileResult.download_url,
-                            };
-
-                            const originalFileName = file.name;
-                            let metaContent = { caption: '' };
-                            let metaBase64Content;
-
-                            if (metaFileMap[originalFileName]) {
-                                const metaFile = metaFileMap[originalFileName];
-                                const metaReader = new FileReader();
-                                const metaResult = await new Promise((metaResolve, metaReject) => {
-                                    metaReader.readAsText(metaFile);
-                                    metaReader.onload = () => {
-                                        try {
-                                            const content = JSON.parse(metaReader.result);
-                                            if (content.caption) {
-                                                metaContent = { caption: content.caption };
-                                            }
-                                            metaResolve();
-                                        } catch (error) {
-                                            metaReject(new Error(`Error parsing meta JSON for ${metaFile.name}: ${error.message}`));
-                                        }
-                                    };
-                                    metaReader.onerror = () => metaReject(new Error(`Error reading meta file ${metaFile.name}`));
-                                });
-
-                                console.log(`Using provided meta JSON for ${originalFileName}:`, metaContent);
-                            } else {
-                                console.log(`No meta JSON provided for ${originalFileName}, creating default.`);
-                            }
-
-                            const metaFileName = `${uploadFolderValue}/${newFileName}.meta.json`;
-                            const metaContentString = JSON.stringify(metaContent, null, 2);
-                            metaBase64Content = btoa(unescape(encodeURIComponent(metaContentString)));
-                            const metaCommitMessage = uploadFolderValue.startsWith('ig/') 
-                                ? `Upload meta for ${newFileName} to ${uploadFolderValue} [vercel-skip]` 
-                                : `Upload meta for ${newFileName} to ${uploadFolderValue}`;
-
-                            console.log(`Uploading meta file: ${metaFileName}`);
-
-                            const metaResponse = await fetch('/api/upload_to_github', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    fileName: metaFileName,
-                                    content: metaBase64Content,
-                                    message: metaCommitMessage,
-                                }),
-                            });
-
-                            const metaResponseData = await metaResponse.json();
-                            if (!metaResponse.ok) {
-                                console.error(`Meta upload failed: ${metaResponseData.error}`);
-                                showFloatingNotification(`Gagal mengunggah meta untuk ${newFileName}: ${metaResponseData.error}`, true);
-                            } else {
-                                console.log(`Meta file uploaded successfully: ${metaFileName}`);
-                            }
-
-                            allMediaFiles.push(newFile);
-                            captions[newFile.path] = metaContent.caption || '';
-                            uploadedCount++;
-                            if (uploadedCount < totalFiles) {
-                                showFloatingNotification(`Mengunggah file ${uploadedCount + 1} dari ${totalFiles}...`);
-                            }
-
-                            resolve(newFile);
-                        } catch (error) {
-                            console.error(`Error in upload process for ${file.name}:`, error);
-                            reject(error);
-                        }
-                    };
-                    reader.onerror = () => reject(new Error(`Error reading file ${file.name}`));
-                });
+    } else if (uploadFolderSelect.value) {
+        uploadFolderValue = uploadFolderSelect.value; // Ambil folder utama (misalnya: ig/IGV4-10)
+        if (uploadSubfolderSelect.value === 'custom') {
+            // Jika subfolder adalah "Tambah Folder Baru", gunakan input dari uploadFolderInput
+            const newSubfolder = uploadFolderInput.value.trim();
+            if (!newSubfolder) {
+                showFloatingNotification('Masukkan nama subfolder baru.', true);
+                return;
             }
-
-            showFloatingNotification(`${mediaFiles.length} file media berhasil diunggah ke GitHub!`);
-            displayGallery(allMediaFiles);
-
-            // Pertahankan pilihan folder setelah unggah
-            await loadUploadFolders(); // Memuat ulang daftar folder sambil mempertahankan pilihan
-        } catch (error) {
-            showFloatingNotification(`Error uploading to GitHub: ${error.message}`, true);
-            console.error('Error uploading to GitHub:', error);
-        } finally {
-            spinner.classList.add('hidden');
-            uploadFile.value = ''; // Reset input file setelah unggah
+            uploadFolderValue = `${uploadFolderValue}/${newSubfolder}`; // Gabungkan folder utama dengan subfolder baru (misalnya: ig/IGV4-10/9)
+        } else if (uploadSubfolderSelect.value) {
+            // Jika subfolder dipilih dari dropdown (bukan "Tambah Folder Baru"), gunakan nilai subfolder
+            uploadFolderValue = uploadSubfolderSelect.value;
+        } else if (uploadFolderInput.value.trim()) {
+            // Jika tidak ada subfolder yang dipilih tetapi ada input manual, gunakan input tersebut
+            uploadFolderValue = `${uploadFolderValue}/${uploadFolderInput.value.trim()}`;
         }
+    }
+
+    if (!uploadFolderValue) {
+        uploadFolderValue = 'ig/image'; // Default jika tidak ada folder yang dipilih
+    } else {
+        if (!uploadFolderValue.startsWith('ig/')) {
+            uploadFolderValue = `ig/${uploadFolderValue}`; // Pastikan path dimulai dengan 'ig/'
+        }
+
+        const invalidChars = /[<>:"|?*]/;
+        if (invalidChars.test(uploadFolderValue)) {
+            showFloatingNotification('Path folder tujuan mengandung karakter yang tidak diizinkan.', true);
+            return;
+        }
+    }
+
+    const files = Array.from(uploadFile.files);
+
+    const mediaFiles = files.filter(file => {
+        const fileName = file.name.toLowerCase();
+        return fileName.endsWith('.jpg') || 
+               fileName.endsWith('.jpeg') || 
+               fileName.endsWith('.png') || 
+               fileName.endsWith('.mp4');
     });
+
+    const metaFiles = files.filter(file => {
+        const fileName = file.name.toLowerCase();
+        return fileName.endsWith('.json');
+    });
+
+    if (mediaFiles.length === 0) {
+        showFloatingNotification('Pilih setidaknya satu file media (JPG, JPEG, PNG, atau MP4).', true);
+        return;
+    }
+
+    const metaFileMap = {};
+    metaFiles.forEach(metaFile => {
+        const baseName = metaFile.name.replace(/\.meta\.json$/i, '');
+        metaFileMap[baseName] = metaFile;
+    });
+
+    let uploadedCount = 0;
+    const totalFiles = mediaFiles.length;
+    showFloatingNotification(`Mengunggah file 1 dari ${totalFiles}...`);
+    spinner.classList.remove('hidden');
+
+    try {
+        for (const file of mediaFiles) {
+            const reader = new FileReader();
+            const result = await new Promise((resolve, reject) => {
+                reader.readAsDataURL(file);
+                reader.onload = async () => {
+                    try {
+                        const base64Content = reader.result.split(',')[1];
+                        let newFileName;
+
+                        if (uploadFolderValue && uploadFolderValue !== 'ig/image') {
+                            newFileName = file.name;
+                        } else {
+                            const randomNum = Math.floor(10000 + Math.random() * 90000);
+                            const extension = file.name.split('.').pop();
+                            newFileName = `${randomNum}.${extension}`;
+                        }
+
+                        const filePath = `${uploadFolderValue}/${newFileName}`;
+                        const commitMessage = uploadFolderValue.startsWith('ig/') 
+                            ? `Upload ${newFileName} to ${uploadFolderValue} [vercel-skip]` 
+                            : `Upload ${newFileName} to ${uploadFolderValue}`;
+
+                        console.log(`Uploading file: ${filePath}`);
+
+                        const fileResponse = await fetch('/api/upload_to_github', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                fileName: filePath,
+                                content: base64Content,
+                                message: commitMessage,
+                            }),
+                        });
+
+                        if (!fileResponse.ok) {
+                            const errorData = await fileResponse.json();
+                            throw new Error(`HTTP error uploading file ${newFileName}! status: ${fileResponse.status}, details: ${errorData.error}`);
+                        }
+
+                        const fileResult = await fileResponse.json();
+                        const newFile = {
+                            name: newFileName,
+                            path: filePath,
+                            download_url: fileResult.download_url,
+                        };
+
+                        const originalFileName = file.name;
+                        let metaContent = { caption: '' };
+                        let metaBase64Content;
+
+                        if (metaFileMap[originalFileName]) {
+                            const metaFile = metaFileMap[originalFileName];
+                            const metaReader = new FileReader();
+                            const metaResult = await new Promise((metaResolve, metaReject) => {
+                                metaReader.readAsText(metaFile);
+                                metaReader.onload = () => {
+                                    try {
+                                        const content = JSON.parse(metaReader.result);
+                                        if (content.caption) {
+                                            metaContent = { caption: content.caption };
+                                        }
+                                        metaResolve();
+                                    } catch (error) {
+                                        metaReject(new Error(`Error parsing meta JSON for ${metaFile.name}: ${error.message}`));
+                                    }
+                                };
+                                metaReader.onerror = () => metaReject(new Error(`Error reading meta file ${metaFile.name}`));
+                            });
+
+                            console.log(`Using provided meta JSON for ${originalFileName}:`, metaContent);
+                        } else {
+                            console.log(`No meta JSON provided for ${originalFileName}, creating default.`);
+                        }
+
+                        const metaFileName = `${uploadFolderValue}/${newFileName}.meta.json`;
+                        const metaContentString = JSON.stringify(metaContent, null, 2);
+                        metaBase64Content = btoa(unescape(encodeURIComponent(metaContentString)));
+                        const metaCommitMessage = uploadFolderValue.startsWith('ig/') 
+                            ? `Upload meta for ${newFileName} to ${uploadFolderValue} [vercel-skip]` 
+                            : `Upload meta for ${newFileName} to ${uploadFolderValue}`;
+
+                        console.log(`Uploading meta file: ${metaFileName}`);
+
+                        const metaResponse = await fetch('/api/upload_to_github', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                fileName: metaFileName,
+                                content: metaBase64Content,
+                                message: metaCommitMessage,
+                            }),
+                        });
+
+                        const metaResponseData = await metaResponse.json();
+                        if (!metaResponse.ok) {
+                            console.error(`Meta upload failed: ${metaResponseData.error}`);
+                            showFloatingNotification(`Gagal mengunggah meta untuk ${newFileName}: ${metaResponseData.error}`, true);
+                        } else {
+                            console.log(`Meta file uploaded successfully: ${metaFileName}`);
+                        }
+
+                        allMediaFiles.push(newFile);
+                        captions[newFile.path] = metaContent.caption || '';
+                        uploadedCount++;
+                        if (uploadedCount < totalFiles) {
+                            showFloatingNotification(`Mengunggah file ${uploadedCount + 1} dari ${totalFiles}...`);
+                        }
+
+                        resolve(newFile);
+                    } catch (error) {
+                        console.error(`Error in upload process for ${file.name}:`, error);
+                        reject(error);
+                    }
+                };
+                reader.onerror = () => reject(new Error(`Error reading file ${file.name}`));
+            });
+        }
+
+        showFloatingNotification(`${mediaFiles.length} file media berhasil diunggah ke GitHub!`);
+        displayGallery(allMediaFiles);
+
+        // Pertahankan pilihan folder setelah unggah
+        await loadUploadFolders(); // Memuat ulang daftar folder sambil mempertahankan pilihan
+    } catch (error) {
+        showFloatingNotification(`Error uploading to GitHub: ${error.message}`, true);
+        console.error('Error uploading to GitHub:', error);
+    } finally {
+        spinner.classList.add('hidden');
+        uploadFile.value = ''; // Reset input file setelah unggah
+    }
+});
 
     async function deletePhoto(filePath) {
         showFloatingNotification(`Menghapus ${filePath}...`);
@@ -992,18 +992,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         console.log('Files received by displayGallery:', files);
 
-        // Filter file media yang didukung (gambar dan video)
-        const mediaFiles = files.filter(file => 
-            file.name && 
-            (file.name.endsWith('.jpg') || file.name.endsWith('.png') || file.name.endsWith('.mp4'))
-        );
+        const imageFiles = files.filter(file => file.name && (file.name.endsWith('.jpg') || file.name.endsWith('.png')));
 
-        console.log('Media files after filter:', mediaFiles);
+        console.log('Image files after filter:', imageFiles);
 
         const scheduleAllContainer = document.querySelector('.schedule-all-container');
 
-        if (mediaFiles.length === 0) {
-            gallery.innerHTML = '<p>Tidak ada media untuk ditampilkan.</p>';
+        if (imageFiles.length === 0) {
+            gallery.innerHTML = '<p>Tidak ada gambar untuk ditampilkan.</p>';
             scheduleAllContainer.style.display = 'none';
             return;
         }
@@ -1027,7 +1023,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const withSchedule = [];
         const withoutSchedule = [];
 
-        mediaFiles.forEach(file => {
+        imageFiles.forEach(file => {
             if (scheduledTimes[file.path]) {
                 withSchedule.push(file);
             } else {
@@ -1035,9 +1031,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        const sortedMediaFiles = [...withSchedule, ...withoutSchedule];
+        const sortedImageFiles = [...withSchedule, ...withoutSchedule];
 
-        console.log('Sorted media files:', sortedMediaFiles.map(file => file.name));
+        console.log('Sorted image files:', sortedImageFiles.map(file => file.name));
 
         function formatDateTime(date, hours, minutes) {
             const year = date.getFullYear();
@@ -1047,38 +1043,19 @@ document.addEventListener('DOMContentLoaded', () => {
             return formatted;
         }
 
-        sortedMediaFiles.forEach((file, index) => {
+        sortedImageFiles.forEach((file, index) => {
             const container = document.createElement('div');
             container.className = 'gallery-item';
 
-            let mediaElement;
-            if (file.name.endsWith('.mp4')) {
-                // Buat elemen video untuk file MP4
-                mediaElement = document.createElement('video');
-                mediaElement.src = file.download_url;
-                mediaElement.controls = false; // Nonaktifkan kontrol untuk pratinjau
-                mediaElement.volume = 0.5; // Set volume default (50%)
-                mediaElement.loop = true; // Loop untuk pratinjau
-                mediaElement.dataset.fileData = JSON.stringify(file);
-                mediaElement.addEventListener('click', () => {
-                    gallery.querySelectorAll('img, video').forEach(i => i.classList.remove('selected'));
-                    mediaElement.classList.add('selected');
-                    mediaUrl.value = file.download_url;
-                });
-                mediaElement.addEventListener('mouseenter', () => mediaElement.play());
-                mediaElement.addEventListener('mouseleave', () => mediaElement.pause());
-            } else {
-                // Buat elemen gambar untuk JPG/PNG
-                mediaElement = document.createElement('img');
-                mediaElement.src = file.download_url;
-                mediaElement.alt = file.name;
-                mediaElement.dataset.fileData = JSON.stringify(file);
-                mediaElement.addEventListener('click', () => {
-                    gallery.querySelectorAll('img, video').forEach(i => i.classList.remove('selected'));
-                    mediaElement.classList.add('selected');
-                    mediaUrl.value = file.download_url;
-                });
-            }
+            const img = document.createElement('img');
+            img.src = file.download_url;
+            img.alt = file.name;
+            img.dataset.fileData = JSON.stringify(file);
+            img.addEventListener('click', () => {
+                gallery.querySelectorAll('img').forEach(i => i.classList.remove('selected'));
+                img.classList.add('selected');
+                mediaUrl.value = file.download_url;
+            });
 
             const deleteDirectBtn = document.createElement('button');
             deleteDirectBtn.className = 'delete-direct-btn';
@@ -1098,7 +1075,6 @@ document.addEventListener('DOMContentLoaded', () => {
             captionText.className = 'caption-text';
             captionText.textContent = captions[file.path] || 'Tidak ada caption';
 
-            // Logika drag untuk caption (tetap sama)
             let isDragging = false;
             let startY = 0;
             let startScrollTop = 0;
@@ -1308,13 +1284,11 @@ document.addEventListener('DOMContentLoaded', () => {
                             mediaUrl: file.download_url,
                             caption: captions[file.path] || '',
                             userToken: selectedToken,
-                            mediaType: file.name.endsWith('.mp4') ? 'REELS' : 'image', // Ubah ke REELS untuk video
                         }),
                     });
 
                     if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(`HTTP error publishing post! status: ${response.status} - ${JSON.stringify(errorData)}`);
+                        throw new Error(`HTTP error publishing post! status: ${response.status}`);
                     }
 
                     const result = await response.json();
@@ -1324,7 +1298,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         await deletePhoto(file.path);
                     }
                 } catch (error) {
-                    showFloatingNotification(`Error publishing to Instagram: ${error.message}`, true);
+                    showFloatingNotification(`Error publishing: ${error.message}`, true);
                     console.error('Error publishing post:', error);
                 } finally {
                     spinner.classList.add('hidden');
@@ -1334,7 +1308,7 @@ document.addEventListener('DOMContentLoaded', () => {
             buttonGroup.appendChild(editBtn);
             buttonGroup.appendChild(scheduleBtn);
 
-            container.appendChild(mediaElement);
+            container.appendChild(img);
             container.appendChild(name);
             container.appendChild(captionText);
             container.appendChild(scheduleTime);
@@ -1344,7 +1318,6 @@ document.addEventListener('DOMContentLoaded', () => {
             gallery.appendChild(container);
         });
 
-        // Event listener lainnya tetap sama (startDateTime, skipDay, scheduleAll)
         startDateTime.addEventListener('input', () => {
             if (!startDateTime.value) {
                 Object.keys(scheduledTimes).forEach(filePath => {
@@ -1358,7 +1331,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         scheduleTimeElement.classList.remove('scheduled');
                     }
                 });
-                showFloatingNotification('Jadwal untuk semua media telah direset.');
+                showFloatingNotification('Jadwal untuk semua foto telah direset.');
             }
         });
 
@@ -1368,7 +1341,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const hours = start.getHours();
             const minutes = start.getMinutes();
             const dayIncrement = skipDay.checked ? 2 : 1;
-            mediaFiles.forEach((file, index) => {
+            imageFiles.forEach((file, index) => {
                 const newDate = new Date(start);
                 newDate.setDate(start.getDate() + (index * dayIncrement));
                 scheduledTimes[file.path] = formatDateTime(newDate, hours, minutes);
@@ -1396,7 +1369,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const hours = start.getHours();
             const minutes = start.getMinutes();
             const dayIncrement = skipDay.checked ? 2 : 1;
-            mediaFiles.forEach((file, index) => {
+            imageFiles.forEach((file, index) => {
                 const newDate = new Date(start);
                 newDate.setDate(start.getDate() + (index * dayIncrement));
                 scheduledTimes[file.path] = formatDateTime(newDate, hours, minutes);
@@ -1432,7 +1405,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('Start time selected:', startDateTime.value);
             console.log('Hours:', hours, 'Minutes:', minutes);
 
-            mediaFiles.forEach((file, index) => {
+            imageFiles.forEach((file, index) => {
                 const newDate = new Date(start);
                 newDate.setDate(start.getDate() + (index * dayIncrement));
                 scheduledTimes[file.path] = formatDateTime(newDate, hours, minutes);
@@ -1454,7 +1427,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log(`File ${file.name} scheduled at: ${scheduledTimes[file.path]}`);
             });
 
-            showFloatingNotification(`Waktu jadwal untuk semua media disimpan sementara. Klik "Simpan Jadwal" untuk mengirimkan.`);
+            showFloatingNotification(`Waktu jadwal untuk semua foto disimpan sementara. Klik "Simpan Jadwal" untuk mengirimkan.`);
             window.history.pushState({}, document.title, window.location.pathname);
         });
     }
@@ -1573,18 +1546,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const wibTime = convertToWIB(schedule.time);
             const formattedWibTime = formatToDatetimeLocal(wibTime);
             const row = document.createElement('tr');
-
-            // Tentukan apakah media adalah video atau gambar
-            const isVideo = schedule.mediaUrl.endsWith('.mp4');
-            const mediaPreview = isVideo
-                ? `<video src="${schedule.mediaUrl}" class="schedule-media-preview video-preview" muted></video>`
-                : `<img src="${schedule.mediaUrl}" alt="Media" class="schedule-media-preview">`;
-
             row.innerHTML = `
                 <td>${globalIndex + 1}</td>
                 <td><input type="checkbox" class="schedule-checkbox" data-schedule-id="${schedule.scheduleId}"></td>
                 <td>${schedule.username || 'Unknown'}</td>
-                <td>${mediaPreview}</td>
+                <td><img src="${schedule.mediaUrl}" alt="Media" class="schedule-media-preview"></td>
                 <td class="editable-caption" contenteditable="true" data-schedule-id="${schedule.scheduleId}">${schedule.caption}</td>
                 <td class="editable-time" data-schedule-id="${schedule.scheduleId}">
                     <input type="datetime-local" class="time-input" value="${formattedWibTime}">
@@ -1758,7 +1724,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return scheduledTime && typeof scheduledTime === 'string' && scheduledTime.trim() !== '';
         });
         if (scheduledFiles.length === 0) {
-            showFloatingNotification('Tidak ada media yang dijadwalkan.', true);
+            showFloatingNotification('Tidak ada foto yang dijadwalkan.', true);
             return;
         }
 
@@ -1777,7 +1743,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     userToken: selectedToken,
                     accountNum: userAccount.value,
                     completed: false,
-                    mediaType: file.name.endsWith('.mp4') ? 'REELS' : 'image', // Ubah ke REELS untuk video
                 };
 
                 console.log('Scheduling file:', file.path, 'with data:', formData);
@@ -1804,7 +1769,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 showFloatingNotification(`Menyimpan jadwal... ${completedCount}/${scheduledFiles.length}`, false, 0);
                 console.log('Schedule response:', result);
             }
-            showFloatingNotification(`${scheduledFiles.length} media berhasil dijadwalkan!`, false, 3000);
+            showFloatingNotification(`${scheduledFiles.length} foto berhasil dijadwalkan!`, false, 3000);
             scheduledTimes = {};
             await loadSchedules();
         } catch (error) {
