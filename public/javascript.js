@@ -374,7 +374,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!res.ok) {
                 throw new Error(`HTTP error! status: ${res.status}`);
             }
-            const data = await res.json naranja);
+            const data = await res.json();
             console.log(`Files fetched for path ${path}:`, data);
 
             allMediaFiles = [];
