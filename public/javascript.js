@@ -1308,13 +1308,12 @@ document.addEventListener('DOMContentLoaded', () => {
                             mediaUrl: file.download_url,
                             caption: captions[file.path] || '',
                             userToken: selectedToken,
-                            mediaType: file.name.endsWith('.mp4') ? 'REELS' : 'image', // Ubah ke REELS untuk video
+                            mediaType: file.name.endsWith('.mp4') ? 'video' : 'image', // Tambahkan tipe media
                         }),
                     });
 
                     if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(`HTTP error publishing post! status: ${response.status} - ${JSON.stringify(errorData)}`);
+                        throw new Error(`HTTP error publishing post! status: ${response.status}`);
                     }
 
                     const result = await response.json();
@@ -1324,7 +1323,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         await deletePhoto(file.path);
                     }
                 } catch (error) {
-                    showFloatingNotification(`Error publishing to Instagram: ${error.message}`, true);
+                    showFloatingNotification(`Error publishing: ${error.message}`, true);
                     console.error('Error publishing post:', error);
                 } finally {
                     spinner.classList.add('hidden');
@@ -1777,7 +1776,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     userToken: selectedToken,
                     accountNum: userAccount.value,
                     completed: false,
-                    mediaType: file.name.endsWith('.mp4') ? 'REELS' : 'image', // Ubah ke REELS untuk video
+                    mediaType: file.name.endsWith('.mp4') ? 'video' : 'image', // Tambahkan tipe media
                 };
 
                 console.log('Scheduling file:', file.path, 'with data:', formData);
