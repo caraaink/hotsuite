@@ -9,7 +9,7 @@ module.exports = async (req, res) => {
 
     try {
         // Tentukan apakah ini gambar atau Reels berdasarkan mediaType
-        const isVideo = mediaType === 'REELS';
+        const isVideo = mediaType === 'video';
         const mediaPayload = isVideo
             ? { video_url: mediaUrl, caption: caption || '', media_type: 'REELS' } // Ubah ke REELS untuk video
             : { image_url: mediaUrl, caption: caption || '' };
