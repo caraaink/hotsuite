@@ -199,6 +199,28 @@ body.dark-mode .gallery-item .schedule-time {
     object-fit: cover;
     border-radius: 4px;
 }
+.media-container {
+    position: relative;
+    display: inline-block;
+}
+
+.video-preview {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 5px;
+}
+
+.video-icon {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    font-size: 20px;
+    color: #fff;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 2px 5px;
+    border-radius: 3px;
+}
 /* Upload Form */
 .upload-form {
     display: grid;

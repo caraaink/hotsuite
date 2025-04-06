@@ -490,11 +490,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const subfolderContainer = document.getElementById('subfolderContainer');
         const subfolderLabel = document.querySelector('label[for="githubSubfolder"]');
+        const subSubfolderLabel = document.querySelector('label[for="githubSubSubfolder"]');
         const scheduleAllContainer = document.querySelector('.schedule-all-container');
         scheduleAllContainer.style.display = 'none';
 
-        // Reset sub-subfolder dropdown
         subSubfolderContainer.classList.add('hidden');
+        subSubfolderLabel.style.display = 'none';
         githubSubSubfolder.innerHTML = '<option value="">-- Pilih Folder --</option>';
 
         if (!folderPath || folderPath === 'ig') {
@@ -568,10 +569,11 @@ document.addEventListener('DOMContentLoaded', () => {
         mediaUrl.value = '';
 
         const scheduleAllContainer = document.querySelector('.schedule-all-container');
+        const subSubfolderLabel = document.querySelector('label[for="githubSubSubfolder"]');
         scheduleAllContainer.style.display = 'none';
 
-        // Reset sub-subfolder dropdown
         subSubfolderContainer.classList.add('hidden');
+        subSubfolderLabel.style.display = 'none';
         githubSubSubfolder.innerHTML = '<option value="">-- Pilih Folder --</option>';
 
         if (!subfolderPath) {
@@ -594,6 +596,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             } else {
                 subSubfolderContainer.classList.remove('hidden');
+                subSubfolderLabel.style.display = 'block';
+                subSubfolderLabel.textContent = 'Folder';
                 githubSubSubfolder.innerHTML = '<option value="">-- Pilih Folder --</option>';
                 subSubfolders.forEach(subSubfolder => {
                     const option = document.createElement('option');
@@ -612,6 +616,7 @@ document.addEventListener('DOMContentLoaded', () => {
             showFloatingNotification(`Error loading sub-subfolders: ${error.message}`, true);
             console.error('Error fetching sub-subfolders:', error);
             subSubfolderContainer.classList.add('hidden');
+            subSubfolderLabel.style.display = 'none';
         }
     });
 
@@ -1641,7 +1646,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const isVideo = schedule.mediaUrl.endsWith('.mp4');
             const mediaPreview = isVideo
-                ? `<video src="${schedule.mediaUrl}" class="schedule-media-preview video-preview" muted></video>`
+                ? `<div class="media-container"><video src="${schedule.mediaUrl}" class="schedule-media-preview video-preview" muted></video><span class="video-icon">📹</span></div>`
                 : `<img src="${schedule.mediaUrl}" alt="Media" class="schedule-media-preview">`;
 
             row.innerHTML = `
