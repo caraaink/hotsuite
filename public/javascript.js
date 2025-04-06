@@ -1616,65 +1616,65 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     function renderSchedules(schedulesToRender, startIndex) {
-        scheduleTableBody.innerHTML = '';
+    scheduleTableBody.innerHTML = '';
 
-        const oldCaptionCells = document.querySelectorAll('.editable-caption');
-        oldCaptionCells.forEach(cell => {
-            cell.removeEventListener('blur', handleCaptionBlur);
-        });
+    const oldCaptionCells = document.querySelectorAll('.editable-caption');
+    oldCaptionCells.forEach(cell => {
+        cell.removeEventListener('blur', handleCaptionBlur);
+    });
 
-        const oldTimeInputs = document.querySelectorAll('.editable-time .time-input');
-        oldTimeInputs.forEach(input => {
-            input.removeEventListener('change', handleTimeChange);
-        });
+    const oldTimeInputs = document.querySelectorAll('.editable-time .time-input');
+    oldTimeInputs.forEach(input => {
+        input.removeEventListener('change', handleTimeChange);
+    });
 
-        const oldDeleteButtons = document.querySelectorAll('.delete-btn');
-        oldDeleteButtons.forEach(button => {
-            button.removeEventListener('click', handleDeleteClick);
-        });
+    const oldDeleteButtons = document.querySelectorAll('.delete-btn');
+    oldDeleteButtons.forEach(button => {
+        button.removeEventListener('click', handleDeleteClick);
+    });
 
-        schedulesToRender.forEach((schedule, idx) => {
-            const globalIndex = startIndex + idx;
-            const wibTime = convertToWIB(schedule.time);
-            const formattedWibTime = formatToDatetimeLocal(wibTime);
-            const row = document.createElement('tr');
+    schedulesToRender.forEach((schedule, idx) => {
+        const globalIndex = startIndex + idx;
+        const wibTime = convertToWIB(schedule.time);
+        const formattedWibTime = formatToDatetimeLocal(wibTime);
+        const row = document.createElement('tr');
 
-            const isVideo = schedule.mediaUrl.endsWith('.mp4');
-            const mediaPreview = isVideo
-                ? `<video src="${schedule.mediaUrl}" class="schedule-media-preview video-preview" muted></video>`
-                : `<img src="${schedule.mediaUrl}" alt="Media" class="schedule-media-preview">`;
+        const isVideo = schedule.mediaUrl.endsWith('.mp4');
+        const mediaPreview = isVideo
+            ? `<div class="media-container"><video src="${schedule.mediaUrl}" class="schedule-media-preview video-preview" muted></video><span class="video-label">MP4</span></div>`
+            : `<img src="${schedule.mediaUrl}" alt="Media" class="schedule-media-preview">`;
 
-            row.innerHTML = `
-                <td>${globalIndex + 1}</td>
-                <td><input type="checkbox" class="schedule-checkbox" data-schedule-id="${schedule.scheduleId}"></td>
-                <td>${schedule.username || 'Unknown'}</td>
-                <td>${mediaPreview}</td>
-                <td class="editable-caption" contenteditable="true" data-schedule-id="${schedule.scheduleId}">${schedule.caption}</td>
-                <td class="editable-time" data-schedule-id="${schedule.scheduleId}">
-                    <input type="datetime-local" class="time-input" value="${formattedWibTime}">
-                </td>
-                <td class="${schedule.completed ? 'processing' : ''}">${schedule.completed ? '<span class="processing-dots">Process</span>' : 'Menunggu'}</td>
-                <td>
-                    <button class="delete-btn" data-schedule-id="${schedule.scheduleId}">Hapus</button>
-                </td>
-            `;
-            scheduleTableBody.appendChild(row);
-        });
+        row.innerHTML = `
+            <td>${globalIndex + 1}</td>
+            <td><input type="checkbox" class="schedule-checkbox" data-schedule-id="${schedule.scheduleId}"></td>
+            <td>${schedule.username || 'Unknown'}</td>
+            <td>${mediaPreview}</td>
+            <td class="editable-caption" contenteditable="true" data-schedule-id="${schedule.scheduleId}">${schedule.caption}</td>
+            <td class="editable-time" data-schedule-id="${schedule.scheduleId}">
+                <input type="datetime-local" class="time-input" value="${formattedWibTime}">
+            </td>
+            <td class="${schedule.completed ? 'processing' : ''}">${schedule.completed ? '<span class="processing-dots">Process</span>' : 'Menunggu'}</td>
+            <td>
+                <button class="delete-btn" data-schedule-id="${schedule.scheduleId}">Hapus</button>
+            </td>
+        `;
+        scheduleTableBody.appendChild(row);
+    });
 
-        document.querySelectorAll('.editable-caption').forEach(cell => {
-            cell.addEventListener('blur', handleCaptionBlur);
-        });
+    document.querySelectorAll('.editable-caption').forEach(cell => {
+        cell.addEventListener('blur', handleCaptionBlur);
+    });
 
-        document.querySelectorAll('.editable-time .time-input').forEach(input => {
-            input.addEventListener('change', handleTimeChange);
-        });
+    document.querySelectorAll('.editable-time .time-input').forEach(input => {
+        input.addEventListener('change', handleTimeChange);
+    });
 
-        document.querySelectorAll('.delete-btn').forEach(button => {
-            button.addEventListener('click', debounce(handleDeleteClick, 300));
-        });
+    document.querySelectorAll('.delete-btn').forEach(button => {
+        button.addEventListener('click', debounce(handleDeleteClick, 300));
+    });
 
-        animateProcessingDots();
-    }
+    animateProcessingDots();
+}
 
     function animateProcessingDots() {
         const processingElements = document.querySelectorAll('.processing-dots');
