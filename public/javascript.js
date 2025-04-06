@@ -8,6 +8,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const githubFolder = document.getElementById('githubFolder');
     const githubSubfolder = document.getElementById('githubSubfolder');
     const subfolderContainer = document.getElementById('subfolderContainer');
+    // Tambahkan variabel untuk dropdown sub-subfolder
+    const githubSubSubfolder = document.getElementById('githubSubSubfolder');
+    const subSubfolderContainer = document.getElementById('subSubfolderContainer');
     const uploadFile = document.getElementById('uploadFile');
     const uploadToGithub = document.getElementById('uploadToGithub');
     const gallery = document.getElementById('gallery');
@@ -32,6 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let selectedAccountNum = null;
     let selectedAccountId = null;
     let allSubfolders = [];
+    let allSubSubfolders = []; // Tambahkan variabel untuk menyimpan sub-subfolder
     let allMediaFiles = [];
     let captions = {};
     let scheduledTimes = {};
@@ -366,6 +370,39 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Tambahkan fungsi untuk fetch sub-subfolder
+    async function fetchSubSubfolders(path) {
+        showFloatingNotification('Memuat daftar folder...');
+        spinner.classList.remove('hidden');
+        try {
+            const res = await fetch(`/api/get_github_files?path=${path}`);
+            if (!res.ok) {
+                throw new Error(`HTTP error! status: ${res.status}`);
+            }
+            const data = await res.json();
+            console.log(`Sub-subfolders fetched for path ${path}:`, data);
+
+            allSubSubfolders = [];
+            data.files.forEach(item => {
+                if (item.type === 'dir') {
+                    allSubSubfolders.push({
+                        name: item.name,
+                        path: item.path,
+                    });
+                }
+            });
+
+            allSubSubfolders.sort(naturalSort);
+            return allSubSubfolders;
+        } catch (error) {
+            console.error(`Error fetching sub-subfolders for path ${path}:`, error);
+            showFloatingNotification(`Error loading sub-subfolders: ${error.message}`, true);
+            return [];
+        } finally {
+            spinner.classList.add('hidden');
+        }
+    }
+
     async function fetchFilesInSubfolder(path) {
         showFloatingNotification('Memuat daftar file...');
         spinner.classList.remove('hidden');
@@ -468,8 +505,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const subfolderContainer = document.getElementById('subfolderContainer');
         const subfolderLabel = document.querySelector('label[for="githubSubfolder"]');
+        const subSubfolderLabel = document.querySelector('label[for="githubSubSubfolder"]');
         const scheduleAllContainer = document.querySelector('.schedule-all-container');
         scheduleAllContainer.style.display = 'none';
+
+        // Reset sub-subfolder dropdown
+        subSubfolderContainer.classList.add('hidden');
+        subSubfolderLabel.style.display = 'none';
+        githubSubSubfolder.innerHTML = '<option value="">-- Pilih Folder --</option>';
 
         if (!folderPath || folderPath === 'ig') {
             subfolderContainer.classList.add('hidden');
@@ -542,21 +585,83 @@ document.addEventListener('DOMContentLoaded', () => {
         mediaUrl.value = '';
 
         const scheduleAllContainer = document.querySelector('.schedule-all-container');
+        const subSubfolderLabel = document.querySelector('label[for="githubSubSubfolder"]');
         scheduleAllContainer.style.display = 'none';
+
+        // Reset sub-subfolder dropdown
+        subSubfolderContainer.classList.add('hidden');
+        subSubfolderLabel.style.display = 'none';
+        githubSubSubfolder.innerHTML = '<option value="">-- Pilih Folder --</option>';
 
         if (!subfolderPath) {
             return;
         }
 
         try {
-            const files = await fetchFilesInSubfolder(subfolderPath);
+            const subSubfolders = await fetchSubSubfolders(subfolderPath);
+            console.log('All sub-subfolders found:', subSubfolders);
+
+            if (subSubfolders.length === 0) {
+                const files = await fetchFilesInSubfolder(subfolderPath);
+                allMediaFiles = files;
+                displayGallery(files);
+
+                if (files.length === 0) {
+                    showFloatingNotification('No supported media files found in this subfolder.', true);
+                } else {
+                    showFloatingNotification('');
+                }
+            } else {
+                subSubfolderContainer.classList.remove('hidden');
+                subSubfolderLabel.style.display = 'block';
+                subSubfolderLabel.textContent = 'Folder';
+                githubSubSubfolder.innerHTML = '<option value="">-- Pilih Folder --</option>';
+                subSubfolders.forEach(subSubfolder => {
+                    const option = document.createElement('option');
+                    option.value = subSubfolder.path;
+                    option.textContent = subSubfolder.name;
+                    githubSubSubfolder.appendChild(option);
+                });
+
+                if (githubSubSubfolder.options.length === 1) {
+                    showFloatingNotification('No folders found in this subfolder.', true);
+                } else {
+                    showFloatingNotification('');
+                }
+            }
+        } catch (error) {
+            showFloatingNotification(`Error loading sub-subfolders: ${error.message}`, true);
+            console.error('Error fetching sub-subfolders:', error);
+            subSubfolderContainer.classList.add('hidden');
+            subSubfolderLabel.style.display = 'none';
+        }
+    });
+
+    // Tambahkan event listener untuk sub-subfolder
+    githubSubSubfolder.addEventListener('change', async () => {
+        const subSubfolderPath = githubSubSubfolder.value;
+        allMediaFiles = [];
+        captions = {};
+        scheduledTimes = {};
+        gallery.innerHTML = '';
+        mediaUrl.value = '';
+
+        const scheduleAllContainer = document.querySelector('.schedule-all-container');
+        scheduleAllContainer.style.display = 'none';
+
+        if (!subSubfolderPath) {
+            return;
+        }
+
+        try {
+            const files = await fetchFilesInSubfolder(subSubfolderPath);
             console.log('All media files found:', files);
             allMediaFiles = files;
 
             displayGallery(files);
 
             if (files.length === 0) {
-                showFloatingNotification('No supported media files found in this subfolder.', true);
+                showFloatingNotification('No supported media files found in this folder.', true);
             } else {
                 showFloatingNotification('');
             }
@@ -566,6 +671,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Bagian selanjutnya dari kode tetap sama, tidak diubah
     async function loadUploadFolders() {
         try {
             const res = await fetch('/api/get_github_files?path=ig');

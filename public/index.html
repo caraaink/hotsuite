@@ -48,25 +48,33 @@
                 </div>
 
                 <div class="select-group hidden" id="accountIdContainer">
-        <label for="accountId" style="display: none;">Pilih Username IG:</label>
-        <select id="accountId" name="accountId" required>
-            <option value="">-- Pilih Username --</option>
-        </select>
-    </div>
+                    <label for="accountId" style="display: none;">Pilih Username IG:</label>
+                    <select id="accountId" name="accountId" required>
+                        <option value="">-- Pilih Username --</option>
+                    </select>
+                </div>
 
-    <div class="select-group">
-        <select id="githubFolder" name="githubFolder">
-            <option value="ig">-- Pilih Folder --</option>
-        </select>
-    </div>
+                <div class="select-group">
+                    <select id="githubFolder" name="githubFolder">
+                        <option value="ig">-- Pilih Folder --</option>
+                    </select>
+                </div>
 
-    <div class="select-group hidden" id="subfolderContainer">
-        <label for="githubSubfolder" style="display: none;">Pilih Subfolder:</label>
-        <select id="githubSubfolder" name="githubSubfolder">
-            <option value="">-- Pilih Subfolder --</option>
-        </select>
-    </div>
-</div>
+                <div class="select-group hidden" id="subfolderContainer">
+                    <label for="githubSubfolder" style="display: none;">Pilih Subfolder:</label>
+                    <select id="githubSubfolder" name="githubSubfolder">
+                        <option value="">-- Pilih Subfolder --</option>
+                    </select>
+                </div>
+
+                <!-- Tambahkan dropdown baru untuk sub-subfolder -->
+                <div class="select-group hidden" id="subSubfolderContainer">
+                    <label for="githubSubSubfolder" style="display: none;">Pilih Folder:</label>
+                    <select id="githubSubSubfolder" name="githubSubSubfolder">
+                        <option value="">-- Pilih Folder --</option>
+                    </select>
+                </div>
+            </div>
 
             <!-- Input untuk mengunggah file dari perangkat (opsional) -->
             <div class="upload-row">
@@ -75,19 +83,20 @@
                     <input type="file" id="uploadFile" name="uploadFile" accept=".jpg,.jpeg,.png,.mp4,.json" multiple>
                 </div>
                 <div class="upload-folder-section">
-    <label for="uploadFolderSelect">Folder Tujuan:</label>
-    <div class="folder-selection">
-        <select id="uploadFolderSelect" name="uploadFolderSelect">
-            <option value="">-- Pilih Folder --</option>
-            <!-- Opsi folder akan diisi oleh JavaScript -->
-        </select>
-        <select id="uploadSubfolderSelect" name="uploadSubfolderSelect" style="display: none;">
-            <option value="">-- Pilih Subfolder --</option>
-            <!-- Opsi subfolder akan diisi oleh JavaScript -->
-        </select>
-        <input type="text" id="uploadFolderInput" name="uploadFolderInput" placeholder="Masukkan subfolder (opsional)" style="display: none;">
-    </div>
-</div>         <button type="button" id="uploadToGithub" class="upload-btn">Unggah ke GitHub</button>
+                    <label for="uploadFolderSelect">Folder Tujuan:</label>
+                    <div class="folder-selection">
+                        <select id="uploadFolderSelect" name="uploadFolderSelect">
+                            <option value="">-- Pilih Folder --</option>
+                            <!-- Opsi folder akan diisi oleh JavaScript -->
+                        </select>
+                        <select id="uploadSubfolderSelect" name="uploadSubfolderSelect" style="display: none;">
+                            <option value="">-- Pilih Subfolder --</option>
+                            <!-- Opsi subfolder akan diisi oleh JavaScript -->
+                        </select>
+                        <input type="text" id="uploadFolderInput" name="uploadFolderInput" placeholder="Masukkan subfolder (opsional)" style="display: none;">
+                    </div>
+                </div>
+                <button type="button" id="uploadToGithub" class="upload-btn">Unggah ke GitHub</button>
             </div>
 
             <div id="gallery" class="gallery"></div>
@@ -123,31 +132,32 @@
                     </tr>
                 </thead>
                 <tbody id="scheduleTableBody"></tbody>
-    </table>
-    <div id="noScheduleMessage" class="no-schedule-message hidden">
-        Tidak ada konten terjadwal untuk akun ini.
-    </div>
-    <div class="load-more-container">
-        <button id="loadMore" class="load-more-btn hidden">Load More</button>
-    </div>
-    <div class="delete-container" id="deleteContainer" style="display: none;">
-        <span id="totalSchedules"></span>
-        <button id="deleteSelected" class="delete-selected-btn">Hapus Terpilih</button>
-    </div>
-</div>
-
-    <!-- Modal untuk konfirmasi hapus -->
-    <div id="confirmModal" class="modal hidden">
-        <div class="modal-content">
-            <p id="confirmMessage"></p>
-            <div class="modal-buttons">
-                <button id="confirmOk">OK</button>
-                <button id="confirmCancel">Batal</button>
+            </table>
+            <div id="noScheduleMessage" class="no-schedule-message hidden">
+                Tidak ada konten terjadwal untuk akun ini.
+            </div>
+            <div class="load-more-container">
+                <button id="loadMore" class="load-more-btn hidden">Load More</button>
+            </div>
+            <div class="delete-container" id="deleteContainer" style="display: none;">
+                <span id="totalSchedules"></span>
+                <button id="deleteSelected" class="delete-selected-btn">Hapus Terpilih</button>
             </div>
         </div>
-    </div>
 
-    <!-- Panggil file javascript.js -->
-    <script src="/javascript.js"></script>
+        <!-- Modal untuk konfirmasi hapus -->
+        <div id="confirmModal" class="modal hidden">
+            <div class="modal-content">
+                <p id="confirmMessage"></p>
+                <div class="modal-buttons">
+                    <button id="confirmOk">OK</button>
+                    <button id="confirmCancel">Batal</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panggil file javascript.js -->
+        <script src="/javascript.js"></script>
+    </div>
 </body>
 </html>
