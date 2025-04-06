@@ -481,42 +481,67 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     githubFolder.addEventListener('change', async () => {
-        const folderPath = githubFolder.value;
-        allMediaFiles = [];
-        captions = {};
-        scheduledTimes = {};
-        gallery.innerHTML = '';
-        mediaUrl.value = '';
+    const folderPath = githubFolder.value;
+    console.log('Folder selected:', folderPath); // Debug: Confirm selection
+    allMediaFiles = [];
+    captions = {};
+    scheduledTimes = {};
+    gallery.innerHTML = '';
+    mediaUrl.value = '';
 
-        const subfolderContainer = document.getElementById('subfolderContainer');
-        const subfolderLabel = document.querySelector('label[for="githubSubfolder"]');
-        const subSubfolderLabel = document.querySelector('label[for="githubSubSubfolder"]');
-        const scheduleAllContainer = document.querySelector('.schedule-all-container'); // This might be null
+    const subfolderContainer = document.getElementById('subfolderContainer');
+    const subfolderLabel = document.querySelector('label[for="githubSubfolder"]');
+    const subSubfolderLabel = document.querySelector('label[for="githubSubSubfolder"]');
+    const scheduleAllContainer = document.querySelector('.schedule-all-container');
 
-        subSubfolderContainer.classList.add('hidden');
-        subSubfolderLabel.style.display = 'none';
-        githubSubSubfolder.innerHTML = '<option value="">-- Pilih Folder --</option>';
+    console.log('scheduleAllContainer found:', !!scheduleAllContainer); // Debug: Check element presence
+    if (scheduleAllContainer) {
+        scheduleAllContainer.style.display = 'none';
+    } else {
+        console.warn('scheduleAllContainer not found in DOM during githubFolder change');
+    }
 
-        // Fix: Check if scheduleAllContainer exists before accessing style
-        if (scheduleAllContainer) {
-            scheduleAllContainer.style.display = 'none';
-        } else {
-            console.warn('scheduleAllContainer not found in DOM during githubFolder change');
-        }
+    subSubfolderContainer.classList.add('hidden');
+    subSubfolderLabel.style.display = 'none';
+    githubSubSubfolder.innerHTML = '<option value="">-- Pilih Folder --</option>';
 
-        if (!folderPath || folderPath === 'ig') {
+    if (!folderPath || folderPath === 'ig') {
+        console.log('No folder selected or default "ig", resetting subfolder'); // Debug
+        subfolderContainer.classList.add('hidden');
+        subfolderLabel.style.display = 'none';
+        githubSubfolder.innerHTML = '<option value="">-- Pilih Subfolder --</option>';
+        return;
+    }
+
+    try {
+        console.log('Processing folder:', folderPath); // Debug
+        if (folderPath === 'ig/image') {
+            console.log('Direct image folder selected'); // Debug
             subfolderContainer.classList.add('hidden');
             subfolderLabel.style.display = 'none';
-            githubSubfolder.innerHTML = '<option value="">-- Pilih Subfolder --</option>';
-            return;
-        }
+            const files = await fetchFilesInSubfolder(folderPath);
+            console.log('Files fetched:', files); // Debug
+            allMediaFiles = files;
+            displayGallery(files);
 
-        try {
-            if (folderPath === 'ig/image') {
-                subfolderContainer.classList.add('hidden');
-                subfolderLabel.style.display = 'none';
+            if (files.length === 0) {
+                showFloatingNotification('No supported media files found in this folder.', true);
+            } else {
+                showFloatingNotification('');
+            }
+        } else {
+            console.log('Fetching subfolders for:', folderPath); // Debug
+            subfolderContainer.classList.remove('hidden');
+            subfolderLabel.style.display = 'block';
+            subfolderLabel.textContent = 'Subfolder';
+            const subfolders = await fetchSubfolders(folderPath);
+            console.log('Subfolders fetched:', subfolders); // Debug
+
+            if (subfolders.length === 0) {
+                console.log('No subfolders, fetching files directly'); // Debug
                 const files = await fetchFilesInSubfolder(folderPath);
                 allMediaFiles = files;
+                githubSubfolder.innerHTML = '<option value="">-- Tidak Ada Subfolder --</option>';
                 displayGallery(files);
 
                 if (files.length === 0) {
@@ -525,46 +550,30 @@ document.addEventListener('DOMContentLoaded', () => {
                     showFloatingNotification('');
                 }
             } else {
-                subfolderContainer.classList.remove('hidden');
-                subfolderLabel.style.display = 'block';
-                subfolderLabel.textContent = 'Subfolder';
-                const subfolders = await fetchSubfolders(folderPath);
-                console.log('All subfolders found:', subfolders);
+                console.log('Populating subfolder dropdown'); // Debug
+                githubSubfolder.innerHTML = '<option value="">-- Pilih Subfolder --</option>';
+                subfolders.forEach(subfolder => {
+                    const option = document.createElement('option');
+                    option.value = subfolder.path;
+                    option.textContent = subfolder.name;
+                    githubSubfolder.appendChild(option);
+                });
 
-                if (subfolders.length === 0) {
-                    const files = await fetchFilesInSubfolder(folderPath);
-                    allMediaFiles = files;
-                    githubSubfolder.innerHTML = '<option value="">-- Tidak Ada Subfolder --</option>';
-                    displayGallery(files);
-
-                    if (files.length === 0) {
-                        showFloatingNotification('No supported media files found in this folder.', true);
-                    } else {
-                        showFloatingNotification('');
-                    }
+                if (githubSubfolder.options.length === 1) {
+                    showFloatingNotification('No subfolders found in this folder.', true);
                 } else {
-                    githubSubfolder.innerHTML = '<option value="">-- Pilih Subfolder --</option>';
-                    subfolders.forEach(subfolder => {
-                        const option = document.createElement('option');
-                        option.value = subfolder.path;
-                        option.textContent = subfolder.name;
-                        githubSubfolder.appendChild(option);
-                    });
-
-                    if (githubSubfolder.options.length === 1) {
-                        showFloatingNotification('No subfolders found in this folder.', true);
-                    } else {
-                        showFloatingNotification('');
-                    }
+                    showFloatingNotification('');
                 }
             }
-        } catch (error) {
-            showFloatingNotification(`Error loading subfolders: ${error.message}`, true);
-            console.error('Error fetching subfolders:', error);
-            subfolderContainer.classList.add('hidden');
-            subfolderLabel.style.display = 'none';
         }
-    });
+        console.log('Folder processing complete'); // Debug
+    } catch (error) {
+        console.error('Error in githubFolder change:', error); // Debug: Catch all errors
+        showFloatingNotification(`Error loading subfolders: ${error.message}`, true);
+        subfolderContainer.classList.add('hidden');
+        subfolderLabel.style.display = 'none';
+    }
+});
 
     githubSubfolder.addEventListener('change', async () => {
         const subfolderPath = githubSubfolder.value;
