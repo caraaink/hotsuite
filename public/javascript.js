@@ -1049,355 +1049,828 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             if (!response.ok) {
-                throw new Error(`HTTP error uploading meta file! status: ${response.status}`);
+                throw new Error(`HTTP error uploading meta to GitHub! status: ${response.status}`);
             }
 
-            const result = await response.json();
-            showFloatingNotification(`Caption untuk ${file.name} berhasil disimpan!`);
+            console.log(`Meta file ${metaPath} saved to GitHub`);
+            return true;
         } catch (error) {
-            showFloatingNotification(`Gagal menyimpan caption: ${error.message}`, true);
-            console.error('Error saving caption to GitHub:', error);
+            console.error(`Error saving meta file for ${file.name}:`, error);
+            showFloatingNotification(`Error saving meta file for ${file.name}: ${error.message}`, true);
+            return false;
         }
     }
 
-    function displayGallery(files) {
+    async function displayGallery(files) {
         gallery.innerHTML = '';
+
+        console.log('Files received by displayGallery:', files);
+
+        const mediaFiles = files.filter(file => 
+            file.name && 
+            (file.name.endsWith('.jpg') || file.name.endsWith('.png') || file.name.endsWith('.mp4'))
+        );
+
+        console.log('Media files after filter:', mediaFiles);
+
         const scheduleAllContainer = document.querySelector('.schedule-all-container');
-        if (files.length === 0) {
+
+        if (mediaFiles.length === 0) {
+            gallery.innerHTML = '<p>Tidak ada media untuk ditampilkan.</p>';
             scheduleAllContainer.style.display = 'none';
             return;
         }
 
-        scheduleAllContainer.style.display = 'block';
+        scheduleAllContainer.style.display = 'flex';
 
-        files.forEach((file, index) => {
-            const galleryItem = document.createElement('div');
-            galleryItem.classList.add('gallery-item');
-
-            const mediaElement = file.name.endsWith('.mp4') 
-                ? document.createElement('video') 
-                : document.createElement('img');
-            mediaElement.src = file.download_url;
-            if (file.name.endsWith('.mp4')) {
-                mediaElement.controls = true;
+        let schedules = [];
+        try {
+            const schedulesResponse = await fetch('/api/get_schedules');
+            if (!schedulesResponse.ok) {
+                throw new Error(`Failed to fetch schedules: ${schedulesResponse.status}`);
             }
-            mediaElement.alt = file.name;
-            mediaElement.classList.add('gallery-media');
+            schedules = await schedulesResponse.json();
+            console.log('Schedules for gallery:', schedules);
+        } catch (error) {
+            console.error('Error fetching schedules:', error);
+            showFloatingNotification('Gagal mengambil data jadwal. Galeri tetap ditampilkan tanpa jadwal.', true);
+            schedules = { schedules: [] };
+        }
 
-            const captionTextarea = document.createElement('textarea');
-            captionTextarea.classList.add('caption-input');
-            captionTextarea.placeholder = 'Masukkan caption...';
-            captionTextarea.value = captions[file.path] || '';
-            captionTextarea.addEventListener('input', (e) => {
-                captions[file.path] = e.target.value;
-            });
+        const withSchedule = [];
+        const withoutSchedule = [];
 
-            const saveCaptionBtn = document.createElement('button');
-            saveCaptionBtn.textContent = 'Simpan Caption';
-            saveCaptionBtn.classList.add('save-caption-btn');
-            saveCaptionBtn.addEventListener('click', async () => {
-                const caption = captions[file.path] || '';
-                const folderPath = file.path.substring(0, file.path.lastIndexOf('/'));
-                const commitMessage = folderPath.startsWith('ig/') 
-                    ? `Update caption for ${file.name} in ${folderPath} [vercel-skip]` 
-                    : `Update caption for ${file.name} in ${folderPath}`;
-                await saveCaptionToGithub(file, caption, commitMessage);
-            });
-
-            const scheduleInput = document.createElement('input');
-            scheduleInput.type = 'datetime-local';
-            scheduleInput.classList.add('schedule-input');
+        mediaFiles.forEach(file => {
             if (scheduledTimes[file.path]) {
-                const wibTime = convertToWIB(scheduledTimes[file.path]);
-                scheduleInput.value = formatToDatetimeLocal(wibTime);
+                withSchedule.push(file);
+            } else {
+                withoutSchedule.push(file);
             }
-            scheduleInput.addEventListener('change', (e) => {
-                const selectedTime = new Date(e.target.value);
-                scheduledTimes[file.path] = selectedTime.toISOString();
-            });
+        });
 
-            const deleteBtn = document.createElement('button');
-            deleteBtn.textContent = 'Hapus';
-            deleteBtn.classList.add('delete-btn');
-            deleteBtn.addEventListener('click', async () => {
+        const sortedMediaFiles = [...withSchedule, ...withoutSchedule];
+
+        console.log('Sorted media files:', sortedMediaFiles.map(file => file.name));
+
+        function formatDateTime(date, hours, minutes) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const formatted = `${year}-${month}-${day}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+            return formatted;
+        }
+
+        sortedMediaFiles.forEach((file, index) => {
+            const container = document.createElement('div');
+            container.className = 'gallery-item';
+
+            let mediaElement;
+            if (file.name.endsWith('.mp4')) {
+                mediaElement = document.createElement('video');
+                mediaElement.src = file.download_url;
+                mediaElement.controls = false;
+                mediaElement.volume = 0.5;
+                mediaElement.loop = true;
+                mediaElement.dataset.fileData = JSON.stringify(file);
+                mediaElement.addEventListener('click', () => {
+                    gallery.querySelectorAll('img, video').forEach(i => i.classList.remove('selected'));
+                    mediaElement.classList.add('selected');
+                    mediaUrl.value = file.download_url;
+                });
+                mediaElement.addEventListener('mouseenter', () => mediaElement.play());
+                mediaElement.addEventListener('mouseleave', () => mediaElement.pause());
+            } else {
+                mediaElement = document.createElement('img');
+                mediaElement.src = file.download_url;
+                mediaElement.alt = file.name;
+                mediaElement.dataset.fileData = JSON.stringify(file);
+                mediaElement.addEventListener('click', () => {
+                    gallery.querySelectorAll('img, video').forEach(i => i.classList.remove('selected'));
+                    mediaElement.classList.add('selected');
+                    mediaUrl.value = file.download_url;
+                });
+            }
+
+            const deleteDirectBtn = document.createElement('button');
+            deleteDirectBtn.className = 'delete-direct-btn';
+            deleteDirectBtn.textContent = '×';
+            deleteDirectBtn.addEventListener('click', async () => {
                 const confirmed = await showConfirmModal(`Apakah Anda yakin ingin menghapus ${file.name}?`);
                 if (confirmed) {
                     await deletePhoto(file.path);
                 }
             });
+            container.appendChild(deleteDirectBtn);
 
-            galleryItem.appendChild(mediaElement);
-            galleryItem.appendChild(captionTextarea);
-            galleryItem.appendChild(saveCaptionBtn);
-            galleryItem.appendChild(scheduleInput);
-            galleryItem.appendChild(deleteBtn);
-            gallery.appendChild(galleryItem);
-        });
-    }
+            const name = document.createElement('p');
+            name.textContent = file.name;
 
-    async function loadSchedules() {
-        if (isLoadingSchedules) return;
-        isLoadingSchedules = true;
-        showFloatingNotification('Memuat jadwal...');
-        spinner.classList.remove('hidden');
+            const captionText = document.createElement('p');
+            captionText.className = 'caption-text';
+            captionText.textContent = captions[file.path] || 'Tidak ada caption';
 
-        try {
-            let url = `/api/get_schedules?limit=${ITEMS_PER_PAGE}&page=${currentPage}`;
-            if (selectedAccountNum) {
-                url += `&accountNum=${selectedAccountNum}`;
+            let isDragging = false;
+            let startY = 0;
+            let startScrollTop = 0;
+
+            captionText.addEventListener('mousedown', (e) => {
+                if (captionText.scrollHeight > captionText.clientHeight) {
+                    isDragging = true;
+                    startY = e.clientY;
+                    startScrollTop = captionText.scrollTop;
+                    captionText.style.cursor = 'grabbing';
+                }
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (isDragging) {
+                    const deltaY = e.clientY - startY;
+                    captionText.scrollTop = startScrollTop - deltaY;
+                }
+            });
+
+            document.addEventListener('mouseup', () => {
+                if (isDragging) {
+                    isDragging = false;
+                    captionText.style.cursor = 'default';
+                }
+            });
+
+            captionText.addEventListener('selectstart', (e) => {
+                if (isDragging) {
+                    e.preventDefault();
+                }
+            });
+
+            const scheduleTime = document.createElement('p');
+            scheduleTime.className = 'schedule-time';
+            if (scheduledTimes[file.path]) {
+                const date = new Date(scheduledTimes[file.path]);
+                const formattedTime = date.toLocaleString('id-ID', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                }).replace(',', '').replace(/(\d{2}):(\d{2})/, '$1.$2');
+                scheduleTime.textContent = formattedTime;
+                scheduleTime.classList.add('scheduled');
+            } else {
+                scheduleTime.textContent = 'Belum dijadwalkan';
+                scheduleTime.classList.add('unscheduled');
             }
-            if (selectedAccountId) {
-                url += `&accountId=${selectedAccountId}`;
-            }
 
-            const response = await fetch(url);
-            if (!response.ok) {
-                throw new Error(`HTTP error fetching schedules! status: ${response.status}`);
-            }
-            const data = await response.json();
-            console.log('Schedules fetched:', data);
+            const existingSchedule = schedules.schedules.find(schedule => schedule.mediaUrl === file.download_url);
+            const scheduleId = existingSchedule ? existingSchedule.scheduleId : null;
 
-            allSchedules = data.schedules || [];
-            updateScheduleVisibility(allSchedules);
-        } catch (error) {
-            showFloatingNotification(`Error loading schedules: ${error.message}`, true);
-            console.error('Error fetching schedules:', error);
-            updateScheduleVisibility([]);
-        } finally {
-            spinner.classList.add('hidden');
-            isLoadingSchedules = false;
-        }
-    }
+            const buttonGroup = document.createElement('div');
+            buttonGroup.className = 'button-group';
 
-    function renderSchedules(schedules, startIndex) {
-        scheduleTableBody.innerHTML = '';
-        schedules.forEach((schedule, index) => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${startIndex + index + 1}</td>
-                <td><input type="checkbox" class="schedule-checkbox" data-id="${schedule.id}"></td>
-                <td>${schedule.username || 'N/A'}</td>
-                <td>
-                    ${schedule.media_url ? (
-                        schedule.media_url.endsWith('.mp4') 
-                            ? `<video src="${schedule.media_url}" width="50" controls></video>` 
-                            : `<img src="${schedule.media_url}" width="50" alt="Media">`
-                    ) : 'No Media'}
-                </td>
-                <td>${schedule.caption || 'No Caption'}</td>
-                <td>${schedule.scheduled_time ? formatToLocaleString(convertToWIB(schedule.scheduled_time)) : 'Not Scheduled'}</td>
-                <td>${schedule.status || 'Pending'}</td>
-                <td>
-                    <button class="delete-schedule-btn" data-id="${schedule.id}">Hapus</button>
-                </td>
-            `;
-            scheduleTableBody.appendChild(row);
-        });
+            const editBtn = document.createElement('button');
+            editBtn.className = 'btn edit';
+            editBtn.textContent = 'Edit';
+            editBtn.addEventListener('click', () => {
+                const editor = document.createElement('div');
+                editor.className = 'caption-editor';
+                const textarea = document.createElement('textarea');
+                textarea.value = captions[file.path] || '';
+                const buttonContainer = document.createElement('div');
+                buttonContainer.className = 'editor-buttons';
+                const saveBtn = document.createElement('button');
+                saveBtn.textContent = 'Simpan';
+                const saveSpinner = document.createElement('span');
+                saveSpinner.className = 'editor-spinner hidden';
+                saveBtn.appendChild(saveSpinner);
+                saveBtn.addEventListener('click', async () => {
+                    saveSpinner.classList.remove('hidden');
+                    saveBtn.disabled = true;
+                    captions[file.path] = textarea.value;
 
-        document.querySelectorAll('.delete-schedule-btn').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                const scheduleId = btn.dataset.id;
-                const confirmed = await showConfirmModal('Apakah Anda yakin ingin menghapus jadwal ini?');
+                    const folderPath = file.path.substring(0, file.path.lastIndexOf('/'));
+                    const metaCommitMessage = folderPath.startsWith('ig/') 
+                        ? `Update meta file for ${file.path} [vercel-skip]` 
+                        : `Update meta file for ${file.path}`;
+
+                    const success = await saveCaptionToGithub(file, captions[file.path], metaCommitMessage);
+                    if (success) {
+                        captionText.textContent = captions[file.path] || 'Tidak ada caption';
+                        editor.remove();
+                        showFloatingNotification(`Caption untuk ${file.name} berhasil disimpan.`);
+                    }
+                    saveSpinner.classList.add('hidden');
+                    saveBtn.disabled = false;
+                });
+
+                const cancelBtn = document.createElement('button');
+                cancelBtn.textContent = 'Batal';
+                cancelBtn.addEventListener('click', () => {
+                    editor.remove();
+                });
+
+                buttonContainer.appendChild(saveBtn);
+                buttonContainer.appendChild(cancelBtn);
+                editor.appendChild(textarea);
+                editor.appendChild(buttonContainer);
+                container.appendChild(editor);
+            });
+
+            const scheduleBtn = document.createElement('button');
+            scheduleBtn.className = 'btn schedule';
+            scheduleBtn.textContent = 'Jadwalkan';
+            scheduleBtn.addEventListener('click', () => {
+                const editor = document.createElement('div');
+                editor.className = 'schedule-editor';
+                const datetimeInput = document.createElement('input');
+                datetimeInput.type = 'datetime-local';
+                datetimeInput.value = scheduledTimes[file.path] || '';
+
+                const buttonContainer = document.createElement('div');
+                buttonContainer.className = 'editor-buttons';
+
+                const saveBtn = document.createElement('button');
+                saveBtn.className = 'btn-save';
+                saveBtn.textContent = 'Simpan';
+                saveBtn.addEventListener('click', () => {
+                    if (!datetimeInput.value) {
+                        showFloatingNotification('Pilih waktu terlebih dahulu.', true);
+                        return;
+                    }
+
+                    scheduledTimes[file.path] = datetimeInput.value;
+                    const date = new Date(scheduledTimes[file.path]);
+                    const formattedTime = date.toLocaleString('id-ID', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: false
+                    }).replace(',', '').replace(/(\d{2}):(\d{2})/, '$1.$2');
+                    scheduleTime.textContent = formattedTime;
+                    scheduleTime.classList.add('scheduled');
+                    scheduleTime.classList.remove('unscheduled');
+
+                    editor.remove();
+                    showFloatingNotification(`Waktu jadwal untuk ${file.name} disimpan sementara. Klik "Simpan Jadwal" untuk mengirimkan.`);
+                });
+
+                const cancelBtn = document.createElement('button');
+                cancelBtn.className = 'btn-cancel';
+                cancelBtn.textContent = 'Batal';
+                cancelBtn.addEventListener('click', () => {
+                    delete scheduledTimes[file.path];
+                    scheduleTime.textContent = 'Belum dijadwalkan';
+                    scheduleTime.classList.add('unscheduled');
+                    scheduleTime.classList.remove('scheduled');
+                    editor.remove();
+                    displayGallery(files);
+                });
+
+                buttonContainer.appendChild(saveBtn);
+                buttonContainer.appendChild(cancelBtn);
+
+                editor.appendChild(datetimeInput);
+                editor.appendChild(buttonContainer);
+                container.appendChild(editor);
+            });
+
+            const deleteScheduleBtn = document.createElement('button');
+            deleteScheduleBtn.className = 'btn delete';
+            deleteScheduleBtn.textContent = 'Hapus Jadwal';
+            deleteScheduleBtn.disabled = !scheduleId;
+            deleteScheduleBtn.addEventListener('click', async () => {
+                if (!scheduleId) {
+                    showFloatingNotification('File ini belum memiliki jadwal.', true);
+                    return;
+                }
+
+                const confirmed = await showConfirmModal(`Apakah Anda yakin ingin menghapus jadwal untuk ${file.name}?`);
                 if (confirmed) {
                     await deleteSchedule(scheduleId);
+                    deleteScheduleBtn.disabled = true;
+                    scheduleTime.textContent = 'Belum dijadwalkan';
+                    scheduleTime.classList.add('unscheduled');
+                    scheduleTime.classList.remove('scheduled');
+                    showFloatingNotification(`Jadwal untuk ${file.name} berhasil dihapus.`);
+                }
+            });
+
+            const publishBtn = document.createElement('button');
+            publishBtn.className = 'btn publish';
+            publishBtn.textContent = 'Publish';
+            publishBtn.addEventListener('click', async () => {
+                if (!selectedToken || !accountId.value) {
+                    showFloatingNotification('Pilih akun dan username terlebih dahulu.', true);
+                    return;
+                }
+
+                showFloatingNotification('Mempublikasikan...', false, 0);
+                spinner.classList.remove('hidden');
+                let isUploadedFile = file.path.startsWith('ig/image/');
+
+                try {
+                    const response = await fetch('/api/publish', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            accountId: accountId.value,
+                            mediaUrl: file.download_url,
+                            caption: captions[file.path] || '',
+                            userToken: selectedToken,
+                            mediaType: file.name.endsWith('.mp4') ? 'video' : 'image',
+                        }),
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error publishing post! status: ${response.status}`);
+                    }
+
+                    const result = await response.json();
+                    showFloatingNotification(result.message || 'Berhasil dipublikasikan ke Instagram!', false, 3000);
+
+                    if (isUploadedFile) {
+                        await deletePhoto(file.path);
+                    }
+                } catch (error) {
+                    showFloatingNotification(`Error publishing: ${error.message}`, true);
+                    console.error('Error publishing post:', error);
+                } finally {
+                    spinner.classList.add('hidden');
+                }
+            });
+
+            buttonGroup.appendChild(editBtn);
+            buttonGroup.appendChild(scheduleBtn);
+
+            container.appendChild(mediaElement);
+            container.appendChild(name);
+            container.appendChild(captionText);
+            container.appendChild(scheduleTime);
+            container.appendChild(buttonGroup);
+            container.appendChild(deleteScheduleBtn);
+            container.appendChild(publishBtn);
+            gallery.appendChild(container);
+        });
+
+        startDateTime.addEventListener('input', () => {
+            if (!startDateTime.value) {
+                Object.keys(scheduledTimes).forEach(filePath => {
+                    delete scheduledTimes[filePath];
+                });
+                Array.from(gallery.children).forEach(container => {
+                    const scheduleTimeElement = container.querySelector('.schedule-time');
+                    if (scheduleTimeElement) {
+                        scheduleTimeElement.textContent = 'Belum dijadwalkan';
+                        scheduleTimeElement.classList.add('unscheduled');
+                        scheduleTimeElement.classList.remove('scheduled');
+                    }
+                });
+                showFloatingNotification('Jadwal untuk semua media telah direset.');
+            }
+        });
+
+        startDateTime.addEventListener('change', () => {
+            if (!startDateTime.value) return;
+            const start = new Date(startDateTime.value);
+            const hours = start.getHours();
+            const minutes = start.getMinutes();
+            const dayIncrement = skipDay.checked ? 2 : 1;
+            mediaFiles.forEach((file, index) => {
+                const newDate = new Date(start);
+                newDate.setDate(start.getDate() + (index * dayIncrement));
+                scheduledTimes[file.path] = formatDateTime(newDate, hours, minutes);
+                const scheduleTimeElement = gallery.children[index]?.querySelector('.schedule-time');
+                if (scheduleTimeElement) {
+                    const date = new Date(scheduledTimes[file.path]);
+                    const formattedTime = date.toLocaleString('id-ID', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: false
+                    }).replace(',', '').replace(/(\d{2}):(\d{2})/, '$1.$2');
+                    scheduleTimeElement.textContent = formattedTime;
+                    scheduleTimeElement.classList.add('scheduled');
+                    scheduleTimeElement.classList.remove('unscheduled');
                 }
             });
         });
-    }
 
-    async function deleteSchedule(scheduleId) {
-        showFloatingNotification('Menghapus jadwal...');
-        spinner.classList.remove('hidden');
-
-        try {
-            const response = await fetch(`/api/delete_schedule?id=${scheduleId}`, {
-                method: 'DELETE',
+        skipDay.addEventListener('change', () => {
+            if (!startDateTime.value) return;
+            const start = new Date(startDateTime.value);
+            const hours = start.getHours();
+            const minutes = start.getMinutes();
+            const dayIncrement = skipDay.checked ? 2 : 1;
+            mediaFiles.forEach((file, index) => {
+                const newDate = new Date(start);
+                newDate.setDate(start.getDate() + (index * dayIncrement));
+                scheduledTimes[file.path] = formatDateTime(newDate, hours, minutes);
+                const scheduleTimeElement = gallery.children[index]?.querySelector('.schedule-time');
+                if (scheduleTimeElement) {
+                    const date = new Date(scheduledTimes[file.path]);
+                    const formattedTime = date.toLocaleString('id-ID', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: false
+                    }).replace(',', '').replace(/(\d{2}):(\d{2})/, '$1.$2');
+                    scheduleTimeElement.textContent = formattedTime;
+                    scheduleTimeElement.classList.add('scheduled');
+                    scheduleTimeElement.classList.remove('unscheduled');
+                }
             });
+        });
 
-            if (!response.ok) {
-                throw new Error(`HTTP error deleting schedule! status: ${response.status}`);
+        scheduleAll.addEventListener('click', () => {
+            if (!startDateTime.value) {
+                showFloatingNotification('Pilih tanggal dan jam awal terlebih dahulu.', true);
+                return;
             }
 
-            const result = await response.json();
-            showFloatingNotification(`${result.message}`);
+            const start = new Date(startDateTime.value);
+            const hours = start.getHours();
+            const minutes = start.getMinutes();
+            const dayIncrement = skipDay.checked ? 2 : 1;
+
+            console.log('Start time selected:', startDateTime.value);
+            console.log('Hours:', hours, 'Minutes:', minutes);
+
+            mediaFiles.forEach((file, index) => {
+                const newDate = new Date(start);
+                newDate.setDate(start.getDate() + (index * dayIncrement));
+                scheduledTimes[file.path] = formatDateTime(newDate, hours, minutes);
+                const scheduleTimeElement = gallery.children[index]?.querySelector('.schedule-time');
+                if (scheduleTimeElement) {
+                    const date = new Date(scheduledTimes[file.path]);
+                    const formattedTime = date.toLocaleString('id-ID', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: false
+                    }).replace(',', '').replace(/(\d{2}):(\d{2})/, '$1.$2');
+                    scheduleTimeElement.textContent = formattedTime;
+                    scheduleTimeElement.classList.add('scheduled');
+                    scheduleTimeElement.classList.remove('unscheduled');
+                }
+                console.log(`File ${file.name} scheduled at: ${scheduledTimes[file.path]}`);
+            });
+
+            showFloatingNotification(`Waktu jadwal untuk semua media disimpan sementara. Klik "Simpan Jadwal" untuk mengirimkan.`);
+            window.history.pushState({}, document.title, window.location.pathname);
+        });
+    }
+
+    loadGithubFolders();
+
+    async function deleteSchedule(scheduleId) {
+        try {
+            showFloatingNotification('Menghapus jadwal...');
+            spinner.classList.remove('hidden');
+            const res = await fetch('/api/delete_schedule', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ scheduleId }),
+            });
+            if (!res.ok) {
+                throw new Error(`HTTP error! status: ${res.status}`);
+            }
+            const result = await res.json();
+            showFloatingNotification(result.message || 'Jadwal berhasil dihapus!');
             await loadSchedules();
         } catch (error) {
-            showFloatingNotification(`Gagal menghapus jadwal: ${error.message}`, true);
+            showFloatingNotification(`Error deleting schedule: ${error.message}`, true);
             console.error('Error deleting schedule:', error);
         } finally {
             spinner.classList.add('hidden');
         }
     }
 
-    selectAll.addEventListener('change', (e) => {
-        const checkboxes = document.querySelectorAll('.schedule-checkbox');
-        checkboxes.forEach(checkbox => {
-            checkbox.checked = e.target.checked;
-        });
-    });
+    async function updateSchedule(scheduleId, updatedData) {
+        try {
+            const res = await fetch('/api/update_schedule', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ scheduleId, ...updatedData }),
+            });
+            if (!res.ok) {
+                throw new Error(`HTTP error updating schedule! status: ${res.status}`);
+            }
+            const result = await res.json();
+            showFloatingNotification(result.message || 'Jadwal berhasil diperbarui!');
+            await loadSchedules();
+        } catch (error) {
+            showFloatingNotification(`Error updating schedule: ${error.message}`, true);
+            console.error('Error updating schedule:', error);
+        }
+    }
 
-    deleteSelected.addEventListener('click', async () => {
-        const selectedCheckboxes = document.querySelectorAll('.schedule-checkbox:checked');
-        if (selectedCheckboxes.length === 0) {
+    async function deleteSelectedSchedules() {
+        const checkboxes = document.querySelectorAll('.schedule-checkbox:checked');
+        if (checkboxes.length === 0) {
             showFloatingNotification('Pilih setidaknya satu jadwal untuk dihapus.', true);
             return;
         }
 
-        const confirmed = await showConfirmModal(`Apakah Anda yakin ingin menghapus ${selectedCheckboxes.length} jadwal?`);
-        if (!confirmed) return;
-
-        showFloatingNotification('Menghapus jadwal terpilih...');
-        spinner.classList.remove('hidden');
+        const scheduleIds = Array.from(checkboxes).map(checkbox => checkbox.dataset.scheduleId);
 
         try {
-            const deletePromises = Array.from(selectedCheckboxes).map(checkbox => {
-                const scheduleId = checkbox.dataset.id;
-                return fetch(`/api/delete_schedule?id=${scheduleId}`, {
-                    method: 'DELETE',
-                }).then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error deleting schedule ${scheduleId}! status: ${response.status}`);
-                    }
-                    return response.json();
-                });
-            });
-
-            await Promise.all(deletePromises);
-            showFloatingNotification(`${selectedCheckboxes.length} jadwal berhasil dihapus!`);
-            await loadSchedules();
+            showFloatingNotification('Menghapus jadwal terpilih...');
+            spinner.classList.remove('hidden');
+            for (const scheduleId of scheduleIds) {
+                await deleteSchedule(scheduleId);
+            }
+            showFloatingNotification(`${scheduleIds.length} jadwal berhasil dihapus!`);
         } catch (error) {
-            showFloatingNotification(`Gagal menghapus jadwal: ${error.message}`, true);
-            console.error('Error deleting selected schedules:', error);
+            showFloatingNotification(`Error deleting schedules: ${error.message}`, true);
+            console.error('Error deleting schedules:', error);
         } finally {
             spinner.classList.add('hidden');
         }
-    });
+    }
 
-    scheduleAll.addEventListener('click', async () => {
-        if (!startDateTime.value) {
-            showFloatingNotification('Pilih tanggal dan jam awal terlebih dahulu.', true);
+    const handleCaptionBlur = async (e) => {
+        const scheduleId = e.target.dataset.scheduleId;
+        const newCaption = e.target.textContent.trim();
+        await updateSchedule(scheduleId, { caption: newCaption });
+    };
+
+    const handleTimeChange = async (e) => {
+        const scheduleId = e.target.parentElement.dataset.scheduleId;
+        const newTime = e.target.value;
+        await updateSchedule(scheduleId, { time: newTime });
+    };
+
+    const handleDeleteClick = async (e) => {
+        const scheduleId = e.target.getAttribute('data-schedule-id');
+        const confirmed = await showConfirmModal('Apakah Anda yakin ingin menghapus jadwal ini?');
+        if (confirmed) {
+            deleteSchedule(scheduleId);
+        }
+    };
+
+    function renderSchedules(schedulesToRender, startIndex) {
+        scheduleTableBody.innerHTML = '';
+
+        const oldCaptionCells = document.querySelectorAll('.editable-caption');
+        oldCaptionCells.forEach(cell => {
+            cell.removeEventListener('blur', handleCaptionBlur);
+        });
+
+        const oldTimeInputs = document.querySelectorAll('.editable-time .time-input');
+        oldTimeInputs.forEach(input => {
+            input.removeEventListener('change', handleTimeChange);
+        });
+
+        const oldDeleteButtons = document.querySelectorAll('.delete-btn');
+        oldDeleteButtons.forEach(button => {
+            button.removeEventListener('click', handleDeleteClick);
+        });
+
+        schedulesToRender.forEach((schedule, idx) => {
+            const globalIndex = startIndex + idx;
+            const wibTime = convertToWIB(schedule.time);
+            const formattedWibTime = formatToDatetimeLocal(wibTime);
+            const row = document.createElement('tr');
+
+            const isVideo = schedule.mediaUrl.endsWith('.mp4');
+            const mediaPreview = isVideo
+                ? `<video src="${schedule.mediaUrl}" class="schedule-media-preview video-preview" muted></video>`
+                : `<img src="${schedule.mediaUrl}" alt="Media" class="schedule-media-preview">`;
+
+            row.innerHTML = `
+                <td>${globalIndex + 1}</td>
+                <td><input type="checkbox" class="schedule-checkbox" data-schedule-id="${schedule.scheduleId}"></td>
+                <td>${schedule.username || 'Unknown'}</td>
+                <td>${mediaPreview}</td>
+                <td class="editable-caption" contenteditable="true" data-schedule-id="${schedule.scheduleId}">${schedule.caption}</td>
+                <td class="editable-time" data-schedule-id="${schedule.scheduleId}">
+                    <input type="datetime-local" class="time-input" value="${formattedWibTime}">
+                </td>
+                <td class="${schedule.completed ? 'processing' : ''}">${schedule.completed ? '<span class="processing-dots">Process</span>' : 'Menunggu'}</td>
+                <td>
+                    <button class="delete-btn" data-schedule-id="${schedule.scheduleId}">Hapus</button>
+                </td>
+            `;
+            scheduleTableBody.appendChild(row);
+        });
+
+        document.querySelectorAll('.editable-caption').forEach(cell => {
+            cell.addEventListener('blur', handleCaptionBlur);
+        });
+
+        document.querySelectorAll('.editable-time .time-input').forEach(input => {
+            input.addEventListener('change', handleTimeChange);
+        });
+
+        document.querySelectorAll('.delete-btn').forEach(button => {
+            button.addEventListener('click', debounce(handleDeleteClick, 300));
+        });
+
+        animateProcessingDots();
+    }
+
+    function animateProcessingDots() {
+        const processingElements = document.querySelectorAll('.processing-dots');
+        processingElements.forEach(el => {
+            let dotCount = 0;
+            setInterval(() => {
+                dotCount = (dotCount + 1) % 4;
+                el.textContent = 'Process' + '.'.repeat(dotCount);
+            }, 500);
+        });
+    }
+
+    function renderPagination(schedules) {
+        const totalPages = Math.ceil(schedules.length / ITEMS_PER_PAGE);
+        const loadMoreContainer = document.querySelector('.load-more-container');
+        loadMoreContainer.innerHTML = '';
+
+        if (totalPages <= 1) return;
+
+        const prevBtn = document.createElement('button');
+        prevBtn.textContent = 'Prev';
+        prevBtn.className = 'load-more-btn';
+        prevBtn.disabled = currentPage === 1;
+        prevBtn.addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                loadSchedulesPage(schedules);
+            }
+        });
+        loadMoreContainer.appendChild(prevBtn);
+
+        for (let i = 1; i <= totalPages; i++) {
+            const pageBtn = document.createElement('button');
+            pageBtn.textContent = i;
+            pageBtn.className = 'load-more-btn';
+            if (i === currentPage) {
+                pageBtn.style.backgroundColor = '#357abd';
+            }
+            pageBtn.addEventListener('click', () => {
+                currentPage = i;
+                loadSchedulesPage(schedules);
+            });
+            loadMoreContainer.appendChild(pageBtn);
+        }
+
+        const nextBtn = document.createElement('button');
+        nextBtn.textContent = 'Next';
+        nextBtn.className = 'load-more-btn';
+        nextBtn.disabled = currentPage === totalPages;
+        nextBtn.addEventListener('click', () => {
+            if (currentPage < totalPages) {
+                currentPage++;
+                loadSchedulesPage(schedules);
+            }
+        });
+        loadMoreContainer.appendChild(nextBtn);
+    }
+
+    function loadSchedulesPage(schedules) {
+        const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+        const endIndex = startIndex + ITEMS_PER_PAGE;
+        const pageSchedules = schedules.slice(startIndex, endIndex);
+        renderSchedules(pageSchedules, startIndex);
+        renderPagination(schedules);
+    }
+
+    const handleSelectAllChange = () => {
+        const checkboxes = document.querySelectorAll('.schedule-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = selectAll.checked;
+        });
+    };
+
+    const handleDeleteSelectedClick = async () => {
+        const confirmed = await showConfirmModal('Apakah Anda yakin ingin menghapus jadwal yang dipilih?');
+        if (confirmed) {
+            deleteSelectedSchedules();
+        }
+    };
+
+    async function loadSchedules() {
+        if (isLoadingSchedules) {
+            console.log('loadSchedules already in progress, skipping...');
             return;
         }
 
-        if (!selectedToken || !selectedUsername || !selectedAccountId) {
-            showFloatingNotification('Pilih akun dan username IG terlebih dahulu.', true);
+        isLoadingSchedules = true;
+        try {
+            scheduleTableBody.innerHTML = '<tr><td colspan="8">Memuat jadwal...</td></tr>';
+            const res = await fetch('/api/get_schedules');
+            if (!res.ok) {
+                throw new Error(`HTTP error fetching schedules! status: ${res.status}`);
+            }
+            const data = await res.json();
+            console.log('Schedules fetched:', data);
+
+            allSchedules = data.schedules || [];
+
+            allSchedules.sort((a, b) => new Date(a.time) - new Date(b.time));
+
+            let filteredSchedules = allSchedules;
+            if (selectedAccountNum) {
+                filteredSchedules = filteredSchedules.filter(schedule => schedule.accountNum === selectedAccountNum);
+            }
+            if (selectedAccountId) {
+                filteredSchedules = filteredSchedules.filter(schedule => schedule.accountId === selectedAccountId);
+            }
+
+            currentPage = 1;
+            updateScheduleVisibility(filteredSchedules);
+
+            selectAll.removeEventListener('change', handleSelectAllChange);
+            deleteSelected.removeEventListener('click', handleDeleteSelectedClick);
+
+            if (filteredSchedules.length > 0) {
+                selectAll.addEventListener('change', handleSelectAllChange);
+                deleteSelected.addEventListener('click', handleDeleteSelectedClick);
+            }
+        } catch (error) {
+            showFloatingNotification(`Error loading schedules: ${error.message}`, true);
+            console.error('Error fetching schedules:', error);
+            scheduleTableBody.innerHTML = '<tr><td colspan="8">Gagal memuat jadwal.</td></tr>';
+            totalSchedules.textContent = 'Total: 0 jadwal';
+            updateScheduleVisibility([]);
+        } finally {
+            isLoadingSchedules = false;
+        }
+    }
+
+    saveSchedules.addEventListener('click', async () => {
+        if (!selectedToken || !accountId.value) {
+            showFloatingNotification('Pilih akun dan username terlebih dahulu.', true);
             return;
         }
 
-        const startTime = new Date(startDateTime.value);
-        const skipDayChecked = skipDay.checked;
-        let currentTime = startTime;
+        const scheduledFiles = allMediaFiles.filter(file => {
+            const scheduledTime = scheduledTimes[file.path];
+            return scheduledTime && typeof scheduledTime === 'string' && scheduledTime.trim() !== '';
+        });
+        if (scheduledFiles.length === 0) {
+            showFloatingNotification('Tidak ada media yang dijadwalkan.', true);
+            return;
+        }
 
-        showFloatingNotification('Menjadwalkan semua file...');
+        showFloatingNotification('Menyimpan jadwal... 0/' + scheduledFiles.length, false, 0);
         spinner.classList.remove('hidden');
 
         try {
-            for (const file of allMediaFiles) {
-                const caption = captions[file.path] || '';
-                const scheduledTime = scheduledTimes[file.path] || currentTime.toISOString();
+            let completedCount = 0;
+            for (const file of scheduledFiles) {
+                const formData = {
+                    accountId: accountId.value,
+                    username: selectedUsername,
+                    mediaUrl: file.download_url,
+                    caption: captions[file.path] || '',
+                    time: scheduledTimes[file.path],
+                    userToken: selectedToken,
+                    accountNum: userAccount.value,
+                    completed: false,
+                    mediaType: file.name.endsWith('.mp4') ? 'video' : 'image',
+                };
 
-                const response = await fetch('/api/schedule_post', {
+                console.log('Scheduling file:', file.path, 'with data:', formData);
+
+                const response = await fetch('/api/schedule', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        accountNum: selectedAccountNum,
-                        accountId: selectedAccountId,
-                        username: selectedUsername,
-                        token: selectedToken,
-                        mediaUrl: file.download_url,
-                        caption: caption,
-                        scheduledTime: scheduledTime,
-                    }),
+                    body: JSON.stringify(formData),
                 });
 
+                const responseText = await response.text();
+                let result;
+                try {
+                    result = JSON.parse(responseText);
+                } catch (parseError) {
+                    throw new Error(`Failed to parse server response as JSON: ${responseText}`);
+                }
+
                 if (!response.ok) {
-                    throw new Error(`HTTP error scheduling post! status: ${response.status}`);
+                    throw new Error(`HTTP error scheduling post! status: ${response.status}, details: ${result.error || responseText}`);
                 }
 
-                const result = await response.json();
-                console.log(`Scheduled ${file.name}:`, result);
-
-                if (skipDayChecked) {
-                    currentTime.setDate(currentTime.getDate() + 1);
-                } else {
-                    currentTime.setMinutes(currentTime.getMinutes() + 1);
-                }
+                completedCount++;
+                showFloatingNotification(`Menyimpan jadwal... ${completedCount}/${scheduledFiles.length}`, false, 0);
+                console.log('Schedule response:', result);
             }
-
-            showFloatingNotification(`${allMediaFiles.length} file berhasil dijadwalkan!`);
+            showFloatingNotification(`${scheduledFiles.length} media berhasil dijadwalkan!`, false, 3000);
+            scheduledTimes = {};
             await loadSchedules();
         } catch (error) {
-            showFloatingNotification(`Error scheduling posts: ${error.message}`, true);
+            showFloatingNotification(`Error scheduling: ${error.message}`, true);
             console.error('Error scheduling posts:', error);
         } finally {
             spinner.classList.add('hidden');
         }
     });
 
-    saveSchedules.addEventListener('click', async () => {
-        if (!selectedToken || !selectedUsername || !selectedAccountId) {
-            showFloatingNotification('Pilih akun dan username IG terlebih dahulu.', true);
-            return;
-        }
-
-        showFloatingNotification('Menyimpan jadwal...');
-        spinner.classList.remove('hidden');
-
-        try {
-            const schedulePromises = allMediaFiles.map(file => {
-                if (!scheduledTimes[file.path]) return Promise.resolve();
-                const caption = captions[file.path] || '';
-                return fetch('/api/schedule_post', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        accountNum: selectedAccountNum,
-                        accountId: selectedAccountId,
-                        username: selectedUsername,
-                        token: selectedToken,
-                        mediaUrl: file.download_url,
-                        caption: caption,
-                        scheduledTime: scheduledTimes[file.path],
-                    }),
-                }).then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error scheduling post! status: ${response.status}`);
-                    }
-                    return response.json();
-                });
-            });
-
-            await Promise.all(schedulePromises);
-            showFloatingNotification('Jadwal berhasil disimpan!');
-            await loadSchedules();
-        } catch (error) {
-            showFloatingNotification(`Error saving schedules: ${error.message}`, true);
-            console.error('Error saving schedules:', error);
-        } finally {
-            spinner.classList.add('hidden');
-        }
-    });
-
-    loadMoreBtn.addEventListener('click', () => {
-        currentPage++;
-        const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-        const endIndex = startIndex + ITEMS_PER_PAGE;
-        const nextSchedules = allSchedules.slice(startIndex, endIndex);
-        renderSchedules(nextSchedules, startIndex);
-        if (endIndex >= allSchedules.length) {
-            loadMoreBtn.classList.add('hidden');
-        }
-    });
-
-    function renderPagination(schedules) {
-        const loadMoreContainer = document.querySelector('.load-more-container');
-        loadMoreContainer.innerHTML = '';
-        if (schedules.length > ITEMS_PER_PAGE) {
-            loadMoreBtn.classList.remove('hidden');
-            loadMoreContainer.appendChild(loadMoreBtn);
-        }
-    }
-
-    loadGithubFolders();
     loadSchedules();
 });
