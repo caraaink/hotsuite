@@ -150,13 +150,13 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const accountsRes = await fetch(url);
             if (!accountsRes.ok) {
-                throw new Error(`HTTP error fetching accounts! status: ${accountsRes.status}`);
+                throw new Error(`Kesalahan HTTP saat mengambil akun! status: ${accountsRes.status}`);
             }
             const accountsData = await accountsRes.json();
-            console.log('Accounts fetched:', accountsData);
+            console.log('Akun yang diambil:', accountsData);
 
             if (!accountsData.accounts || !accountsData.accounts[accountKey] || !Array.isArray(accountsData.accounts[accountKey].accounts)) {
-                throw new Error('Invalid accounts data structure');
+                throw new Error('Struktur data akun tidak valid');
             }
 
             const igAccounts = accountsData.accounts[accountKey].accounts;
@@ -174,8 +174,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 showFloatingNotification(`Berhasil memuat ${allIgAccounts.length} akun Instagram.`, false, 3000);
             }
         } catch (error) {
-            showFloatingNotification(`Error fetching accounts: ${error.message}`, true);
-            console.error('Error fetching accounts:', error);
+            showFloatingNotification(`Gagal memuat akun: ${error.message}`, true);
+            console.error('Gagal mengambil akun:', error);
             accountId.innerHTML = '<option value="">-- Gagal Memuat --</option>';
         } finally {
             spinner.classList.add('hidden');
@@ -203,7 +203,7 @@ document.addEventListener('DOMContentLoaded', () => {
     userAccount.addEventListener('change', async () => {
         const accountNum = userAccount.value;
         selectedAccountNum = accountNum;
-        console.log('Selected account number:', accountNum);
+        console.log('Nomor akun yang dipilih:', accountNum);
 
         const accountIdContainer = document.getElementById('accountIdContainer');
         const accountIdLabel = document.querySelector('label[for="accountId"]');
@@ -225,13 +225,13 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const tokenRes = await fetch(`/api/refresh-token?accountNum=${accountNum}`);
             if (!tokenRes.ok) {
-                throw new Error(`HTTP error fetching token! status: ${tokenRes.status}`);
+                throw new Error(`Kesalahan HTTP saat mengambil token! status: ${tokenRes.status}`);
             }
             const tokenData = await tokenRes.json();
-            console.log('Token fetched:', tokenData);
+            console.log('Token yang diambil:', tokenData);
             selectedToken = tokenData.token;
             if (!selectedToken) {
-                throw new Error('No token found for this account');
+                throw new Error('Tidak ada token untuk akun ini');
             }
 
             allIgAccounts = [];
@@ -244,8 +244,8 @@ document.addEventListener('DOMContentLoaded', () => {
             await fetchIgAccounts(`Akun ${accountNum}`);
             await loadSchedules();
         } catch (error) {
-            showFloatingNotification(`Error fetching accounts: ${error.message}`, true);
-            console.error('Error fetching accounts:', error);
+            showFloatingNotification(`Gagal memuat akun: ${error.message}`, true);
+            console.error('Gagal mengambil akun:', error);
             accountId.innerHTML = '<option value="">-- Gagal Memuat --</option>';
             accountIdContainer.classList.add('hidden');
             accountIdLabel.style.display = 'none';
@@ -278,7 +278,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const selectedOption = accountId.options[accountId.selectedIndex];
         selectedUsername = selectedOption ? selectedOption.dataset.username : null;
         selectedAccountId = selectedOption ? selectedOption.value : null;
-        console.log('Selected username:', selectedUsername, 'Selected accountId:', selectedAccountId);
+        console.log('Username yang dipilih:', selectedUsername, 'AccountId yang dipilih:', selectedAccountId);
         await loadSchedules();
     });
 
@@ -294,17 +294,17 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const res = await fetch('/api/get_github_files?path=ig');
             if (!res.ok) {
-                throw new Error(`HTTP error! status: ${res.status}`);
+                throw new Error(`Kesalahan HTTP! status: ${res.status}`);
             }
             const data = await res.json();
-            console.log('GitHub folders fetched:', data);
+            console.log('Folder GitHub yang diambil:', JSON.stringify(data, null, 2));
 
             const folders = data.files.filter(item => item.type === 'dir');
             folders.sort(naturalSort);
 
             githubFolder.innerHTML = '<option value="ig">-- Pilih Folder --</option>';
             folders.forEach(item => {
-                console.log('Adding folder to dropdown:', item.name);
+                console.log('Menambahkan folder ke dropdown:', item.name);
                 const option = document.createElement('option');
                 option.value = item.path;
                 option.textContent = item.name;
@@ -312,13 +312,13 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             if (githubFolder.options.length === 1) {
-                showFloatingNotification('No subfolders found in ig directory.', true);
+                showFloatingNotification('Tidak ada subfolder di direktori ig.', true);
             } else {
                 showFloatingNotification('');
             }
         } catch (error) {
-            showFloatingNotification(`Error loading GitHub folders: ${error.message}`, true);
-            console.error('Error fetching GitHub folders:', error);
+            showFloatingNotification(`Gagal memuat folder GitHub: ${error.message}`, true);
+            console.error('Gagal mengambil folder GitHub:', error);
         } finally {
             spinner.classList.add('hidden');
         }
@@ -330,10 +330,10 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const res = await fetch(`/api/get_github_files?path=${path}`);
             if (!res.ok) {
-                throw new Error(`HTTP error! status: ${res.status}`);
+                throw new Error(`Kesalahan HTTP! status: ${res.status}`);
             }
             const data = await res.json();
-            console.log(`Subfolders fetched for path ${path}:`, data);
+            console.log(`Subfolder yang diambil untuk path ${path}:`, data);
 
             allSubfolders = [];
             data.files.forEach(item => {
@@ -348,8 +348,8 @@ document.addEventListener('DOMContentLoaded', () => {
             allSubfolders.sort(naturalSort);
             return allSubfolders;
         } catch (error) {
-            console.error(`Error fetching subfolders for path ${path}:`, error);
-            showFloatingNotification(`Error loading subfolders: ${error.message}`, true);
+            console.error(`Gagal mengambil subfolder untuk path ${path}:`, error);
+            showFloatingNotification(`Gagal memuat subfolder: ${error.message}`, true);
             return [];
         } finally {
             spinner.classList.add('hidden');
@@ -362,10 +362,10 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const res = await fetch(`/api/get_github_files?path=${path}`);
             if (!res.ok) {
-                throw new Error(`HTTP error! status: ${res.status}`);
+                throw new Error(`Kesalahan HTTP! status: ${res.status}`);
             }
             const data = await res.json();
-            console.log(`Sub-subfolders fetched for path ${path}:`, data);
+            console.log(`Sub-subfolder yang diambil untuk path ${path}:`, data);
 
             allSubSubfolders = [];
             data.files.forEach(item => {
@@ -380,8 +380,8 @@ document.addEventListener('DOMContentLoaded', () => {
             allSubSubfolders.sort(naturalSort);
             return allSubSubfolders;
         } catch (error) {
-            console.error(`Error fetching sub-subfolders for path ${path}:`, error);
-            showFloatingNotification(`Error loading sub-subfolders: ${error.message}`, true);
+            console.error(`Gagal mengambil sub-subfolder untuk path ${path}:`, error);
+            showFloatingNotification(`Gagal memuat sub-subfolder: ${error.message}`, true);
             return [];
         } finally {
             spinner.classList.add('hidden');
@@ -394,10 +394,10 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const res = await fetch(`/api/get_github_files?path=${path}`);
             if (!res.ok) {
-                throw new Error(`HTTP error! status: ${res.status}`);
+                throw new Error(`Kesalahan HTTP! status: ${res.status}`);
             }
             const data = await res.json();
-            console.log(`Files fetched for path ${path}:`, data);
+            console.log(`File yang diambil untuk path ${path}:`, data);
 
             allMediaFiles = [];
             const mediaFiles = data.files.filter(item => 
@@ -438,10 +438,10 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const metaRes = await fetch(`/api/get_file_content?${metaPaths.map(path => `paths=${encodeURIComponent(path)}`).join('&')}`);
                 if (!metaRes.ok) {
-                    throw new Error(`HTTP error fetching metadata! status: ${metaRes.status}`);
+                    throw new Error(`Kesalahan HTTP saat mengambil metadata! status: ${metaRes.status}`);
                 }
                 const metaData = await metaRes.json();
-                console.log('Metadata fetched from API:', metaData);
+                console.log('Metadata yang diambil dari API:', metaData);
 
                 allMediaFiles.forEach(file => {
                     const folderPath = file.path.substring(0, file.path.lastIndexOf('/'));
@@ -450,7 +450,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         captions[file.path] = metaData[metaPath].caption;
                     } else {
                         captions[file.path] = '';
-                        console.log(`No valid metadata found for ${metaPath}, using empty caption.`);
+                        console.log(`Tidak ada metadata valid untuk ${metaPath}, menggunakan caption kosong.`);
                     }
                     metaLoadedCount++;
                     showFloatingNotification(`Memuat metadata ${metaLoadedCount}/${totalFiles}...`, false, 0);
@@ -458,7 +458,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 showFloatingNotification(`Berhasil memuat metadata untuk ${metaLoadedCount}/${totalFiles} file.`, false, 3000);
             } catch (error) {
-                console.error('Error fetching metadata:', error);
+                console.error('Gagal mengambil metadata:', error);
                 allMediaFiles.forEach(file => {
                     captions[file.path] = '';
                     metaLoadedCount++;
@@ -470,8 +470,8 @@ document.addEventListener('DOMContentLoaded', () => {
             showFloatingNotification(`Berhasil memuat ${totalFiles} file.`, false, 3000);
             return allMediaFiles;
         } catch (error) {
-            console.error(`Error fetching files for path ${path}:`, error);
-            showFloatingNotification(`Error loading files: ${error.message}`, true);
+            console.error(`Gagal mengambil file untuk path ${path}:`, error);
+            showFloatingNotification(`Gagal memuat file: ${error.message}`, true);
             return [];
         } finally {
             setTimeout(() => {
@@ -495,12 +495,12 @@ document.addEventListener('DOMContentLoaded', () => {
         scheduleAllContainer.style.display = 'none';
 
         subSubfolderContainer.classList.add('hidden');
-        subSubfolderLabel.style.display = 'none';
+        if (subSubfolderLabel) subSubfolderLabel.style.display = 'none';
         githubSubSubfolder.innerHTML = '<option value="">-- Pilih Folder --</option>';
 
         if (!folderPath || folderPath === 'ig') {
             subfolderContainer.classList.add('hidden');
-            subfolderLabel.style.display = 'none';
+            if (subfolderLabel) subfolderLabel.style.display = 'none';
             githubSubfolder.innerHTML = '<option value="">-- Pilih Subfolder --</option>';
             return;
         }
@@ -508,22 +508,24 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             if (folderPath === 'ig/image') {
                 subfolderContainer.classList.add('hidden');
-                subfolderLabel.style.display = 'none';
+                if (subfolderLabel) subfolderLabel.style.display = 'none';
                 const files = await fetchFilesInSubfolder(folderPath);
                 allMediaFiles = files;
                 displayGallery(files);
 
                 if (files.length === 0) {
-                    showFloatingNotification('No supported media files found in this folder.', true);
+                    showFloatingNotification('Tidak ada file media yang didukung di folder ini.', true);
                 } else {
                     showFloatingNotification('');
                 }
             } else {
                 subfolderContainer.classList.remove('hidden');
-                subfolderLabel.style.display = 'block';
-                subfolderLabel.textContent = 'Subfolder';
+                if (subfolderLabel) {
+                    subfolderLabel.style.display = 'block';
+                    subfolderLabel.textContent = 'Subfolder';
+                }
                 const subfolders = await fetchSubfolders(folderPath);
-                console.log('All subfolders found:', subfolders);
+                console.log('Semua subfolder ditemukan:', subfolders);
 
                 if (subfolders.length === 0) {
                     const files = await fetchFilesInSubfolder(folderPath);
@@ -532,7 +534,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     displayGallery(files);
 
                     if (files.length === 0) {
-                        showFloatingNotification('No supported media files found in this folder.', true);
+                        showFloatingNotification('Tidak ada file media yang didukung di folder ini.', true);
                     } else {
                         showFloatingNotification('');
                     }
@@ -546,17 +548,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
 
                     if (githubSubfolder.options.length === 1) {
-                        showFloatingNotification('No subfolders found in this folder.', true);
+                        showFloatingNotification('Tidak ada subfolder di folder ini.', true);
                     } else {
                         showFloatingNotification('');
                     }
                 }
             }
         } catch (error) {
-            showFloatingNotification(`Error loading subfolders: ${error.message}`, true);
-            console.error('Error fetching subfolders:', error);
+            showFloatingNotification(`Gagal memuat subfolder: ${error.message}`, true);
+            console.error('Gagal mengambil subfolder:', error);
             subfolderContainer.classList.add('hidden');
-            subfolderLabel.style.display = 'none';
+            if (subfolderLabel) subfolderLabel.style.display = 'none';
         }
     });
 
@@ -573,7 +575,7 @@ document.addEventListener('DOMContentLoaded', () => {
         scheduleAllContainer.style.display = 'none';
 
         subSubfolderContainer.classList.add('hidden');
-        subSubfolderLabel.style.display = 'none';
+        if (subSubfolderLabel) subSubfolderLabel.style.display = 'none';
         githubSubSubfolder.innerHTML = '<option value="">-- Pilih Folder --</option>';
 
         if (!subfolderPath) {
@@ -582,7 +584,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const subSubfolders = await fetchSubSubfolders(subfolderPath);
-            console.log('All sub-subfolders found:', subSubfolders);
+            console.log('Semua sub-subfolder ditemukan:', subSubfolders);
 
             if (subSubfolders.length === 0) {
                 const files = await fetchFilesInSubfolder(subfolderPath);
@@ -590,14 +592,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 displayGallery(files);
 
                 if (files.length === 0) {
-                    showFloatingNotification('No supported media files found in this subfolder.', true);
+                    showFloatingNotification('Tidak ada file media yang didukung di subfolder ini.', true);
                 } else {
                     showFloatingNotification('');
                 }
             } else {
                 subSubfolderContainer.classList.remove('hidden');
-                subSubfolderLabel.style.display = 'block';
-                subSubfolderLabel.textContent = 'Folder';
+                if (subSubfolderLabel) {
+                    subSubfolderLabel.style.display = 'block';
+                    subSubfolderLabel.textContent = 'Folder';
+                }
                 githubSubSubfolder.innerHTML = '<option value="">-- Pilih Folder --</option>';
                 subSubfolders.forEach(subSubfolder => {
                     const option = document.createElement('option');
@@ -607,16 +611,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
                 if (githubSubSubfolder.options.length === 1) {
-                    showFloatingNotification('No folders found in this subfolder.', true);
+                    showFloatingNotification('Tidak ada folder di subfolder ini.', true);
                 } else {
                     showFloatingNotification('');
                 }
             }
         } catch (error) {
-            showFloatingNotification(`Error loading sub-subfolders: ${error.message}`, true);
-            console.error('Error fetching sub-subfolders:', error);
+            showFloatingNotification(`Gagal memuat sub-subfolder: ${error.message}`, true);
+            console.error('Gagal mengambil sub-subfolder:', error);
             subSubfolderContainer.classList.add('hidden');
-            subSubfolderLabel.style.display = 'none';
+            if (subSubfolderLabel) subSubfolderLabel.style.display = 'none';
         }
     });
 
@@ -637,19 +641,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const files = await fetchFilesInSubfolder(subSubfolderPath);
-            console.log('All media files found:', files);
+            console.log('Semua file media ditemukan:', files);
             allMediaFiles = files;
 
             displayGallery(files);
 
             if (files.length === 0) {
-                showFloatingNotification('No supported media files found in this folder.', true);
+                showFloatingNotification('Tidak ada file media yang didukung di folder ini.', true);
             } else {
                 showFloatingNotification('');
             }
         } catch (error) {
-            showFloatingNotification(`Error loading files: ${error.message}`, true);
-            console.error('Error fetching files:', error);
+            showFloatingNotification(`Gagal memuat file: ${error.message}`, true);
+            console.error('Gagal mengambil file:', error);
         }
     });
 
@@ -657,7 +661,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const res = await fetch('/api/get_github_files?path=ig');
             if (!res.ok) {
-                throw new Error(`HTTP error! status: ${res.status}`);
+                throw new Error(`Kesalahan HTTP! status: ${res.status}`);
             }
             const data = await res.json();
             const folders = data.files.filter(item => item.type === 'dir');
@@ -721,8 +725,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         } catch (error) {
-            console.error('Error loading upload folders:', error);
-            showFloatingNotification(`Error loading upload folders: ${error.message}`, true);
+            console.error('Gagal memuat folder unggahan:', error);
+            showFloatingNotification(`Gagal memuat folder unggahan: ${error.message}`, true);
         }
     }
 
@@ -760,8 +764,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     uploadFolderInput.placeholder = 'Masukkan subfolder (opsional)';
                 }
             } catch (error) {
-                showFloatingNotification(`Error loading subfolders: ${error.message}`, true);
-                console.error('Error fetching subfolders:', error);
+                showFloatingNotification(`Gagal memuat subfolder: ${error.message}`, true);
+                console.error('Gagal mengambil subfolder:', error);
             }
         }
     });
@@ -885,10 +889,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
                             const filePath = `${uploadFolderValue}/${newFileName}`;
                             const commitMessage = uploadFolderValue.startsWith('ig/') 
-                                ? `Upload ${newFileName} to ${uploadFolderValue} [vercel-skip]` 
-                                : `Upload ${newFileName} to ${uploadFolderValue}`;
+                                ? `Unggah ${newFileName} ke ${uploadFolderValue} [vercel-skip]` 
+                                : `Unggah ${newFileName} ke ${uploadFolderValue}`;
 
-                            console.log(`Uploading file: ${filePath}`);
+                            console.log(`Mengunggah file: ${filePath}`);
 
                             const fileResponse = await fetch('/api/upload_to_github', {
                                 method: 'POST',
@@ -902,7 +906,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                             if (!fileResponse.ok) {
                                 const errorData = await fileResponse.json();
-                                throw new Error(`HTTP error uploading file ${newFileName}! status: ${fileResponse.status}, details: ${errorData.error}`);
+                                throw new Error(`Kesalahan HTTP saat mengunggah file ${newFileName}! status: ${fileResponse.status}, detail: ${errorData.error}`);
                             }
 
                             const fileResult = await fileResponse.json();
@@ -929,25 +933,25 @@ document.addEventListener('DOMContentLoaded', () => {
                                             }
                                             metaResolve();
                                         } catch (error) {
-                                            metaReject(new Error(`Error parsing meta JSON for ${metaFile.name}: ${error.message}`));
+                                            metaReject(new Error(`Gagal mengurai JSON meta untuk ${metaFile.name}: ${error.message}`));
                                         }
                                     };
-                                    metaReader.onerror = () => metaReject(new Error(`Error reading meta file ${metaFile.name}`));
+                                    metaReader.onerror = () => metaReject(new Error(`Gagal membaca file meta ${metaFile.name}`));
                                 });
 
-                                console.log(`Using provided meta JSON for ${originalFileName}:`, metaContent);
+                                console.log(`Menggunakan JSON meta yang diberikan untuk ${originalFileName}:`, metaContent);
                             } else {
-                                console.log(`No meta JSON provided for ${originalFileName}, creating default.`);
+                                console.log(`Tidak ada JSON meta untuk ${originalFileName}, membuat default.`);
                             }
 
                             const metaFileName = `${uploadFolderValue}/${newFileName}.meta.json`;
                             const metaContentString = JSON.stringify(metaContent, null, 2);
                             metaBase64Content = btoa(unescape(encodeURIComponent(metaContentString)));
                             const metaCommitMessage = uploadFolderValue.startsWith('ig/') 
-                                ? `Upload meta for ${newFileName} to ${uploadFolderValue} [vercel-skip]` 
-                                : `Upload meta for ${newFileName} to ${uploadFolderValue}`;
+                                ? `Unggah meta untuk ${newFileName} ke ${uploadFolderValue} [vercel-skip]` 
+                                : `Unggah meta untuk ${newFileName} ke ${uploadFolderValue}`;
 
-                            console.log(`Uploading meta file: ${metaFileName}`);
+                            console.log(`Mengunggah file meta: ${metaFileName}`);
 
                             const metaResponse = await fetch('/api/upload_to_github', {
                                 method: 'POST',
@@ -961,10 +965,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
                             const metaResponseData = await metaResponse.json();
                             if (!metaResponse.ok) {
-                                console.error(`Meta upload failed: ${metaResponseData.error}`);
+                                console.error(`Unggahan meta gagal: ${metaResponseData.error}`);
                                 showFloatingNotification(`Gagal mengunggah meta untuk ${newFileName}: ${metaResponseData.error}`, true);
                             } else {
-                                console.log(`Meta file uploaded successfully: ${metaFileName}`);
+                                console.log(`File meta berhasil diunggah: ${metaFileName}`);
                             }
 
                             allMediaFiles.push(newFile);
@@ -976,11 +980,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
                             resolve(newFile);
                         } catch (error) {
-                            console.error(`Error in upload process for ${file.name}:`, error);
+                            console.error(`Gagal dalam proses unggah untuk ${file.name}:`, error);
                             reject(error);
                         }
                     };
-                    reader.onerror = () => reject(new Error(`Error reading file ${file.name}`));
+                    reader.onerror = () => reject(new Error(`Gagal membaca file ${file.name}`));
                 });
             }
 
@@ -989,8 +993,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             await loadUploadFolders();
         } catch (error) {
-            showFloatingNotification(`Error uploading to GitHub: ${error.message}`, true);
-            console.error('Error uploading to GitHub:', error);
+            showFloatingNotification(`Gagal mengunggah ke GitHub: ${error.message}`, true);
+            console.error('Gagal mengunggah ke GitHub:', error);
         } finally {
             spinner.classList.add('hidden');
             uploadFile.value = '';
@@ -1004,8 +1008,8 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const folderPath = filePath.substring(0, filePath.lastIndexOf('/'));
             const commitMessage = folderPath.startsWith('ig/') 
-                ? `Delete file ${filePath} [vercel-skip]` 
-                : `Delete file ${filePath}`;
+                ? `Hapus file ${filePath} [vercel-skip]` 
+                : `Hapus file ${filePath}`;
 
             const deleteResponse = await fetch('/api/delete_from_github', {
                 method: 'POST',
@@ -1017,7 +1021,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             if (!deleteResponse.ok) {
-                throw new Error(`HTTP error deleting file from GitHub! status: ${deleteResponse.status}`);
+                throw new Error(`Kesalahan HTTP saat menghapus file dari GitHub! status: ${deleteResponse.status}`);
             }
 
             const deleteResult = await deleteResponse.json();
@@ -1029,7 +1033,7 @@ document.addEventListener('DOMContentLoaded', () => {
             displayGallery(allMediaFiles);
         } catch (error) {
             showFloatingNotification(`Gagal menghapus file dari GitHub: ${error.message}`, true);
-            console.error('Error deleting file from GitHub:', error);
+            console.error('Gagal menghapus file dari GitHub:', error);
         } finally {
             spinner.classList.add('hidden');
         }
@@ -1054,14 +1058,14 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             if (!response.ok) {
-                throw new Error(`HTTP error uploading meta to GitHub! status: ${response.status}`);
+                throw new Error(`Kesalahan HTTP saat mengunggah meta ke GitHub! status: ${response.status}`);
             }
 
-            console.log(`Meta file ${metaPath} saved to GitHub`);
+            console.log(`File meta ${metaPath} disimpan ke GitHub`);
             return true;
         } catch (error) {
-            console.error(`Error saving meta file for ${file.name}:`, error);
-            showFloatingNotification(`Error saving meta file for ${file.name}: ${error.message}`, true);
+            console.error(`Gagal menyimpan file meta untuk ${file.name}:`, error);
+            showFloatingNotification(`Gagal menyimpan file meta untuk ${file.name}: ${error.message}`, true);
             return false;
         }
     }
@@ -1069,14 +1073,14 @@ document.addEventListener('DOMContentLoaded', () => {
     async function displayGallery(files) {
         gallery.innerHTML = '';
 
-        console.log('Files received by displayGallery:', files);
+        console.log('File yang diterima oleh displayGallery:', files);
 
         const mediaFiles = files.filter(file => 
             file.name && 
             (file.name.endsWith('.jpg') || file.name.endsWith('.png') || file.name.endsWith('.mp4'))
         );
 
-        console.log('Media files after filter:', mediaFiles);
+        console.log('File media setelah filter:', mediaFiles);
 
         const scheduleAllContainer = document.querySelector('.schedule-all-container');
 
@@ -1092,12 +1096,12 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const schedulesResponse = await fetch('/api/get_schedules');
             if (!schedulesResponse.ok) {
-                throw new Error(`Failed to fetch schedules: ${schedulesResponse.status}`);
+                throw new Error(`Gagal mengambil jadwal: ${schedulesResponse.status}`);
             }
             schedules = await schedulesResponse.json();
-            console.log('Schedules for gallery:', schedules);
+            console.log('Jadwal untuk galeri:', schedules);
         } catch (error) {
-            console.error('Error fetching schedules:', error);
+            console.error('Gagal mengambil jadwal:', error);
             showFloatingNotification('Gagal mengambil data jadwal. Galeri tetap ditampilkan tanpa jadwal.', true);
             schedules = { schedules: [] };
         }
@@ -1115,7 +1119,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const sortedMediaFiles = [...withSchedule, ...withoutSchedule];
 
-        console.log('Sorted media files:', sortedMediaFiles.map(file => file.name));
+        console.log('File media yang diurutkan:', sortedMediaFiles.map(file => file.name));
 
         function formatDateTime(date, hours, minutes) {
             const year = date.getFullYear();
@@ -1254,8 +1258,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     const folderPath = file.path.substring(0, file.path.lastIndexOf('/'));
                     const metaCommitMessage = folderPath.startsWith('ig/') 
-                        ? `Update meta file for ${file.path} [vercel-skip]` 
-                        : `Update meta file for ${file.path}`;
+                        ? `Perbarui file meta untuk ${file.path} [vercel-skip]` 
+                        : `Perbarui file meta untuk ${file.path}`;
 
                     const success = await saveCaptionToGithub(file, captions[file.path], metaCommitMessage);
                     if (success) {
@@ -1388,7 +1392,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
 
                     if (!response.ok) {
-                        throw new Error(`HTTP error publishing post! status: ${response.status}`);
+                        throw new Error(`Kesalahan HTTP saat mempublikasikan postingan! status: ${response.status}`);
                     }
 
                     const result = await response.json();
@@ -1398,8 +1402,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         await deletePhoto(file.path);
                     }
                 } catch (error) {
-                    showFloatingNotification(`Error publishing: ${error.message}`, true);
-                    console.error('Error publishing post:', error);
+                    showFloatingNotification(`Gagal mempublikasikan: ${error.message}`, true);
+                    console.error('Gagal mempublikasikan postingan:', error);
                 } finally {
                     spinner.classList.add('hidden');
                 }
@@ -1502,8 +1506,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const minutes = start.getMinutes();
             const dayIncrement = skipDay.checked ? 2 : 1;
 
-            console.log('Start time selected:', startDateTime.value);
-            console.log('Hours:', hours, 'Minutes:', minutes);
+            console.log('Waktu mulai yang dipilih:', startDateTime.value);
+            console.log('Jam:', hours, 'Menit:', minutes);
 
             mediaFiles.forEach((file, index) => {
                 const newDate = new Date(start);
@@ -1524,7 +1528,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     scheduleTimeElement.classList.add('scheduled');
                     scheduleTimeElement.classList.remove('unscheduled');
                 }
-                console.log(`File ${file.name} scheduled at: ${scheduledTimes[file.path]}`);
+                console.log(`File ${file.name} dijadwalkan pada: ${scheduledTimes[file.path]}`);
             });
 
             showFloatingNotification(`Waktu jadwal untuk semua media disimpan sementara. Klik "Simpan Jadwal" untuk mengirimkan.`);
@@ -1544,14 +1548,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({ scheduleId }),
             });
             if (!res.ok) {
-                throw new Error(`HTTP error! status: ${res.status}`);
+                throw new Error(`Kesalahan HTTP! status: ${res.status}`);
             }
             const result = await res.json();
             showFloatingNotification(result.message || 'Jadwal berhasil dihapus!');
             await loadSchedules();
         } catch (error) {
-            showFloatingNotification(`Error deleting schedule: ${error.message}`, true);
-            console.error('Error deleting schedule:', error);
+            showFloatingNotification(`Gagal menghapus jadwal: ${error.message}`, true);
+            console.error('Gagal menghapus jadwal:', error);
         } finally {
             spinner.classList.add('hidden');
         }
@@ -1565,14 +1569,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({ scheduleId, ...updatedData }),
             });
             if (!res.ok) {
-                throw new Error(`HTTP error updating schedule! status: ${res.status}`);
+                throw new Error(`Kesalahan HTTP saat memperbarui jadwal! status: ${res.status}`);
             }
             const result = await res.json();
             showFloatingNotification(result.message || 'Jadwal berhasil diperbarui!');
             await loadSchedules();
         } catch (error) {
-            showFloatingNotification(`Error updating schedule: ${error.message}`, true);
-            console.error('Error updating schedule:', error);
+            showFloatingNotification(`Gagal memperbarui jadwal: ${error.message}`, true);
+            console.error('Gagal memperbarui jadwal:', error);
         }
     }
 
@@ -1593,8 +1597,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             showFloatingNotification(`${scheduleIds.length} jadwal berhasil dihapus!`);
         } catch (error) {
-            showFloatingNotification(`Error deleting schedules: ${error.message}`, true);
-            console.error('Error deleting schedules:', error);
+            showFloatingNotification(`Gagal menghapus jadwal: ${error.message}`, true);
+            console.error('Gagal menghapus jadwal:', error);
         } finally {
             spinner.classList.add('hidden');
         }
@@ -1646,19 +1650,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const isVideo = schedule.mediaUrl.endsWith('.mp4');
             const mediaPreview = isVideo
-                ? `<div class="media-container"><video src="${schedule.mediaUrl}" class="schedule-media-preview video-preview" muted></video><span class="video-icon">📹</span></div>`
+                ? `<div class="media-container"><video src="${schedule.mediaUrl}" class="schedule-media-preview video-preview" muted></video><span class="video-label">MP4</span></div>`
                 : `<img src="${schedule.mediaUrl}" alt="Media" class="schedule-media-preview">`;
 
             row.innerHTML = `
                 <td>${globalIndex + 1}</td>
                 <td><input type="checkbox" class="schedule-checkbox" data-schedule-id="${schedule.scheduleId}"></td>
-                <td>${schedule.username || 'Unknown'}</td>
+                <td>${schedule.username || 'Tidak Diketahui'}</td>
                 <td>${mediaPreview}</td>
                 <td class="editable-caption" contenteditable="true" data-schedule-id="${schedule.scheduleId}">${schedule.caption}</td>
                 <td class="editable-time" data-schedule-id="${schedule.scheduleId}">
                     <input type="datetime-local" class="time-input" value="${formattedWibTime}">
                 </td>
-                <td class="${schedule.completed ? 'processing' : ''}">${schedule.completed ? '<span class="processing-dots">Process</span>' : 'Menunggu'}</td>
+                <td class="${schedule.completed ? 'processing' : ''}">${schedule.completed ? '<span class="processing-dots">Proses</span>'將會有什麼不同？' : 'Menunggu'}</td>
                 <td>
                     <button class="delete-btn" data-schedule-id="${schedule.scheduleId}">Hapus</button>
                 </td>
@@ -1687,7 +1691,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let dotCount = 0;
             setInterval(() => {
                 dotCount = (dotCount + 1) % 4;
-                el.textContent = 'Process' + '.'.repeat(dotCount);
+                el.textContent = 'Proses' + '.'.repeat(dotCount);
             }, 500);
         });
     }
@@ -1700,7 +1704,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (totalPages <= 1) return;
 
         const prevBtn = document.createElement('button');
-        prevBtn.textContent = 'Prev';
+        prevBtn.textContent = 'Sebelumnya';
         prevBtn.className = 'load-more-btn';
         prevBtn.disabled = currentPage === 1;
         prevBtn.addEventListener('click', () => {
@@ -1726,7 +1730,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const nextBtn = document.createElement('button');
-        nextBtn.textContent = 'Next';
+        nextBtn.textContent = 'Berikutnya';
         nextBtn.className = 'load-more-btn';
         nextBtn.disabled = currentPage === totalPages;
         nextBtn.addEventListener('click', () => {
@@ -1762,7 +1766,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadSchedules() {
         if (isLoadingSchedules) {
-            console.log('loadSchedules already in progress, skipping...');
+            console.log('loadSchedules sudah berjalan, dilewati...');
             return;
         }
 
@@ -1771,10 +1775,10 @@ document.addEventListener('DOMContentLoaded', () => {
             scheduleTableBody.innerHTML = '<tr><td colspan="8">Memuat jadwal...</td></tr>';
             const res = await fetch('/api/get_schedules');
             if (!res.ok) {
-                throw new Error(`HTTP error fetching schedules! status: ${res.status}`);
+                throw new Error(`Kesalahan HTTP saat mengambil jadwal! status: ${res.status}`);
             }
             const data = await res.json();
-            console.log('Schedules fetched:', data);
+            console.log('Jadwal yang diambil:', JSON.stringify(data, null, 2));
 
             allSchedules = data.schedules || [];
 
@@ -1799,8 +1803,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 deleteSelected.addEventListener('click', handleDeleteSelectedClick);
             }
         } catch (error) {
-            showFloatingNotification(`Error loading schedules: ${error.message}`, true);
-            console.error('Error fetching schedules:', error);
+            showFloatingNotification(`Gagal memuat jadwal: ${error.message}`, true);
+            console.error('Gagal mengambil jadwal:', error);
             scheduleTableBody.innerHTML = '<tr><td colspan="8">Gagal memuat jadwal.</td></tr>';
             totalSchedules.textContent = 'Total: 0 jadwal';
             updateScheduleVisibility([]);
@@ -1842,7 +1846,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     mediaType: file.name.endsWith('.mp4') ? 'video' : 'image',
                 };
 
-                console.log('Scheduling file:', file.path, 'with data:', formData);
+                console.log('Menjadwalkan file:', file.path, 'dengan data:', formData);
 
                 const response = await fetch('/api/schedule', {
                     method: 'POST',
@@ -1855,23 +1859,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 try {
                     result = JSON.parse(responseText);
                 } catch (parseError) {
-                    throw new Error(`Failed to parse server response as JSON: ${responseText}`);
+                    throw new Error(`Gagal mengurai respons server sebagai JSON: ${responseText}`);
                 }
 
                 if (!response.ok) {
-                    throw new Error(`HTTP error scheduling post! status: ${response.status}, details: ${result.error || responseText}`);
+                    throw new Error(`Kesalahan HTTP saat menjadwalkan postingan! status: ${response.status}, detail: ${result.error || responseText}`);
                 }
 
                 completedCount++;
                 showFloatingNotification(`Menyimpan jadwal... ${completedCount}/${scheduledFiles.length}`, false, 0);
-                console.log('Schedule response:', result);
+                console.log('Respons jadwal:', result);
             }
             showFloatingNotification(`${scheduledFiles.length} media berhasil dijadwalkan!`, false, 3000);
             scheduledTimes = {};
             await loadSchedules();
         } catch (error) {
-            showFloatingNotification(`Error scheduling: ${error.message}`, true);
-            console.error('Error scheduling posts:', error);
+            showFloatingNotification(`Gagal menjadwalkan: ${error.message}`, true);
+            console.error('Gagal menjadwalkan postingan:', error);
         } finally {
             spinner.classList.add('hidden');
         }
