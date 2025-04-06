@@ -211,14 +211,15 @@ body.dark-mode .gallery-item .schedule-time {
     border-radius: 5px;
 }
 
-.video-icon {
+.video-label {
     position: absolute;
     bottom: 5px;
     right: 5px;
-    font-size: 20px;
+    font-size: 12px;
+    font-weight: 500;
     color: #fff;
     background: rgba(0, 0, 0, 0.5);
-    padding: 2px 5px;
+    padding: 1px 4px;
     border-radius: 3px;
 }
 /* Upload Form */
