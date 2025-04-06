@@ -1138,12 +1138,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 mediaUrl.value = file.download_url;
             });
 
-            // Tambahkan tombol play/pause di ujung bawah, sejajar dengan tombol hapus (X)
+            // Tambahkan tombol play/pause di ujung kanan bawah, sesuai area yang dilingkari merah
             const playPauseBtn = document.createElement('button');
             playPauseBtn.textContent = '▶'; // Simbol play
             playPauseBtn.style.position = 'absolute';
-            playPauseBtn.style.bottom = '5px'; // Ujung bawah video
-            playPauseBtn.style.right = '5px'; // Sejajar dengan tombol hapus (X)
+            playPauseBtn.style.bottom = '10px'; // Sedikit di atas ujung bawah video
+            playPauseBtn.style.right = '10px'; // Sejajar dengan tombol hapus (X) secara vertikal
             playPauseBtn.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
             playPauseBtn.style.color = '#fff';
             playPauseBtn.style.border = 'none';
@@ -1242,7 +1242,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 minute: '2-digit',
                 hour12: false
             }).replace(',', '').replace(/(\d{2}):(\d{2})/, '$1.$2');
-            scheduleTime.textContent = 'Belum dijadwalkan';
+            scheduleTime.textContent = formattedTime;
             scheduleTime.classList.add('scheduled');
         } else {
             scheduleTime.textContent = 'Belum dijadwalkan';
