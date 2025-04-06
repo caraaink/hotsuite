@@ -1138,13 +1138,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 mediaUrl.value = file.download_url;
             });
 
-            // Tambahkan tombol play/pause di tengah video
+            // Tambahkan tombol play/pause di tengah area yang dilingkari merah
             const playPauseBtn = document.createElement('button');
             playPauseBtn.textContent = '▶'; // Simbol play
             playPauseBtn.style.position = 'absolute';
-            playPauseBtn.style.top = '50%';
+            playPauseBtn.style.top = '30%'; // Disesuaikan ke 30% dari atas agar berada di tengah area wajah
             playPauseBtn.style.left = '50%';
-            playPauseBtn.style.transform = 'translate(-50%, -50%)'; // Memastikan tombol benar-benar di tengah
+            playPauseBtn.style.transform = 'translate(-50%, -50%)'; // Memastikan tombol benar-benar di tengah secara horizontal
             playPauseBtn.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
             playPauseBtn.style.color = '#fff';
             playPauseBtn.style.border = 'none';
