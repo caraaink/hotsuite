@@ -492,15 +492,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const subfolderLabel = document.querySelector('label[for="githubSubfolder"]');
     const subSubfolderLabel = document.querySelector('label[for="githubSubSubfolder"]');
     const scheduleAllContainer = document.querySelector('.schedule-all-container');
+
+    subSubfolderContainer.classList.add('hidden');
+    subSubfolderLabel.style.display = 'none';
+    githubSubSubfolder.innerHTML = '<option value="">-- Pilih Folder --</option>';
+
     if (scheduleAllContainer) {
         scheduleAllContainer.style.display = 'none';
     } else {
         console.warn('scheduleAllContainer not found in the DOM');
     }
-
-    subSubfolderContainer.classList.add('hidden');
-    subSubfolderLabel.style.display = 'none';
-    githubSubSubfolder.innerHTML = '<option value="">-- Pilih Folder --</option>';
 
     if (!folderPath || folderPath === 'ig') {
         subfolderContainer.classList.add('hidden');
