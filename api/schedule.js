@@ -4,7 +4,7 @@ const { v4: uuidv4 } = require('uuid');
 
 const SCHEDULE_KEY = 'schedules';
 const CONTAINER_KEY = 'pending_container';
-const TIMEOUT_MS = 9000; // 9 detik, lebih pendek dari batas Vercel 10 detik
+const TIMEOUT_MS = 8000; // 8 detik, lebih pendek dari batas Vercel 10 detik
 
 // Axios dengan timeout ketat
 const axiosWithTimeout = async (url, params, timeoutMs = TIMEOUT_MS) => {
