@@ -153,7 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
       showFloatingNotification('Membuat file ZIP...', false, 0);
       spinner.classList.remove('hidden');
 
-      const response = await fetch('/api/refresh-token/generate-zip', {
+      const response = await fetch('/api/refresh-token?action=generate-zip', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: caption }),
