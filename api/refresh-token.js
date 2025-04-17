@@ -25,20 +25,24 @@ module.exports = async (req, res) => {
   }
   // Handle POST /api/refresh-token?action=generate-zip (ZIP generation logic)
   else if (req.method === 'POST' && req.query.action === 'generate-zip') {
-    const { text } = req.body;
+    const { text, format } = req.body;
 
     if (!text || typeof text !== 'string' || text.trim() === '') {
       return res.status(400).json({ error: 'Valid text input is required' });
     }
 
+    // Validasi format (jpg atau mp4, default ke jpg jika tidak valid)
+    const validFormats = ['jpg', 'mp4'];
+    const selectedFormat = validFormats.includes(format) ? format : 'jpg';
+
     try {
       const zip = new JSZip();
       const caption = text.trim();
 
-      // Generate 15 JSON files with names 1.jpg.meta.json to 15.jpg.meta.json
+      // Generate 15 JSON files with names 1.[format].meta.json to 15.[format].meta.json
       for (let i = 1; i <= 15; i++) {
         const jsonContent = JSON.stringify({ caption }, null, 2);
-        zip.file(`${i}.jpg.meta.json`, jsonContent);
+        zip.file(`${i}.${selectedFormat}.meta.json`, jsonContent);
       }
 
       // Generate the ZIP file
