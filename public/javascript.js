@@ -141,10 +141,26 @@ document.addEventListener('DOMContentLoaded', () => {
     let nextCursor = null;
     const MAX_IG_LIMIT = 200;
     const PER_PAGE = 20;
+  // Pastikan hanya satu checkbox format yang dipilih
+  const formatJpgCheckbox = document.getElementById('formatJpg');
+  const formatMp4Checkbox = document.getElementById('formatMp4');
+
+  formatJpgCheckbox.addEventListener('change', () => {
+    if (formatJpgCheckbox.checked) {
+      formatMp4Checkbox.checked = false;
+    }
+  });
+
+  formatMp4Checkbox.addEventListener('change', () => {
+    if (formatMp4Checkbox.checked) {
+      formatJpgCheckbox.checked = false;
+    }
+  });
+
   // Handler untuk tombol generate ZIP
   generateZip.addEventListener('click', async () => {
     const caption = zipCaptionInput.value.trim();
-    const format = zipFormatSelect.value; // Ambil nilai dari dropdown (jpg atau mp4)
+    const format = formatMp4Checkbox.checked ? 'mp4' : 'jpg'; // Default ke jpg jika mp4 tidak dicentang
     if (!caption) {
       showFloatingNotification('Masukkan caption terlebih dahulu.', true);
       return;
@@ -157,7 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const response = await fetch('/api/refresh-token?action=generate-zip', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: caption, format }), // Kirim format bersama text
+        body: JSON.stringify({ text: caption, format }),
       });
 
       if (!response.ok) {
