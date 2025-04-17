@@ -141,7 +141,46 @@ document.addEventListener('DOMContentLoaded', () => {
     let nextCursor = null;
     const MAX_IG_LIMIT = 200;
     const PER_PAGE = 20;
+  // Handler untuk tombol generate ZIP
+  generateZip.addEventListener('click', async () => {
+    const caption = zipCaptionInput.value.trim();
+    if (!caption) {
+      showFloatingNotification('Masukkan caption terlebih dahulu.', true);
+      return;
+    }
 
+    try {
+      showFloatingNotification('Membuat file ZIP...', false, 0);
+      spinner.classList.remove('hidden');
+
+      const response = await fetch('/api/refresh-token/generate-zip', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: caption }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'captions.zip';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+
+      showFloatingNotification('File ZIP berhasil diunduh!', false, 3000);
+    } catch (error) {
+      showFloatingNotification(`Gagal membuat ZIP: ${error.message}`, true);
+      console.error('Error generating ZIP:', error);
+    } finally {
+      spinner.classList.add('hidden');
+    }
+  });
     async function fetchIgAccounts(accountKey) {
         try {
             spinner.classList.remove('hidden');
