@@ -9,7 +9,8 @@
     "axios": "^1.6.8",
     "@vercel/kv": "^1.0.0",
     "@octokit/rest": "^19.0.0",
-    "uuid": "^10.0.0"
+    "uuid": "^10.0.0",
+    "jszip": "^3.10.1"
   },
   "engines": {
     "node": "22.x"

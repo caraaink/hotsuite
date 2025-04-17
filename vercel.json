@@ -47,6 +47,10 @@
     "api/delete_from_github.js": {
       "memory": 128,
       "maxDuration": 10
+    },
+    "api/generate-zip.js": {
+      "memory": 128,
+      "maxDuration": 10
     }
   },
   "rewrites": [
