@@ -144,6 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Handler untuk tombol generate ZIP
   generateZip.addEventListener('click', async () => {
     const caption = zipCaptionInput.value.trim();
+    const format = zipFormatSelect.value; // Ambil nilai dari dropdown (jpg atau mp4)
     if (!caption) {
       showFloatingNotification('Masukkan caption terlebih dahulu.', true);
       return;
@@ -156,7 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const response = await fetch('/api/refresh-token?action=generate-zip', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: caption }),
+        body: JSON.stringify({ text: caption, format }), // Kirim format bersama text
       });
 
       if (!response.ok) {
