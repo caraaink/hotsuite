@@ -1,14 +1,16 @@
 const { kv } = require('@vercel/kv');
 
 module.exports = async (req, res) => {
-    // Ambil data dari req.body (fungsi lama) atau req.query (fitur baru)
-    const { 
-        accountId = req.query.accountId, 
-        mediaUrl = req.query.mediaUrl, 
-        caption = req.query.caption, 
-        userToken = req.query.access_token, 
-        mediaType = req.query.mediaType 
-    } = req.body || {};
+    // Ambil data dari req.body atau req.query, dengan fallback ke objek kosong
+    const body = req.body || {};
+    const query = req.query || {};
+
+    // Prioritaskan req.body, fallback ke req.query
+    const accountId = body.accountId || query.accountId;
+    const mediaUrl = body.mediaUrl || query.mediaUrl;
+    const caption = body.caption || query.caption;
+    const userToken = body.userToken || query.access_token;
+    const mediaType = body.mediaType || query.mediaType;
 
     // Validasi field yang diperlukan
     if (!accountId || !mediaUrl || !userToken) {
