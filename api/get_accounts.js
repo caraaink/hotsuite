@@ -1,20 +1,26 @@
 const { kv } = require('@vercel/kv');
 
 module.exports = async (req, res) => {
+    // Log input for debugging
+    console.log('Request Method:', req.method);
+    console.log('req.body:', req.body);
+    console.log('req.query:', req.query);
+
     // Ambil data dari req.body atau req.query, dengan fallback ke objek kosong
     const body = req.body || {};
     const query = req.query || {};
 
     // Prioritaskan req.body, fallback ke req.query
-    const accountId = body.accountId || query.accountId;
-    const mediaUrl = body.mediaUrl || query.mediaUrl;
-    const caption = body.caption || query.caption;
-    const userToken = body.userToken || query.access_token;
-    const mediaType = body.mediaType || query.mediaType;
+    const accountId = body.accountId || query.accountId || null;
+    const mediaUrl = body.mediaUrl || query.mediaUrl || null;
+    const caption = body.caption || query.caption || null;
+    const userToken = body.userToken || query.access_token || null;
+    const mediaType = body.mediaType || query.mediaType || null;
 
     // Validasi field yang diperlukan
     if (!accountId || !mediaUrl || !userToken) {
-        return res.status(400).json({ error: 'Missing required fields' });
+        console.error('Missing fields:', { accountId, mediaUrl, userToken });
+        return res.status(400).json({ error: 'Missing required fields', details: { accountId, mediaUrl, userToken } });
     }
 
     try {
