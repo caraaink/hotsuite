@@ -13,7 +13,7 @@ module.exports = async (req, res) => {
     // Prioritaskan req.body, fallback ke req.query
     const accountId = body.accountId || query.accountId || null;
     const mediaUrl = body.mediaUrl || query.mediaUrl || null;
-    const caption = body.caption || query.caption || null;
+    let caption = body.caption || query.caption || null;
     const userToken = body.userToken || query.access_token || null;
     const mediaType = body.mediaType || query.mediaType || null;
 
@@ -23,12 +23,24 @@ module.exports = async (req, res) => {
         return res.status(400).json({ error: 'Missing required fields', details: { accountId, mediaUrl, userToken } });
     }
 
+    // Decode caption to handle URL-encoded characters (e.g., %2C for commas)
+    if (caption) {
+        try {
+            caption = decodeURIComponent(caption);
+        } catch (e) {
+            console.error('Error decoding caption:', e.message);
+        }
+    }
+
     try {
         // Tentukan apakah ini gambar atau video berdasarkan mediaType
         const isVideo = mediaType === 'video';
         const mediaPayload = isVideo
             ? { video_url: mediaUrl, caption: caption || '', media_type: 'VIDEO' }
             : { image_url: mediaUrl, caption: caption || '' };
+
+        // Log payload untuk debugging
+        console.log('Media Payload:', mediaPayload);
 
         // Langkah 1: Buat media container menggunakan Facebook Graph API untuk Instagram
         const response = await fetch(`https://graph.facebook.com/v20.0/${accountId}/media`, {
