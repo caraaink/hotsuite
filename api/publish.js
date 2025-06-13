@@ -1,8 +1,16 @@
 const { kv } = require('@vercel/kv');
 
 module.exports = async (req, res) => {
-    const { accountId, mediaUrl, caption, userToken, mediaType } = req.body;
+    // Ambil data dari body (POST) atau query string (GET)
+    const { 
+        accountId = req.query.id || req.body.accountId,
+        mediaUrl = req.query.photos || req.body.mediaUrl,
+        caption = req.query.message || req.body.caption,
+        userToken = req.query.access_token || req.body.userToken,
+        mediaType = req.query.media_type || req.body.mediaType || 'image' // Default ke 'image' jika tidak disediakan
+    } = req;
 
+    // Validasi field yang diperlukan
     if (!accountId || !mediaUrl || !userToken) {
         return res.status(400).json({ error: 'Missing required fields' });
     }
