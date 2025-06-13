@@ -1,71 +1,82 @@
-const axios = require('axios');
+const { kv } = require('@vercel/kv');
 
 module.exports = async (req, res) => {
-  const { account_key, limit = 20, after } = req.query; // Default limit 20, tambah parameter 'after' untuk pagination
+    // Ambil data dari req.body (fungsi lama) atau req.query (fitur baru)
+    const { 
+        accountId = req.query.accountId, 
+        mediaUrl = req.query.mediaUrl, 
+        caption = req.query.caption, 
+        userToken = req.query.access_token, 
+        mediaType = req.query.mediaType 
+    } = req.body || {};
 
-  if (!account_key) {
-    return res.status(400).json({ error: 'Missing account_key parameter' });
-  }
+    // Validasi field yang diperlukan
+    if (!accountId || !mediaUrl || !userToken) {
+        return res.status(400).json({ error: 'Missing required fields' });
+    }
 
-  const accountNum = account_key.split(' ')[1];
-  const token = process.env[`TOKEN_${accountNum}`];
+    try {
+        // Tentukan apakah ini gambar atau video berdasarkan mediaType
+        const isVideo = mediaType === 'video';
+        const mediaPayload = isVideo
+            ? { video_url: mediaUrl, caption: caption || '', media_type: 'VIDEO' }
+            : { image_url: mediaUrl, caption: caption || '' };
 
-  if (!token) {
-    return res.status(404).json({ error: `No token found for ${account_key}` });
-  }
+        // Langkah 1: Buat media container menggunakan Facebook Graph API untuk Instagram
+        const response = await fetch(`https://graph.facebook.com/v20.0/${accountId}/media`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${userToken}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(mediaPayload),
+        });
 
-  try {
-    // Ambil daftar akun dari Facebook Graph API dengan pagination
-    const response = await axios.get('https://graph.facebook.com/v19.0/me/accounts', {
-      params: {
-        access_token: token,
-        fields: 'id,name,instagram_business_account',
-        limit: parseInt(limit), // Gunakan limit dari query atau default 20
-        after: after || undefined, // Cursor untuk pagination
-      },
-    });
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(`HTTP error creating media container: ${response.status} - ${JSON.stringify(errorData)}`);
+        }
 
-    const partners = response.data.data; // Data akun dari respons
-    const igAccounts = [];
-    const MAX_LIMIT = 200; // Batas maksimal total akun
+        const data = await response.json();
+        const mediaId = data.id;
 
-    // Proses hanya sejumlah 'limit' akun per request
-    const promises = partners
-      .filter(partner => partner.instagram_business_account) // Filter yang punya IG account
-      .slice(0, parseInt(limit)) // Batasi sesuai limit per page
-      .map(partner =>
-        axios.get(`https://graph.facebook.com/v19.0/${partner.instagram_business_account.id}`, {
-          params: {
-            access_token: token,
-            fields: 'username',
-          },
-        }).then(igResponse => ({
-          type: 'ig',
-          id: partner.instagram_business_account.id,
-          username: igResponse.data.username || 'unknown', // Default 'unknown' jika username undefined
-        })).catch(err => {
-          console.error(`Error fetching IG account ${partner.instagram_business_account.id}:`, err.message);
-          return null; // Kembalikan null jika gagal, akan difilter nanti
-        })
-      );
+        if (!mediaId) {
+            throw new Error('Media ID not returned from Facebook Graph API');
+        }
 
-    // Jalankan request paralel untuk efisiensi
-    const results = await Promise.all(promises);
-    igAccounts.push(...results.filter(acc => acc !== null)); // Tambahkan hanya akun yang valid
+        // Langkah 2: Publikasikan media
+        const publishResponse = await fetch(`https://graph.facebook.com/v20.0/${accountId}/media_publish`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${userToken}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                creation_id: mediaId,
+            }),
+        });
 
-    const accounts = {
-      [account_key]: { accounts: igAccounts },
-    };
+        if (!publishResponse.ok) {
+            const errorData = await publishResponse.json();
+            throw new Error(`HTTP error publishing media: ${publishResponse.status} - ${JSON.stringify(errorData)}`);
+        }
 
-    // Tambahkan info pagination ke respons
-    const pagination = response.data.paging || {};
-    res.status(200).json({
-      accounts,
-      next: pagination.next ? pagination.cursors?.after : null, // Cursor untuk halaman berikutnya
-      totalFetched: igAccounts.length,
-    });
-  } catch (error) {
-    console.error('Error fetching accounts:', error.response?.data || error.message);
-    res.status(500).json({ error: 'Failed to fetch accounts' });
-  }
+        const publishData = await publishResponse.json();
+        res.status(200).json({ message: 'Berhasil dipublikasikan ke Instagram!', publishData });
+    } catch (error) {
+        console.error('Error publishing to Instagram:', error.message);
+        // Simpan error ke @vercel/kv untuk debugging
+        try {
+            const errorLogKey = `publish_error:${Date.now()}`;
+            await kv.set(errorLogKey, {
+                timestamp: new Date().toISOString(),
+                accountId,
+                mediaUrl,
+                error: error.message,
+            }, { ex: 604800 }); // Simpan selama 7 hari
+        } catch (kvError) {
+            console.error('Error saving to KV:', kvError);
+        }
+        res.status(500).json({ error: 'Failed to publish to Instagram', details: error.message });
+    }
 };
