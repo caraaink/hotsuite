@@ -344,6 +344,18 @@ body.dark-mode .skip-day-option label {
     color: #fff;
 }
 
+.publish-btn {
+    padding: 6px 12px;
+    margin-right: 5px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    background-color: #2ecc71;
+    color: #fff;
+}
+
 /* Floating Notification */
 .floating-notification {
     position: fixed;
