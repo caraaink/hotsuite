@@ -914,6 +914,10 @@ body.dark-mode .caption-editor .editor-buttons button:first-child:hover {
         padding: 4px 8px; /* Kecilkan padding */
         font-size: 10px; /* Kecilkan ukuran font */
     }
+    .publish-btn {
+        padding: 4px 8px;
+        font-size: 10px;
+    }
 
     /* Perbaikan untuk schedule-all-container agar elemen berada dalam satu baris */
     .schedule-all-container {
