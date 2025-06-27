@@ -1760,10 +1760,10 @@ document.addEventListener('DOMContentLoaded', () => {
             input.removeEventListener('change', handleTimeChange);
         });
 
-        const oldDeleteButtons = document.querySelectorAll('.delete-btn');
-        oldDeleteButtons.forEach(button => {
-            button.removeEventListener('click', handleDeleteClick);
-        });
+        //const oldDeleteButtons = document.querySelectorAll('.delete-btn');
+        //oldDeleteButtons.forEach(button => {
+            //button.removeEventListener('click', handleDeleteClick);
+        //});
 
         const oldPublishButtons = document.querySelectorAll('.publish-btn');
         oldPublishButtons.forEach(button => {
@@ -1793,7 +1793,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td class="${schedule.completed ? 'processing' : ''}">${schedule.completed ? '<span class="processing-dots">Process</span>' : 'Menunggu'}</td>
                 <td>
                     <button class="delete-btn" data-schedule-id="${schedule.scheduleId}">Hapus</button>
-                    <button class="publish-btn" data-schedule-id="${schedule.scheduleId}">Publish</button>
+                    <button class="btn publish" data-schedule-id="${schedule.scheduleId}">Publish</button>
                 </td>
             `;
             scheduleTableBody.appendChild(row);
