@@ -28,7 +28,6 @@ module.exports = async (req, res) => {
     }
 
     try {
-        // Check for both 'video' and 'REELS' to handle video/reels media
         const isVideo = mediaType === 'video' || mediaType === 'REELS';
         const mediaPayload = isVideo
             ? { video_url: mediaUrl, caption: caption || '', media_type: 'REELS' }
@@ -56,6 +55,9 @@ module.exports = async (req, res) => {
         if (!mediaId) {
             throw new Error('Media ID not returned from Facebook Graph API');
         }
+
+        // Introduce a 6-second delay to ensure the media container is ready
+        await new Promise(resolve => setTimeout(resolve, 6000));
 
         const publishResponse = await fetch(`https://graph.facebook.com/v20.0/${accountId}/media_publish`, {
             method: 'POST',
