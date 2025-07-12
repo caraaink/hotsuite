@@ -1462,7 +1462,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             mediaUrl: file.download_url,
                             caption: captions[file.path] || '',
                             userToken: selectedToken,
-                            mediaType: file.name.endsWith('.mp4') ? 'video' : 'image',
+                            mediaType: file.name.endsWith('.mp4') ? 'REELS' : 'image',
                         }),
                     });
 
@@ -1727,7 +1727,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     mediaUrl: schedule.mediaUrl,
                     caption: schedule.caption || '',
                     userToken: schedule.userToken,
-                    mediaType: schedule.mediaType,
+                    mediaType: schedule.mediaUrl.endsWith('.mp4') ? 'REELS' : 'image',
                 }),
             });
 
