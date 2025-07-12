@@ -36,7 +36,7 @@ module.exports = async (req, res) => {
         // Tentukan apakah ini gambar atau video berdasarkan mediaType
         const isVideo = mediaType === 'video';
         const mediaPayload = isVideo
-            ? { video_url: mediaUrl, caption: caption || '', media_type: 'VIDEO' }
+            ? { video_url: mediaUrl, caption: caption || '', media_type: 'REELS' }
             : { image_url: mediaUrl, caption: caption || '' };
 
         // Log payload untuk debugging
