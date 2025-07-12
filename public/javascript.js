@@ -1727,7 +1727,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     mediaUrl: schedule.mediaUrl,
                     caption: schedule.caption || '',
                     userToken: schedule.userToken,
-                    mediaType: schedule.mediaUrl.endsWith('.mp4') ? 'REELS' : 'image',
+                    mediaType: schedule.mediaType,
                 }),
             });
 
@@ -1976,7 +1976,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     userToken: selectedToken,
                     accountNum: userAccount.value,
                     completed: false,
-                    mediaType: file.name.endsWith('.mp4') ? 'video' : 'image',
+                    mediaType: file.name.endsWith('.mp4') ? 'REELS' : 'image',
                 };
 
                 console.log('Scheduling file:', file.path, 'with data:', formData);
