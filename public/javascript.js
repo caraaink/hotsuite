@@ -1454,6 +1454,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 let isUploadedFile = file.path.startsWith('ig/image/');
 
                 try {
+                    const mediaType = file.name.endsWith('.mp4') ? 'REELS' : 'image';
+                    console.log('Publish payload:', {
+                        accountId: accountId.value,
+                        mediaUrl: file.download_url,
+                        caption: captions[file.path] || '',
+                        userToken: selectedToken,
+                        mediaType: mediaType,
+                    });
+
                     const response = await fetch('/api/publish', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -1462,7 +1471,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             mediaUrl: file.download_url,
                             caption: captions[file.path] || '',
                             userToken: selectedToken,
-                            mediaType: file.name.endsWith('.mp4') ? 'REELS' : 'image',
+                            mediaType: mediaType,
                         }),
                     });
 
@@ -1679,6 +1688,66 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    saveSchedules.addEventListener('click', async () => {
+        if (!accountId.value || !selectedToken || !selectedUsername) {
+            showFloatingNotification('Pilih akun dan username terlebih dahulu.', true);
+            return;
+        }
+
+        if (Object.keys(scheduledTimes).length === 0) {
+            showFloatingNotification('Tidak ada jadwal untuk disimpan.', true);
+            return;
+        }
+
+        showFloatingNotification('Menyimpan jadwal...', false, 0);
+        spinner.classList.remove('hidden');
+
+        try {
+            const schedules = Object.keys(scheduledTimes).map(filePath => {
+                const file = allMediaFiles.find(f => f.path === filePath);
+                if (!file) return null;
+                const mediaType = file.name.endsWith('.mp4') ? 'REELS' : 'image';
+                return {
+                    accountId: accountId.value,
+                    username: selectedUsername,
+                    mediaUrl: file.download_url,
+                    caption: captions[file.path] || '',
+                    time: scheduledTimes[file.path],
+                    userToken: selectedToken,
+                    accountNum: userAccount.value,
+                    completed: false,
+                    mediaType: mediaType,
+                };
+            }).filter(schedule => schedule !== null);
+
+            console.log('Schedules payload to /api/schedule:', JSON.stringify(schedules, null, 2));
+
+            const response = await fetch('/api/schedule', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ schedules }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error saving schedules! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            showFloatingNotification(result.message || 'Jadwal berhasil disimpan!', false, 3000);
+            await loadSchedules();
+
+            Object.keys(scheduledTimes).forEach(filePath => {
+                delete scheduledTimes[filePath];
+            });
+            displayGallery(allMediaFiles);
+        } catch (error) {
+            showFloatingNotification(`Error saving schedules: ${error.message}`, true);
+            console.error('Error saving schedules:', error);
+        } finally {
+            spinner.classList.add('hidden');
+        }
+    });
+
     const handleCaptionBlur = async (e) => {
         const scheduleId = e.target.dataset.scheduleId;
         const newCaption = e.target.textContent.trim();
@@ -1719,6 +1788,14 @@ document.addEventListener('DOMContentLoaded', () => {
         spinner.classList.remove('hidden');
 
         try {
+            console.log('Manual publish payload from schedule:', {
+                accountId: schedule.accountId,
+                mediaUrl: schedule.mediaUrl,
+                caption: schedule.caption || '',
+                userToken: schedule.userToken,
+                mediaType: schedule.mediaType,
+            });
+
             const response = await fetch('/api/publish', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
