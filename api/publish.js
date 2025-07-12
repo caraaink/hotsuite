@@ -34,7 +34,7 @@ module.exports = async (req, res) => {
 
     try {
         // Tentukan apakah ini gambar atau video berdasarkan mediaType
-        const isVideo = mediaType === 'video';
+        const isVideo = mediaType === 'REELS';
         const mediaPayload = isVideo
             ? { video_url: mediaUrl, caption: caption || '', media_type: 'REELS' }
             : { image_url: mediaUrl, caption: caption || '' };
