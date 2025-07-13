@@ -141,63 +141,63 @@ document.addEventListener('DOMContentLoaded', () => {
     let nextCursor = null;
     const MAX_IG_LIMIT = 200;
     const PER_PAGE = 20;
-  // Pastikan hanya satu checkbox format yang dipilih
-  const formatJpgCheckbox = document.getElementById('formatJpg');
-  const formatMp4Checkbox = document.getElementById('formatMp4');
 
-  formatJpgCheckbox.addEventListener('change', () => {
-    if (formatJpgCheckbox.checked) {
-      formatMp4Checkbox.checked = false;
-    }
-  });
+    const formatJpgCheckbox = document.getElementById('formatJpg');
+    const formatMp4Checkbox = document.getElementById('formatMp4');
 
-  formatMp4Checkbox.addEventListener('change', () => {
-    if (formatMp4Checkbox.checked) {
-      formatJpgCheckbox.checked = false;
-    }
-  });
+    formatJpgCheckbox.addEventListener('change', () => {
+        if (formatJpgCheckbox.checked) {
+            formatMp4Checkbox.checked = false;
+        }
+    });
 
-  // Handler untuk tombol generate ZIP
-  generateZip.addEventListener('click', async () => {
-    const caption = zipCaptionInput.value.trim();
-    const format = formatMp4Checkbox.checked ? 'mp4' : 'jpg'; // Default ke jpg jika mp4 tidak dicentang
-    if (!caption) {
-      showFloatingNotification('Masukkan caption terlebih dahulu.', true);
-      return;
-    }
+    formatMp4Checkbox.addEventListener('change', () => {
+        if (formatMp4Checkbox.checked) {
+            formatJpgCheckbox.checked = false;
+        }
+    });
 
-    try {
-      showFloatingNotification('Membuat file ZIP...', false, 0);
-      spinner.classList.remove('hidden');
+    generateZip.addEventListener('click', async () => {
+        const caption = zipCaptionInput.value.trim();
+        const format = formatMp4Checkbox.checked ? 'mp4' : 'jpg';
+        if (!caption) {
+            showFloatingNotification('Masukkan caption terlebih dahulu.', true);
+            return;
+        }
 
-      const response = await fetch('/api/refresh-token?action=generate-zip', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: caption, format }),
-      });
+        try {
+            showFloatingNotification('Membuat file ZIP...', false, 0);
+            spinner.classList.remove('hidden');
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+            const response = await fetch('/api/refresh-token?action=generate-zip', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: caption, format }),
+            });
 
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'captions.zip';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
 
-      showFloatingNotification('File ZIP berhasil diunduh!', false, 3000);
-    } catch (error) {
-      showFloatingNotification(`Gagal membuat ZIP: ${error.message}`, true);
-      console.error('Error generating ZIP:', error);
-    } finally {
-      spinner.classList.add('hidden');
-    }
-  });
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'captions.zip';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+
+            showFloatingNotification('File ZIP berhasil diunduh!', false, 3000);
+        } catch (error) {
+            showFloatingNotification(`Gagal membuat ZIP: ${error.message}`, true);
+            console.error('Error generating ZIP:', error);
+        } finally {
+            spinner.classList.add('hidden');
+        }
+    });
+
     async function fetchIgAccounts(accountKey) {
         try {
             spinner.classList.remove('hidden');
@@ -551,7 +551,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const scheduleAllContainer = document.querySelector('.schedule-all-container');
         scheduleAllContainer.style.display = 'none';
 
-        // Reset sub-subfolder dropdown
         subSubfolderContainer.classList.add('hidden');
         githubSubSubfolder.innerHTML = '<option value="">-- Pilih Folder --</option>';
 
@@ -628,7 +627,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const scheduleAllContainer = document.querySelector('.schedule-all-container');
         scheduleAllContainer.style.display = 'none';
 
-        // Reset sub-subfolder dropdown
         subSubfolderContainer.classList.add('hidden');
         githubSubSubfolder.innerHTML = '<option value="">-- Pilih Folder --</option>';
 
@@ -1196,13 +1194,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     mediaUrl.value = file.download_url;
                 });
 
-                // Tambahkan tombol play/pause di tengah area yang dilingkari merah
                 const playPauseBtn = document.createElement('button');
-                playPauseBtn.textContent = '▶'; // Simbol play
+                playPauseBtn.textContent = '▶';
                 playPauseBtn.style.position = 'absolute';
-                playPauseBtn.style.top = '30%'; // Disesuaikan ke 30% dari atas agar berada di tengah area wajah
+                playPauseBtn.style.top = '30%';
                 playPauseBtn.style.left = '50%';
-                playPauseBtn.style.transform = 'translate(-50%, -50%)'; // Memastikan tombol benar-benar di tengah secara horizontal
+                playPauseBtn.style.transform = 'translate(-50%, -50%)';
                 playPauseBtn.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
                 playPauseBtn.style.color = '#fff';
                 playPauseBtn.style.border = 'none';
@@ -1218,10 +1215,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 playPauseBtn.addEventListener('click', () => {
                     if (mediaElement.paused) {
                         mediaElement.play();
-                        playPauseBtn.textContent = '⏸'; // Simbol pause
+                        playPauseBtn.textContent = '⏸';
                     } else {
                         mediaElement.pause();
-                        playPauseBtn.textContent = '▶'; // Simbol play
+                        playPauseBtn.textContent = '▶';
                     }
                 });
 
@@ -1702,66 +1699,124 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    const handlePublishClick = async (e) => {
+        const scheduleId = e.target.getAttribute('data-schedule-id');
+        const schedule = allSchedules.find(s => s.scheduleId === scheduleId);
+        if (!schedule) {
+            showFloatingNotification('Jadwal tidak ditemukan.', true);
+            return;
+        }
+
+        if (!schedule.userToken || !schedule.accountId) {
+            showFloatingNotification('Data akun tidak lengkap untuk mempublikasikan.', true);
+            return;
+        }
+
+        const confirmed = await showConfirmModal(`Apakah Anda yakin ingin mempublikasikan posting untuk ${schedule.username} sekarang?`);
+        if (!confirmed) return;
+
+        showFloatingNotification('Mempublikasikan...', false, 0);
+        spinner.classList.remove('hidden');
+
+        try {
+            const response = await fetch('/api/publish', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    accountId: schedule.accountId,
+                    mediaUrl: schedule.mediaUrl,
+                    caption: schedule.caption || '',
+                    userToken: schedule.userToken,
+                    mediaType: schedule.mediaType,
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error publishing post! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            showFloatingNotification(result.message || 'Berhasil dipublikasikan ke Instagram!', false, 3000);
+
+            await deleteSchedule(scheduleId);
+        } catch (error) {
+            showFloatingNotification(`Error publishing: ${error.message}`, true);
+            console.error('Error publishing post:', error);
+        } finally {
+            spinner.classList.add('hidden');
+        }
+    };
+
     function renderSchedules(schedulesToRender, startIndex) {
-    scheduleTableBody.innerHTML = '';
+        scheduleTableBody.innerHTML = '';
 
-    const oldCaptionCells = document.querySelectorAll('.editable-caption');
-    oldCaptionCells.forEach(cell => {
-        cell.removeEventListener('blur', handleCaptionBlur);
-    });
+        const oldCaptionCells = document.querySelectorAll('.editable-caption');
+        oldCaptionCells.forEach(cell => {
+            cell.removeEventListener('blur', handleCaptionBlur);
+        });
 
-    const oldTimeInputs = document.querySelectorAll('.editable-time .time-input');
-    oldTimeInputs.forEach(input => {
-        input.removeEventListener('change', handleTimeChange);
-    });
+        const oldTimeInputs = document.querySelectorAll('.editable-time .time-input');
+        oldTimeInputs.forEach(input => {
+            input.removeEventListener('change', handleTimeChange);
+        });
 
-    const oldDeleteButtons = document.querySelectorAll('.delete-btn');
-    oldDeleteButtons.forEach(button => {
-        button.removeEventListener('click', handleDeleteClick);
-    });
+        const oldDeleteButtons = document.querySelectorAll('.delete-btn');
+        oldDeleteButtons.forEach(button => {
+            button.removeEventListener('click', handleDeleteClick);
+        });
 
-    schedulesToRender.forEach((schedule, idx) => {
-        const globalIndex = startIndex + idx;
-        const wibTime = convertToWIB(schedule.time);
-        const formattedWibTime = formatToDatetimeLocal(wibTime);
-        const row = document.createElement('tr');
+        const oldPublishButtons = document.querySelectorAll('.publish-btn');
+        oldPublishButtons.forEach(button => {
+            button.removeEventListener('click', handlePublishClick);
+        });
 
-        const isVideo = schedule.mediaUrl.endsWith('.mp4');
-        const mediaPreview = isVideo
-            ? `<div class="media-container"><video src="${schedule.mediaUrl}" class="schedule-media-preview video-preview" muted></video><span class="video-label">MP4</span></div>`
-            : `<img src="${schedule.mediaUrl}" alt="Media" class="schedule-media-preview">`;
+        schedulesToRender.forEach((schedule, idx) => {
+            const globalIndex = startIndex + idx;
+            const wibTime = convertToWIB(schedule.time);
+            const formattedWibTime = formatToDatetimeLocal(wibTime);
+            const row = document.createElement('tr');
 
-        row.innerHTML = `
-            <td>${globalIndex + 1}</td>
-            <td><input type="checkbox" class="schedule-checkbox" data-schedule-id="${schedule.scheduleId}"></td>
-            <td>${schedule.username || 'Unknown'}</td>
-            <td>${mediaPreview}</td>
-            <td class="editable-caption" contenteditable="true" data-schedule-id="${schedule.scheduleId}">${schedule.caption}</td>
-            <td class="editable-time" data-schedule-id="${schedule.scheduleId}">
-                <input type="datetime-local" class="time-input" value="${formattedWibTime}">
-            </td>
-            <td class="${schedule.completed ? 'processing' : ''}">${schedule.completed ? '<span class="processing-dots">Process</span>' : 'Menunggu'}</td>
-            <td>
-                <button class="delete-btn" data-schedule-id="${schedule.scheduleId}">Hapus</button>
-            </td>
-        `;
-        scheduleTableBody.appendChild(row);
-    });
+            const isVideo = schedule.mediaUrl.endsWith('.mp4');
+            const mediaPreview = isVideo
+                ? `<div class="media-container"><video src="${schedule.mediaUrl}" class="schedule-media-preview video-preview" muted></video><span class="video-label">MP4</span></div>`
+                : `<img src="${schedule.mediaUrl}" alt="Media" class="schedule-media-preview">`;
 
-    document.querySelectorAll('.editable-caption').forEach(cell => {
-        cell.addEventListener('blur', handleCaptionBlur);
-    });
+            row.innerHTML = `
+                <td>${globalIndex + 1}</td>
+                <td><input type="checkbox" class="schedule-checkbox" data-schedule-id="${schedule.scheduleId}"></td>
+                <td>${schedule.username || 'Unknown'}</td>
+                <td>${mediaPreview}</td>
+                <td class="editable-caption" contenteditable="true" data-schedule-id="${schedule.scheduleId}">${schedule.caption}</td>
+                <td class="editable-time" data-schedule-id="${schedule.scheduleId}">
+                    <input type="datetime-local" class="time-input" value="${formattedWibTime}">
+                </td>
+                <td class="${schedule.completed ? 'processing' : ''}">${schedule.completed ? '<span class="processing-dots">Process</span>' : 'Menunggu'}</td>
+                <td>
+                    <button class="delete-btn" data-schedule-id="${schedule.scheduleId}">Hapus</button>
+                    <button class="publish-btn" data-schedule-id="${schedule.scheduleId}">Publish</button>
+                </td>
+            `;
+            scheduleTableBody.appendChild(row);
+        });
 
-    document.querySelectorAll('.editable-time .time-input').forEach(input => {
-        input.addEventListener('change', handleTimeChange);
-    });
+        document.querySelectorAll('.editable-caption').forEach(cell => {
+            cell.addEventListener('blur', handleCaptionBlur);
+        });
 
-    document.querySelectorAll('.delete-btn').forEach(button => {
-        button.addEventListener('click', debounce(handleDeleteClick, 300));
-    });
+        document.querySelectorAll('.editable-time .time-input').forEach(input => {
+            input.addEventListener('change', handleTimeChange);
+        });
 
-    animateProcessingDots();
-}
+        document.querySelectorAll('.delete-btn').forEach(button => {
+            button.addEventListener('click', debounce(handleDeleteClick, 300));
+        });
+
+        document.querySelectorAll('.publish-btn').forEach(button => {
+            button.addEventListener('click', debounce(handlePublishClick, 300));
+        });
+
+        animateProcessingDots();
+    }
 
     function animateProcessingDots() {
         const processingElements = document.querySelectorAll('.processing-dots');
