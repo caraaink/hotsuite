@@ -93,7 +93,7 @@ module.exports = async (req, res) => {
                 accountId,
                 mediaUrl,
                 error: error.message,
-            }, { ex: 300 }); // Simpan selama 5 Menit
+            }, { ex: 86400000 }); // Simpan selama 5 Menit
         } catch (kvError) {
             console.error('Error saving to KV:', kvError);
         }
