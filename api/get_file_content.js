@@ -51,7 +51,7 @@ module.exports = async (req, res) => {
           }
 
           const cacheKey = `file_content:${path}`;
-          await kv.set(cacheKey, parsedContent, { ex: 3600 }); // Cache selama 1 jam
+          await kv.set(cacheKey, parsedContent, { ex: 86400000 }); // Cache selama 1 jam
           return { path, content: parsedContent };
         } catch (error) {
           console.error(`Error fetching file content for path ${path}:`, error.response?.data || error.message);
