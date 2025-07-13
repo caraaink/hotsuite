@@ -12,7 +12,9 @@ module.exports = async (req, res) => {
     const mediaUrl = body.mediaUrl || query.mediaUrl || null;
     let caption = body.caption || query.caption || null;
     const userToken = body.userToken || query.access_token || null;
-    const mediaType = body.mediaType || query.mediaType || null;
+    const mediaType = body.mediaType || query.mediaType || (mediaUrl && mediaUrl.endsWith('.mp4') ? 'REELS' : 'image');
+
+    console.log('Received mediaType:', mediaType);
 
     // Validate required fields
     if (!accountId || !mediaUrl || !userToken) {
@@ -37,7 +39,7 @@ module.exports = async (req, res) => {
 
     try {
         // Determine if the media is a video/reel
-        const isVideo = mediaType === 'video' || mediaType === 'REELS';
+        const isVideo = mediaType === 'video' || mediaType === 'REELS' || (mediaUrl && mediaUrl.endsWith('.mp4'));
         const mediaPayload = isVideo
             ? {
                   video_url: mediaUrl,
