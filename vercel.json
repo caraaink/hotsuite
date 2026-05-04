@@ -2,51 +2,51 @@
   "functions": {
     "api/schedule.js": {
       "memory": 128,
-      "maxDuration": 10
+      "maxDuration": 60
     },
     "api/refresh-token.js": {
       "memory": 128,
-      "maxDuration": 10
+      "maxDuration": 60
     },
     "api/get_accounts.js": {
       "memory": 128,
-      "maxDuration": 10
+      "maxDuration": 60
     },
     "api/get_github_files.js": {
       "memory": 128,
-      "maxDuration": 10
+      "maxDuration": 60
     },
     "api/get_schedules.js": {
       "memory": 128,
-      "maxDuration": 10
+      "maxDuration": 60
     },
     "api/publish.js": {
       "memory": 256,
-      "maxDuration": 30
+      "maxDuration": 60
     },
     "api/get_file_content.js": {
       "memory": 128,
-      "maxDuration": 10
+      "maxDuration": 60
     },
     "api/check_schedules.js": {
       "memory": 128,
-      "maxDuration": 10
+      "maxDuration": 60
     },
     "api/delete_schedule.js": {
       "memory": 128,
-      "maxDuration": 10
+      "maxDuration": 60
     },
     "api/update_schedule.js": {
       "memory": 128,
-      "maxDuration": 10
+      "maxDuration": 60
     },
     "api/upload_to_github.js": {
       "memory": 128,
-      "maxDuration": 10
+      "maxDuration": 60
     },
     "api/delete_from_github.js": {
       "memory": 128,
-      "maxDuration": 10
+      "maxDuration": 60
     }
   },
   "rewrites": [
